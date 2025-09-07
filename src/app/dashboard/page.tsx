@@ -107,7 +107,7 @@ export default function DashboardPage() {
                     <SummaryCard title="Total Tasks" value={counts.taskCount} icon={CheckSquare} />
                 </div>
             )}
-            <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 md:gap-8">
                 {insights && <AiInsights insights={insights.insights} />}
             </div>
         </>

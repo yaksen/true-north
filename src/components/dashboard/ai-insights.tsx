@@ -13,7 +13,7 @@ interface AiInsightsProps {
 
 export function AiInsights({ insights }: AiInsightsProps) {
   return (
-    <Card className="xl:col-span-2">
+    <Card>
       <CardHeader className="flex flex-row items-center">
         <div className="grid gap-2">
             <CardTitle>AI Insights</CardTitle>
