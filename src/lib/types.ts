@@ -2,11 +2,21 @@
 export type LeadState = 'new' | 'contacted' | 'interested' | 'lost' | 'converted';
 export type TaskStatus = 'pending' | 'in-progress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
+export type UserRole = 'admin' | 'manager' | 'employee';
 
 export interface BaseEntity {
   id: string;
   userId: string;
   createdAt: Date;
+}
+
+export interface UserProfile {
+    id: string;
+    email: string;
+    role: UserRole;
+    name?: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface Lead extends BaseEntity {

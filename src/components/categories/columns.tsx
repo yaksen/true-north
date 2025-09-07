@@ -71,6 +71,8 @@ export const getColumns = ({ setCategories }: ColumnsProps): ColumnDef<Category>
       const { toast } = useToast();
       const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
       const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+      
+      const userRole = user?.profile?.role;
 
       const handleDelete = async () => {
         if (!user) {
@@ -99,13 +101,17 @@ export const getColumns = ({ setCategories }: ColumnsProps): ColumnDef<Category>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => setIsDeleteDialogOpen(true)}
-                className="text-destructive"
-              >
-                Delete
-              </DropdownMenuItem>
+               {userRole !== 'employee' && (
+                <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                        onSelect={() => setIsDeleteDialogOpen(true)}
+                        className="text-destructive"
+                    >
+                        Delete
+                    </DropdownMenuItem>
+                </>
+               )}
             </DropdownMenuContent>
           </DropdownMenu>
 

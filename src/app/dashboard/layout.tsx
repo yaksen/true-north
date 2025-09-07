@@ -15,6 +15,7 @@ import {
   Menu,
   Shapes,
   ShoppingBag,
+  Users,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -34,6 +35,7 @@ const navItems = [
   { href: '/dashboard/categories', label: 'Categories', icon: Shapes },
   { href: '/dashboard/packages', label: 'Packages', icon: Box },
   { href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare },
+  { href: '/dashboard/users', label: 'Users', icon: Users, roles: ['admin'] },
 ];
 
 export default function DashboardLayout({
@@ -54,6 +56,14 @@ export default function DashboardLayout({
     return null;
   }
 
+  const userRole = user.profile?.role;
+
+  const accessibleNavItems = navItems.filter(item => {
+    if (!item.roles) return true; // Public item
+    if (!userRole) return false; // Role not yet loaded
+    return item.roles.includes(userRole);
+  });
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -63,7 +73,7 @@ export default function DashboardLayout({
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              {navItems.map((item) => (
+              {accessibleNavItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -90,7 +100,7 @@ export default function DashboardLayout({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              {navItems.map((item) => (
+              {accessibleNavItems.map((item) => (
                 <DropdownMenuItem key={item.href} asChild>
                   <Link
                     href={item.href}
