@@ -63,10 +63,13 @@ export function AiPlanner({ onSaveTasks }: AiPlannerProps) {
   }
 
   const handleSave = () => {
-    const tasksToSave = plannedTasks.map(pt => ({
-        ...pt,
-        dueDate: pt.dueDate ? new Date(pt.dueDate) : undefined,
-    }));
+    const tasksToSave = plannedTasks.map(pt => {
+        const dueDate = pt.dueDate && !isNaN(new Date(pt.dueDate).getTime()) ? new Date(pt.dueDate) : undefined;
+        return {
+            ...pt,
+            dueDate,
+        };
+    });
     onSaveTasks(tasksToSave);
   };
 
