@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 const leadStates: LeadState[] = ['new', 'contacted', 'interested', 'lost', 'converted'];
 
@@ -49,6 +50,7 @@ interface LeadFormProps {
 export function LeadForm({ lead, closeForm }: LeadFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(formSchema),
@@ -62,13 +64,12 @@ export function LeadForm({ lead, closeForm }: LeadFormProps) {
     },
   });
 
-  const { isSubmitting } = form.formState;
-
   async function onSubmit(values: LeadFormValues) {
     if (!user) {
       toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
       return;
     }
+    setIsSubmitting(true);
 
     const leadData = {
         name: values.name,
@@ -95,6 +96,8 @@ export function LeadForm({ lead, closeForm }: LeadFormProps) {
         closeForm();
     } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Something went wrong.' });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 

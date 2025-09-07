@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -36,6 +37,7 @@ interface CategoryFormProps {
 export function CategoryForm({ category, closeForm }: CategoryFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(formSchema),
@@ -45,13 +47,13 @@ export function CategoryForm({ category, closeForm }: CategoryFormProps) {
     },
   });
 
-  const { isSubmitting } = form.formState;
-
   async function onSubmit(values: CategoryFormValues) {
     if (!user) {
       toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
       return;
     }
+
+    setIsSubmitting(true);
 
     const categoryData = {
       name: values.name,
@@ -74,6 +76,8 @@ export function CategoryForm({ category, closeForm }: CategoryFormProps) {
       closeForm();
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Something went wrong.' });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 

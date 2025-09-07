@@ -23,6 +23,7 @@ import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { Checkbox } from '../ui/checkbox';
 import { ScrollArea } from '../ui/scroll-area';
+import { useState } from 'react';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -46,6 +47,7 @@ interface PackageFormProps {
 export function PackageForm({ pkg, services, closeForm }: PackageFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(formSchema),
@@ -59,13 +61,12 @@ export function PackageForm({ pkg, services, closeForm }: PackageFormProps) {
     },
   });
 
-  const { isSubmitting } = form.formState;
-
   async function onSubmit(values: PackageFormValues) {
     if (!user) {
       toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
       return;
     }
+    setIsSubmitting(true);
 
     const packageData = {
       ...values,
@@ -88,6 +89,8 @@ export function PackageForm({ pkg, services, closeForm }: PackageFormProps) {
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: 'Something went wrong.' });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
