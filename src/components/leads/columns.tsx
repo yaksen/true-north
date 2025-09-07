@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
@@ -19,7 +20,6 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
   } from '@/components/ui/dialog';
 import {
     AlertDialog,
@@ -30,7 +30,6 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
   } from '@/components/ui/alert-dialog';
 import { LeadForm } from './lead-form';
 import { useAuth } from '@/hooks/use-auth';
@@ -82,11 +81,12 @@ export const getColumns = (): ColumnDef<Lead>[] => [
   },
   {
     id: 'actions',
-    cell: ({ row }) => {
+    cell: function Actions({ row }) {
       const lead = row.original;
       const { user } = useAuth();
       const { toast } = useToast();
       const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+      const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
       const handleDelete = async () => {
         if (!user) {
@@ -102,25 +102,21 @@ export const getColumns = (): ColumnDef<Lead>[] => [
       }
 
       return (
-        <AlertDialog>
-             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <>
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">Open menu</span>
-                    <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DialogTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
-                    </DialogTrigger>
-                    <DropdownMenuSeparator />
-                    <AlertDialogTrigger asChild>
-                        <DropdownMenuItem className="text-red-500">Delete</DropdownMenuItem>
-                    </AlertDialogTrigger>
-                </DropdownMenuContent>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-red-500">Delete</DropdownMenuItem>
+                    </DropdownMenuContent>
                 </DropdownMenu>
                 <DialogContent>
                     <DialogHeader>
@@ -132,19 +128,21 @@ export const getColumns = (): ColumnDef<Lead>[] => [
                     <LeadForm lead={lead} closeForm={() => setIsEditDialogOpen(false)} />
                 </DialogContent>
             </Dialog>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete this lead.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this lead.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
       );
     },
   },

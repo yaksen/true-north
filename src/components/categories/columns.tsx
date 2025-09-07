@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
@@ -18,7 +19,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -53,11 +53,12 @@ export const getColumns = (): ColumnDef<Category>[] => [
   },
   {
     id: 'actions',
-    cell: ({ row }) => {
+    cell: function Actions({ row }) {
       const category = row.original;
       const { user } = useAuth();
       const { toast } = useToast();
       const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+      const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
       const handleDelete = async () => {
         if (!user) {
@@ -73,7 +74,7 @@ export const getColumns = (): ColumnDef<Category>[] => [
       };
 
       return (
-        <AlertDialog>
+        <>
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -84,13 +85,14 @@ export const getColumns = (): ColumnDef<Category>[] => [
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DialogTrigger asChild>
-                  <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
-                </DialogTrigger>
+                <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem className="text-red-500">Delete</DropdownMenuItem>
-                </AlertDialogTrigger>
+                <DropdownMenuItem
+                  onSelect={() => setIsDeleteDialogOpen(true)}
+                  className="text-red-500"
+                >
+                  Delete
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <DialogContent>
@@ -103,19 +105,21 @@ export const getColumns = (): ColumnDef<Category>[] => [
               <CategoryForm category={category} closeForm={() => setIsEditDialogOpen(false)} />
             </DialogContent>
           </Dialog>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete this category.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete this category.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
       );
     },
   },
