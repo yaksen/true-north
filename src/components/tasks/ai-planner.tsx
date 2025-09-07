@@ -15,6 +15,7 @@ import type { Task } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
+import { v4 as uuidv4 } from 'uuid';
 
 const formSchema = z.object({
   rawTasks: z.string().min(10, { message: 'Please enter a few tasks to get started.' }),
@@ -44,7 +45,12 @@ export function AiPlanner({ onSaveTasks }: AiPlannerProps) {
     try {
       const result = await planDailyTasks({ rawTasks: values.rawTasks });
       if (result && result.plannedTasks) {
-        setPlannedTasks(result.plannedTasks);
+        // Assign UUIDs to subtasks here
+        const tasksWithSubtaskIds = result.plannedTasks.map(task => ({
+            ...task,
+            subtasks: task.subtasks?.map(st => ({ ...st, id: uuidv4() }))
+        }));
+        setPlannedTasks(tasksWithSubtaskIds);
       } else {
         toast({ variant: 'destructive', title: 'Error', description: 'AI could not generate a plan.' });
       }

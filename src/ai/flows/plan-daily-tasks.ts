@@ -19,7 +19,7 @@ export const DailyPlanInputSchema = z.object({
 export type DailyPlanInput = z.infer<typeof DailyPlanInputSchema>;
 
 const SubtaskSchema = z.object({
-    id: z.string().describe("A unique identifier for the subtask, preferably a UUID."),
+    id: z.string().optional().describe("A unique identifier for the subtask, preferably a UUID."),
     title: z.string().describe("The title of the subtask."),
     completed: z.boolean().describe("Whether the subtask is completed."),
 });
@@ -55,7 +55,7 @@ const planDailyTasksPrompt = ai.definePrompt({
 
 Analyze the raw task list provided by the user. For each task you identify, you must:
 1.  **Structure the Task**: Create a clear, concise title. Determine an appropriate priority (low, medium, high) and status (usually 'pending'). If a due date is mentioned, format it as YYYY-MM-DD.
-2.  **Identify Subtasks**: If a task can be broken down into smaller steps, create a list of subtasks.
+2.  **Identify Subtasks**: If a task can be broken down into smaller steps, create a list of subtasks. Each subtask needs a title and its completed status should be set to false.
 3.  **Identify Obstacles**: Think critically about what might prevent the user from completing the task. List 1-2 potential obstacles.
 4.  **Provide Tips**: Offer 1-2 actionable tips or suggestions to help the user complete the task efficiently.
 5.  **Order the Plan**: Arrange the final list of structured tasks in a logical and productive order for the day.
