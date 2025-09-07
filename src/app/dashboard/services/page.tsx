@@ -40,7 +40,7 @@ export default function ServicesPage() {
         servicesData.push({
           id: doc.id,
           ...data,
-          createdAt: data.createdAt.toDate(),
+          createdAt: data.createdAt?.toDate() || new Date(),
         } as Service);
       });
       setServices(servicesData);

@@ -37,7 +37,7 @@ export default function LeadsPage() {
         leadsData.push({ 
             id: doc.id,
             ...data,
-            createdAt: data.createdAt.toDate(),
+            createdAt: data.createdAt?.toDate() || new Date(),
         } as Lead);
       });
       setLeads(leadsData);

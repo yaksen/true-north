@@ -37,7 +37,7 @@ export default function CategoriesPage() {
         categoriesData.push({ 
             id: doc.id,
             ...data,
-            createdAt: data.createdAt.toDate(),
+            createdAt: data.createdAt?.toDate() || new Date(),
         } as Category);
       });
       setCategories(categoriesData);

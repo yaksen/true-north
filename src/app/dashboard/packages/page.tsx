@@ -40,7 +40,7 @@ export default function PackagesPage() {
         packagesData.push({
           id: doc.id,
           ...data,
-          createdAt: data.createdAt.toDate(),
+          createdAt: data.createdAt?.toDate() || new Date(),
         } as Package);
       });
       setPackages(packagesData);
