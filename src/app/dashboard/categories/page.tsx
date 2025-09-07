@@ -24,7 +24,7 @@ export default function CategoriesPage() {
   const { user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -54,7 +54,7 @@ export default function CategoriesPage() {
     <>
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Categories</h1>
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-1">
               <PlusCircle className="h-4 w-4" />
@@ -68,7 +68,7 @@ export default function CategoriesPage() {
                 Add the details of your new category below.
               </DialogDescription>
             </DialogHeader>
-            <CategoryForm closeForm={() => setIsFormOpen(false)} />
+            <CategoryForm closeForm={() => setIsCreateDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
