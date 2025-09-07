@@ -37,21 +37,53 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Badge } from '../ui/badge';
+import { EditableCell } from '../ui/editable-cell';
 
-export const getColumns = ({ services }: { services: Service[] }): ColumnDef<Package>[] => [
+interface ColumnsProps {
+    services: Service[];
+    setPackages: React.Dispatch<React.SetStateAction<Package[]>>;
+}
+
+export const getColumns = ({ services, setPackages }: ColumnsProps): ColumnDef<Package>[] => [
   {
     accessorKey: 'name',
     header: 'Name',
+    cell: ({ row }) => <EditableCell
+        initialValue={row.original.name}
+        onSave={(value) => {
+            const packageId = row.original.id;
+            setPackages(prev => prev.map(p => p.id === packageId ? { ...p, name: value } : p));
+            return { collection: 'packages', docId: packageId, field: 'name', value };
+        }}
+    />,
   },
   {
     accessorKey: 'priceLKR',
     header: 'Price (LKR)',
-    cell: ({ row }) => `Rs. ${row.getValue('priceLKR')}`,
+    cell: ({ row }) => <EditableCell
+        initialValue={row.original.priceLKR}
+        onSave={(value) => {
+            const packageId = row.original.id;
+            const numericValue = Number(value);
+            setPackages(prev => prev.map(p => p.id === packageId ? { ...p, priceLKR: numericValue } : p));
+            return { collection: 'packages', docId: packageId, field: 'priceLKR', value: numericValue };
+        }}
+        type="number"
+    />,
   },
   {
     accessorKey: 'priceUSD',
     header: 'Price (USD)',
-    cell: ({ row }) => `$${row.getValue('priceUSD')}`,
+    cell: ({ row }) => <EditableCell
+        initialValue={row.original.priceUSD}
+        onSave={(value) => {
+            const packageId = row.original.id;
+            const numericValue = Number(value);
+            setPackages(prev => prev.map(p => p.id === packageId ? { ...p, priceUSD: numericValue } : p));
+            return { collection: 'packages', docId: packageId, field: 'priceUSD', value: numericValue };
+        }}
+        type="number"
+    />,
   },
   {
     accessorKey: 'serviceIds',
@@ -64,6 +96,14 @@ export const getColumns = ({ services }: { services: Service[] }): ColumnDef<Pac
   {
     accessorKey: 'duration',
     header: 'Duration',
+    cell: ({ row }) => <EditableCell
+        initialValue={row.original.duration}
+        onSave={(value) => {
+            const packageId = row.original.id;
+            setPackages(prev => prev.map(p => p.id === packageId ? { ...p, duration: value } : p));
+            return { collection: 'packages', docId: packageId, field: 'duration', value };
+        }}
+    />,
   },
   {
     accessorKey: 'createdAt',

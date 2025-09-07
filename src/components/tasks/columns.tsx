@@ -38,6 +38,7 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Checkbox } from '../ui/checkbox';
+import { EditableCell } from '../ui/editable-cell';
 
 const priorityIcons = {
     low: <ArrowDown className="h-4 w-4 text-muted-foreground" />,
@@ -90,7 +91,7 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
   {
     accessorKey: 'title',
     header: 'Title',
-    cell: ({ row }) => {
+    cell: function TitleCell({ row }) {
         const task = row.original;
         const { user } = useAuth();
         const { toast } = useToast();
@@ -111,7 +112,14 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
 
         return (
             <div>
-                <span className="font-medium">{task.title}</span>
+                <EditableCell
+                    initialValue={task.title}
+                    onSave={(value) => {
+                        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, title: value } : t));
+                        return { collection: 'tasks', docId: task.id, field: 'title', value };
+                    }}
+                    className="font-medium"
+                />
                 {task.subtasks && task.subtasks.length > 0 && (
                     <div className="mt-2 space-y-2">
                         {task.subtasks.map(subtask => (
@@ -121,12 +129,15 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
                                     checked={subtask.completed}
                                     onCheckedChange={(checked) => handleSubtaskToggle(subtask.id, !!checked)}
                                 />
-                                <label
-                                    htmlFor={subtask.id}
+                                <EditableCell
+                                    initialValue={subtask.title}
+                                    onSave={(value) => {
+                                        const updatedSubtasks = task.subtasks?.map(st => st.id === subtask.id ? {...st, title: value} : st)
+                                        setTasks(prev => prev.map(t => t.id === task.id ? {...t, subtasks: updatedSubtasks} : t));
+                                        return { collection: 'tasks', docId: task.id, field: 'subtasks', value: updatedSubtasks };
+                                    }}
                                     className={`text-sm ${subtask.completed ? 'text-muted-foreground line-through' : 'text-foreground'}`}
-                                >
-                                    {subtask.title}
-                                </label>
+                                />
                             </div>
                         ))}
                     </div>

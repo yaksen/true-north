@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Task } from '@/lib/types';
+import type { Task, TaskPriority, TaskStatus } from '@/lib/types';
 import { DataTable } from '@/components/ui/data-table';
 import { getColumns } from '@/components/tasks/columns';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import {
 import { TaskForm } from '@/components/tasks/task-form';
 import { AiPlanner } from '@/components/tasks/ai-planner';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function TasksPage() {
   const { user } = useAuth();
@@ -29,6 +30,8 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isAiPlannerOpen, setIsAiPlannerOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
 
   useEffect(() => {
     if (!user) return;
@@ -77,6 +80,12 @@ export default function TasksPage() {
   };
 
 
+  const filteredTasks = tasks.filter(task => {
+      const statusMatch = statusFilter === 'all' || task.status === statusFilter;
+      const priorityMatch = priorityFilter === 'all' || task.priority === priorityFilter;
+      return statusMatch && priorityMatch;
+  })
+
   const columns = getColumns({ tasks, setTasks });
 
   return (
@@ -121,7 +130,38 @@ export default function TasksPage() {
             </Dialog>
         </div>
       </div>
-      <DataTable columns={columns} data={tasks} />
+      <DataTable 
+        columns={columns} 
+        data={filteredTasks} 
+        filterColumn="title" 
+        filterColumnName="Title"
+        toolbar={
+            <div className='flex gap-2'>
+                 <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as TaskStatus | 'all')}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="in-progress">In Progress</SelectItem>
+                        <SelectItem value="done">Done</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select value={priorityFilter} onValueChange={(value) => setPriorityFilter(value as TaskPriority | 'all')}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filter by priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Priorities</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        }
+       />
     </>
   );
 }

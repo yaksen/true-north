@@ -62,7 +62,7 @@ export default function PackagesPage() {
     };
   }, [user]);
 
-  const columns = getColumns({ services });
+  const columns = getColumns({ services, setPackages });
 
   return (
     <>
@@ -89,7 +89,12 @@ export default function PackagesPage() {
           </DialogContent>
         </Dialog>
       </div>
-      <DataTable columns={columns} data={packages} />
+      <DataTable
+        columns={columns}
+        data={packages}
+        filterColumn="name"
+        filterColumnName="Name"
+       />
     </>
   );
 }

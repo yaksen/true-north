@@ -36,11 +36,24 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { EditableCell } from '../ui/editable-cell';
 
-export const getColumns = (): ColumnDef<Category>[] => [
+interface ColumnsProps {
+    setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
+}
+
+export const getColumns = ({ setCategories }: ColumnsProps): ColumnDef<Category>[] => [
   {
     accessorKey: 'name',
     header: 'Name',
+    cell: ({ row }) => <EditableCell
+        initialValue={row.original.name}
+        onSave={(value) => {
+            const categoryId = row.original.id;
+            setCategories(prev => prev.map(c => c.id === categoryId ? { ...c, name: value } : c));
+            return { collection: 'categories', docId: categoryId, field: 'name', value };
+        }}
+    />,
   },
   {
     accessorKey: 'createdAt',

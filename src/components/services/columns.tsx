@@ -36,11 +36,25 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { EditableCell } from '../ui/editable-cell';
 
-export const getColumns = ({ categories }: { categories: Category[] }): ColumnDef<Service>[] => [
+interface ColumnsProps {
+    categories: Category[];
+    setServices: React.Dispatch<React.SetStateAction<Service[]>>;
+}
+
+export const getColumns = ({ categories, setServices }: ColumnsProps): ColumnDef<Service>[] => [
   {
     accessorKey: 'name',
     header: 'Name',
+    cell: ({ row }) => <EditableCell
+        initialValue={row.original.name}
+        onSave={(value) => {
+            const serviceId = row.original.id;
+            setServices(prev => prev.map(s => s.id === serviceId ? { ...s, name: value } : s));
+            return { collection: 'services', docId: serviceId, field: 'name', value };
+        }}
+    />,
   },
   {
     accessorKey: 'categoryId',
@@ -54,16 +68,42 @@ export const getColumns = ({ categories }: { categories: Category[] }): ColumnDe
   {
     accessorKey: 'priceLKR',
     header: 'Price (LKR)',
-    cell: ({ row }) => `Rs. ${row.getValue('priceLKR')}`,
+    cell: ({ row }) => <EditableCell
+        initialValue={row.original.priceLKR}
+        onSave={(value) => {
+            const serviceId = row.original.id;
+            const numericValue = Number(value);
+            setServices(prev => prev.map(s => s.id === serviceId ? { ...s, priceLKR: numericValue } : s));
+            return { collection: 'services', docId: serviceId, field: 'priceLKR', value: numericValue };
+        }}
+        type="number"
+    />,
   },
   {
     accessorKey: 'priceUSD',
     header: 'Price (USD)',
-    cell: ({ row }) => `$${row.getValue('priceUSD')}`,
+    cell: ({ row }) => <EditableCell
+        initialValue={row.original.priceUSD}
+        onSave={(value) => {
+            const serviceId = row.original.id;
+            const numericValue = Number(value);
+            setServices(prev => prev.map(s => s.id === serviceId ? { ...s, priceUSD: numericValue } : s));
+            return { collection: 'services', docId: serviceId, field: 'priceUSD', value: numericValue };
+        }}
+        type="number"
+    />,
   },
   {
     accessorKey: 'finishingTime',
     header: 'Duration',
+    cell: ({ row }) => <EditableCell
+        initialValue={row.original.finishingTime}
+        onSave={(value) => {
+            const serviceId = row.original.id;
+            setServices(prev => prev.map(s => s.id === serviceId ? { ...s, finishingTime: value } : s));
+            return { collection: 'services', docId: serviceId, field: 'finishingTime', value };
+        }}
+    />,
   },
   {
     accessorKey: 'createdAt',

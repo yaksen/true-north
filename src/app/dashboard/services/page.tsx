@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { ServiceForm } from '@/components/services/service-form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function ServicesPage() {
   const { user } = useAuth();
@@ -26,6 +27,8 @@ export default function ServicesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+
 
   useEffect(() => {
     if (!user) return;
@@ -61,8 +64,13 @@ export default function ServicesPage() {
       unsubscribeCategories();
     };
   }, [user]);
+  
+  const filteredServices = services.filter(service => {
+    if (categoryFilter === 'all') return true;
+    return service.categoryId === categoryFilter;
+  });
 
-  const columns = getColumns({ categories });
+  const columns = getColumns({ categories, setServices });
 
   return (
     <>
@@ -89,7 +97,25 @@ export default function ServicesPage() {
           </DialogContent>
         </Dialog>
       </div>
-      <DataTable columns={columns} data={services} />
+      <DataTable
+        columns={columns}
+        data={filteredServices}
+        filterColumn="name"
+        filterColumnName="Name"
+        toolbar={
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        }
+      />
     </>
   );
 }

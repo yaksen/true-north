@@ -48,7 +48,7 @@ export default function CategoriesPage() {
     return () => unsubscribe();
   }, [user]);
 
-  const columns = getColumns();
+  const columns = getColumns({ setCategories });
 
   return (
     <>
@@ -72,7 +72,7 @@ export default function CategoriesPage() {
           </DialogContent>
         </Dialog>
       </div>
-      <DataTable columns={columns} data={categories} />
+      <DataTable columns={columns} data={categories} filterColumn="name" filterColumnName="Name" />
     </>
   );
 }

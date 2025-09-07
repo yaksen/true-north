@@ -33,22 +33,44 @@ import {
   } from '@/components/ui/alert-dialog';
 import { LeadForm } from './lead-form';
 import { useAuth } from '@/hooks/use-auth';
-import { deleteDoc, doc } from 'firebase/firestore';
+import { deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { EditableCell } from '../ui/editable-cell';
 
-export const getColumns = (): ColumnDef<Lead>[] => [
+const leadStates: LeadState[] = ['new', 'contacted', 'interested', 'lost', 'converted'];
+
+interface ColumnsProps {
+    setLeads: React.Dispatch<React.SetStateAction<Lead[]>>;
+}
+
+export const getColumns = ({ setLeads }: ColumnsProps): ColumnDef<Lead>[] => [
   {
     accessorKey: 'name',
     header: 'Name',
+    cell: ({ row }) => <EditableCell
+        initialValue={row.original.name}
+        onSave={(value) => {
+            const leadId = row.original.id;
+            setLeads(prev => prev.map(l => l.id === leadId ? { ...l, name: value } : l));
+            return { collection: 'leads', docId: leadId, field: 'name', value };
+        }}
+    />,
   },
   {
     accessorKey: 'emails',
     header: 'Email',
     cell: ({ row }) => {
         const emails = row.getValue('emails') as string[];
-        return <div>{emails?.[0]}</div>
+        return <EditableCell
+            initialValue={emails?.[0] || ''}
+            onSave={(value) => {
+                const leadId = row.original.id;
+                setLeads(prev => prev.map(l => l.id === leadId ? { ...l, emails: [value] } : l));
+                return { collection: 'leads', docId: leadId, field: 'emails', value: [value] };
+            }}
+        />
     }
   },
   {
@@ -56,7 +78,14 @@ export const getColumns = (): ColumnDef<Lead>[] => [
     header: 'Phone',
     cell: ({ row }) => {
         const phones = row.getValue('phoneNumbers') as string[];
-        return <div>{phones?.[0]}</div>
+        return <EditableCell
+            initialValue={phones?.[0] || ''}
+            onSave={(value) => {
+                const leadId = row.original.id;
+                setLeads(prev => prev.map(l => l.id === leadId ? { ...l, phoneNumbers: [value] } : l));
+                return { collection: 'leads', docId: leadId, field: 'phoneNumbers', value: [value] };
+            }}
+        />
     }
   },
   {
@@ -151,3 +180,4 @@ export const getColumns = (): ColumnDef<Lead>[] => [
     },
   },
 ];
+

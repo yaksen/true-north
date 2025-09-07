@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Lead } from '@/lib/types';
+import type { Lead, LeadState } from '@/lib/types';
 import { DataTable } from '@/components/ui/data-table';
 import { getColumns } from '@/components/leads/columns';
 import { Button } from '@/components/ui/button';
@@ -19,12 +19,14 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { LeadForm } from '@/components/leads/lead-form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function LeadsPage() {
   const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<LeadState | 'all'>('all');
 
   useEffect(() => {
     if (!user) return;
@@ -48,7 +50,12 @@ export default function LeadsPage() {
     return () => unsubscribe();
   }, [user]);
 
-  const columns = getColumns();
+  const filteredLeads = leads.filter(lead => {
+    if (statusFilter === 'all') return true;
+    return lead.state === statusFilter;
+  });
+
+  const columns = getColumns({ setLeads });
 
   return (
     <>
@@ -72,7 +79,27 @@ export default function LeadsPage() {
           </DialogContent>
         </Dialog>
       </div>
-      <DataTable columns={columns} data={leads} />
+      <DataTable
+        columns={columns}
+        data={filteredLeads}
+        filterColumn="name"
+        filterColumnName="Name"
+        toolbar={
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as LeadState | 'all')}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="contacted">Contacted</SelectItem>
+                    <SelectItem value="interested">Interested</SelectItem>
+                    <SelectItem value="converted">Converted</SelectItem>
+                    <SelectItem value="lost">Lost</SelectItem>
+                </SelectContent>
+            </Select>
+        }
+      />
     </>
   );
 }
