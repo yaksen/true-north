@@ -1,29 +1,35 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import Link from 'next/link';
 import { Logo } from '@/components/logo';
 
-const loginSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
-});
+const signupSchema = z
+  .object({
+    email: z.string().email({ message: 'Invalid email address' }),
+    password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type SignupFormValues = z.infer<typeof signupSchema>;
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
-  const { user, loading, signInWithEmail } = useAuth();
+  const { signUpWithEmail } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -32,43 +38,29 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
   });
 
-  useEffect(() => {
-    if (!loading && user) {
-      router.push('/dashboard');
-    }
-  }, [user, loading, router]);
-
-  const onSubmit = async (data: LoginFormValues) => {
+  const onSubmit = async (data: SignupFormValues) => {
     setIsSubmitting(true);
     try {
-      await signInWithEmail(data.email, data.password);
+      await signUpWithEmail(data.email, data.password);
       toast({
-        title: 'Login Successful',
-        description: "Welcome back!",
+        title: 'Signup Successful',
+        description: 'You can now sign in.',
       });
-      router.push('/dashboard');
+      router.push('/');
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
+        title: 'Signup Failed',
         description: error.message || 'An unexpected error occurred.',
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  if (loading || (!loading && user)) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -77,8 +69,8 @@ export default function LoginPage() {
           <Logo />
         </div>
         <div className="mb-4 text-center">
-          <h1 className="text-2xl font-bold">Welcome Back</h1>
-          <p className="text-muted-foreground">Sign in to continue to Yaksen CRM</p>
+          <h1 className="text-2xl font-bold">Create an Account</h1>
+          <p className="text-muted-foreground">Start managing your business with Yaksen CRM</p>
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1">
@@ -109,15 +101,25 @@ export default function LoginPage() {
             </button>
             {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
           </div>
+           <div className="space-y-1">
+            <Input
+              id="confirmPassword"
+              placeholder="Confirm Password"
+              type={showPassword ? 'text' : 'password'}
+              {...register('confirmPassword')}
+              disabled={isSubmitting}
+            />
+            {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
+          </div>
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Sign In
+            Sign Up
           </Button>
         </form>
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{' '}
-          <Link href="/signup" className="font-semibold text-primary hover:underline">
-            Sign up
+          Already have an account?{' '}
+          <Link href="/" className="font-semibold text-primary hover:underline">
+            Sign in
           </Link>
         </p>
       </div>
