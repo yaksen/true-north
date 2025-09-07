@@ -2,9 +2,9 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import type { Task, TaskPriority, TaskStatus } from '@/lib/types';
+import type { Task, TaskPriority, TaskStatus, Subtask } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, ArrowUp, ArrowRight, ArrowDown } from 'lucide-react';
+import { MoreHorizontal, ArrowUp, ArrowRight, ArrowDown, ShieldAlert, Sparkles, ChevronsRight, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -33,10 +33,11 @@ import {
   } from '@/components/ui/alert-dialog';
 import { TaskForm } from './task-form';
 import { useAuth } from '@/hooks/use-auth';
-import { deleteDoc, doc } from 'firebase/firestore';
+import { deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { Checkbox } from '../ui/checkbox';
 
 const priorityIcons = {
     low: <ArrowDown className="h-4 w-4 text-muted-foreground" />,
@@ -44,22 +45,126 @@ const priorityIcons = {
     high: <ArrowUp className="h-4 w-4 text-muted-foreground" />,
 }
 
-export const getColumns = (): ColumnDef<Task>[] => [
-  {
-    accessorKey: 'title',
-    header: 'Title',
-  },
+interface ColumnProps {
+    tasks: Task[];
+    setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
+}
+
+export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] => [
   {
     accessorKey: 'status',
     header: 'Status',
-    cell: ({ row }) => {
-      const status = row.getValue('status') as TaskStatus;
-      return (
-        <Badge variant="outline" className="capitalize">
-            {status}
-        </Badge>
-      );
+    cell: function StatusCell({ row }) {
+        const task = row.original;
+        const { user } = useAuth();
+        const { toast } = useToast();
+
+        const handleStatusChange = async (newStatus: TaskStatus) => {
+            if (!user) return;
+            const taskRef = doc(db, `users/${user.uid}/tasks`, task.id);
+            try {
+                await updateDoc(taskRef, { status: newStatus });
+                // Optimistic update
+                setTasks(prevTasks => prevTasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Error updating status' });
+            }
+        };
+        
+        return (
+            <div className="flex items-center space-x-2">
+                 <Checkbox
+                    id={`status-${task.id}`}
+                    checked={task.status === 'done'}
+                    onCheckedChange={(checked) => {
+                        handleStatusChange(checked ? 'done' : 'pending');
+                    }}
+                />
+                <Badge variant={task.status === 'done' ? 'default': 'outline'} className="capitalize">
+                    {task.status}
+                </Badge>
+            </div>
+        );
     },
+  },
+  {
+    accessorKey: 'title',
+    header: 'Title',
+    cell: ({ row }) => {
+        const task = row.original;
+        const { user } = useAuth();
+        const { toast } = useToast();
+
+        const handleSubtaskToggle = async (subtaskId: string, completed: boolean) => {
+            if (!user) return;
+            const updatedSubtasks = task.subtasks?.map(st => 
+                st.id === subtaskId ? { ...st, completed } : st
+            );
+            const taskRef = doc(db, `users/${user.uid}/tasks`, task.id);
+            try {
+                await updateDoc(taskRef, { subtasks: updatedSubtasks });
+                setTasks(prev => prev.map(t => t.id === task.id ? {...t, subtasks: updatedSubtasks} : t));
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Error updating subtask' });
+            }
+        };
+
+        return (
+            <div>
+                <span className="font-medium">{task.title}</span>
+                {task.subtasks && task.subtasks.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                        {task.subtasks.map(subtask => (
+                            <div key={subtask.id} className="flex items-center gap-2">
+                                <Checkbox
+                                    id={subtask.id}
+                                    checked={subtask.completed}
+                                    onCheckedChange={(checked) => handleSubtaskToggle(subtask.id, !!checked)}
+                                />
+                                <label
+                                    htmlFor={subtask.id}
+                                    className={`text-sm ${subtask.completed ? 'text-muted-foreground line-through' : 'text-foreground'}`}
+                                >
+                                    {subtask.title}
+                                </label>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }
+  },
+  {
+    accessorKey: 'ai-insights',
+    header: 'AI Insights',
+    cell: ({ row }) => {
+        const task = row.original;
+        const hasInsights = task.obstacles?.length || task.tips?.length;
+
+        if (!hasInsights) return <span className="text-muted-foreground/50">None</span>;
+
+        return (
+            <div className="space-y-2">
+                {task.obstacles && task.obstacles.length > 0 && (
+                    <div className="flex items-start gap-2">
+                        <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-muted-foreground italic">
+                           {task.obstacles.join(', ')}
+                        </p>
+                    </div>
+                )}
+                {task.tips && task.tips.length > 0 && (
+                     <div className="flex items-start gap-2">
+                        <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-muted-foreground">
+                            {task.tips.join(', ')}
+                        </p>
+                    </div>
+                )}
+            </div>
+        )
+    }
   },
   {
     accessorKey: 'priority',

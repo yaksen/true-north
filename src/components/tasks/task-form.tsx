@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -27,15 +27,22 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { v4 as uuidv4 } from 'uuid';
 
 const taskStatuses: TaskStatus[] = ['pending', 'in-progress', 'done'];
 const taskPriorities: TaskPriority[] = ['low', 'medium', 'high'];
+
+const subtaskSchema = z.object({
+    id: z.string(),
+    title: z.string().min(1, 'Subtask title cannot be empty.'),
+    completed: z.boolean(),
+});
 
 const formSchema = z.object({
   title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
@@ -43,6 +50,7 @@ const formSchema = z.object({
   status: z.enum(taskStatuses),
   priority: z.enum(taskPriorities),
   dueDate: z.date().optional(),
+  subtasks: z.array(subtaskSchema).optional(),
 });
 
 type TaskFormValues = z.infer<typeof formSchema>;
@@ -65,7 +73,13 @@ export function TaskForm({ task, closeForm }: TaskFormProps) {
       status: task?.status ?? 'pending',
       priority: task?.priority ?? 'medium',
       dueDate: task?.dueDate,
+      subtasks: task?.subtasks ?? [],
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "subtasks",
   });
 
   async function onSubmit(values: TaskFormValues) {
@@ -220,6 +234,36 @@ export function TaskForm({ task, closeForm }: TaskFormProps) {
           )}
         />
         
+        <div>
+          <FormLabel>Subtasks</FormLabel>
+          <div className="space-y-2 mt-2">
+            {fields.map((field, index) => (
+              <div key={field.id} className="flex items-center gap-2">
+                <FormField
+                  control={form.control}
+                  name={`subtasks.${index}.title`}
+                  render={({ field }) => (
+                    <Input {...field} placeholder="Subtask title" className="flex-grow" />
+                  )}
+                />
+                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-2"
+            onClick={() => append({ id: uuidv4(), title: '', completed: false })}
+          >
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Subtask
+          </Button>
+        </div>
+
         <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>

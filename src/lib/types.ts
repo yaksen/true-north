@@ -41,10 +41,19 @@ export interface Package extends BaseEntity {
   duration: string;
 }
 
+export interface Subtask {
+    id: string;
+    title: string;
+    completed: boolean;
+}
+
 export interface Task extends BaseEntity {
   title: string;
   description?: string;
   status: TaskStatus;
   priority: TaskPriority;
   dueDate?: Date;
+  subtasks?: Subtask[];
+  obstacles?: string[];
+  tips?: string[];
 }
