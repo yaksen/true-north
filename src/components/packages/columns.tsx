@@ -108,7 +108,7 @@ export const getColumns = ({ services }: { services: Service[] }): ColumnDef<Pac
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DialogTrigger asChild>
-                  <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
                 </DialogTrigger>
                 <DropdownMenuSeparator />
                 <AlertDialogTrigger asChild>

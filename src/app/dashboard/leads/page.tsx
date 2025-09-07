@@ -47,9 +47,7 @@ export default function LeadsPage() {
     return () => unsubscribe();
   }, [user]);
 
-  const columns = getColumns({
-    openForm: () => setIsFormOpen(true),
-  });
+  const columns = getColumns();
 
   return (
     <>

@@ -3,7 +3,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 import type { Lead, LeadState } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, ArrowUp, ArrowDown, ArrowRight, X, Check } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -39,17 +39,7 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 
-const stateConfig: Record<LeadState, { icon: React.ElementType; color: string }> = {
-    new: { icon: ArrowRight, color: 'bg-blue-500' },
-    contacted: { icon: ArrowRight, color: 'bg-yellow-500' },
-    interested: { icon: ArrowUp, color: 'bg-green-500' },
-    lost: { icon: X, color: 'bg-red-500' },
-    converted: { icon: Check, color: 'bg-purple-500' },
-  };
-
-export const getColumns = (
-    { openForm }: { openForm: (lead?: Lead) => void }
-  ): ColumnDef<Lead>[] => [
+export const getColumns = (): ColumnDef<Lead>[] => [
   {
     accessorKey: 'name',
     header: 'Name',
@@ -75,7 +65,6 @@ export const getColumns = (
     header: 'State',
     cell: ({ row }) => {
       const state = row.getValue('state') as LeadState;
-      const { icon: Icon, color } = stateConfig[state] || {};
       return (
         <Badge variant="outline" className="capitalize">
             {state}
@@ -125,7 +114,7 @@ export const getColumns = (
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DialogTrigger asChild>
-                        <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
                     </DialogTrigger>
                     <DropdownMenuSeparator />
                     <AlertDialogTrigger asChild>

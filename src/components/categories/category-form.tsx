@@ -75,6 +75,7 @@ export function CategoryForm({ category, closeForm }: CategoryFormProps) {
       }
       closeForm();
     } catch (error) {
+      console.error("Error submitting category form: ", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Something went wrong.' });
     } finally {
         setIsSubmitting(false);
@@ -111,7 +112,7 @@ export function CategoryForm({ category, closeForm }: CategoryFormProps) {
           )}
         />
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={closeForm}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {category ? 'Update' : 'Create'} Category

@@ -95,6 +95,7 @@ export function LeadForm({ lead, closeForm }: LeadFormProps) {
         }
         closeForm();
     } catch (error) {
+        console.error("Error submitting lead form: ", error);
         toast({ variant: 'destructive', title: 'Error', description: 'Something went wrong.' });
     } finally {
       setIsSubmitting(false);
@@ -196,7 +197,7 @@ export function LeadForm({ lead, closeForm }: LeadFormProps) {
           )}
         />
         <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={closeForm}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {lead ? 'Update' : 'Create'} Lead

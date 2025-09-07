@@ -33,8 +33,8 @@ const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   categoryId: z.string().nonempty({ message: 'Category is required.' }),
   finishingTime: z.string().nonempty({ message: 'Finishing time is required.' }),
-  priceLKR: z.coerce.number().min(0),
-  priceUSD: z.coerce.number().min(0),
+  priceLKR: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
+  priceUSD: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
   notes: z.string().optional(),
 });
 
@@ -89,7 +89,7 @@ export function ServiceForm({ service, categories, closeForm }: ServiceFormProps
       }
       closeForm();
     } catch (error) {
-      console.error(error);
+      console.error("Error submitting service form: ", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Something went wrong.' });
     } finally {
       setIsSubmitting(false);
@@ -195,7 +195,7 @@ export function ServiceForm({ service, categories, closeForm }: ServiceFormProps
           )}
         />
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={closeForm}>
+          <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>

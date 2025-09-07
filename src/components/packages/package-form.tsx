@@ -29,8 +29,8 @@ const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   description: z.string().optional(),
   duration: z.string().nonempty({ message: 'Duration is required' }),
-  priceLKR: z.coerce.number().min(0),
-  priceUSD: z.coerce.number().min(0),
+  priceLKR: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
+  priceUSD: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
   serviceIds: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: 'You have to select at least one service.',
   }),
@@ -87,7 +87,7 @@ export function PackageForm({ pkg, services, closeForm }: PackageFormProps) {
       }
       closeForm();
     } catch (error) {
-      console.error(error);
+      console.error("Error submitting package form: ", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Something went wrong.' });
     } finally {
       setIsSubmitting(false);
@@ -220,7 +220,7 @@ export function PackageForm({ pkg, services, closeForm }: PackageFormProps) {
         />
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={closeForm}>
+          <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>
