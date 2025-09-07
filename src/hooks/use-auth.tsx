@@ -13,6 +13,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
@@ -22,6 +24,7 @@ interface AuthContextType {
   loading: boolean;
   signUpWithEmail: (email: string, pass: string) => Promise<any>;
   signInWithEmail: (email: string, pass: string) => Promise<any>;
+  signInWithGoogle: () => Promise<any>;
   signOut: () => Promise<void>;
 }
 
@@ -47,6 +50,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
+  const signInWithGoogle = (): Promise<any> => {
+    const provider = new GoogleAuthProvider();
+    return signInWithPopup(auth, provider);
+  };
+
   const signOut = (): Promise<void> => {
     return firebaseSignOut(auth);
   };
@@ -56,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signUpWithEmail,
     signInWithEmail,
+    signInWithGoogle,
     signOut,
   };
 
