@@ -1,60 +1,104 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { getDashboardInsights } from "@/ai/flows/dashboard-summary-insights";
 import { AiInsights } from "@/components/dashboard/ai-insights";
 import { SummaryCard } from "@/components/dashboard/summary-card";
-import { auth } from "@/lib/firebase";
 import { collection, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { BarChart, Box, Contact, Shapes, ShoppingBag } from "lucide-react";
+import { Contact, ShoppingBag, Shapes, Box, Loader2 } from "lucide-react";
+import { useAuth } from '@/hooks/use-auth';
 
-async function getSummaryCounts(userId: string) {
-    const leadsCol = collection(db, `users/${userId}/leads`);
-    const servicesCol = collection(db, `users/${userId}/services`);
-    const categoriesCol = collection(db, `users/${userId}/categories`);
-    const packagesCol = collection(db, `users/${userId}/packages`);
-
-    const [leadsSnapshot, servicesSnapshot, categoriesSnapshot, packagesSnapshot] = await Promise.all([
-        getCountFromServer(leadsCol),
-        getCountFromServer(servicesCol),
-        getCountFromServer(categoriesCol),
-        getCountFromServer(packagesCol),
-    ]);
-
-    return {
-        leadCount: leadsSnapshot.data().count,
-        serviceCount: servicesSnapshot.data().count,
-        categoryCount: categoriesSnapshot.data().count,
-        packageCount: packagesSnapshot.data().count,
-    };
+interface SummaryCounts {
+    leadCount: number;
+    serviceCount: number;
+    categoryCount: number;
+    packageCount: number;
 }
 
+interface DashboardInsights {
+    insights: string;
+}
 
-export default async function DashboardPage() {
-    // In a real app, you'd get the user from the session.
-    // For this example, we'll assume a hardcoded user or handle auth differently.
-    const user = auth.currentUser;
+export default function DashboardPage() {
+    const { user, loading: authLoading } = useAuth();
+    const [counts, setCounts] = useState<SummaryCounts | null>(null);
+    const [insights, setInsights] = useState<DashboardInsights | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (authLoading) return;
+        if (!user) {
+            // This should be handled by the layout's auth guard, but as a fallback.
+            setLoading(false);
+            return;
+        }
+
+        async function fetchData() {
+            setLoading(true);
+            try {
+                const leadsCol = collection(db, `users/${user.uid}/leads`);
+                const servicesCol = collection(db, `users/${user.uid}/services`);
+                const categoriesCol = collection(db, `users/${user.uid}/categories`);
+                const packagesCol = collection(db, `users/${user.uid}/packages`);
+
+                const [leadsSnapshot, servicesSnapshot, categoriesSnapshot, packagesSnapshot] = await Promise.all([
+                    getCountFromServer(leadsCol),
+                    getCountFromServer(servicesCol),
+                    getCountFromServer(categoriesCol),
+                    getCountFromServer(packagesCol),
+                ]);
+
+                const summaryCounts = {
+                    leadCount: leadsSnapshot.data().count,
+                    serviceCount: servicesSnapshot.data().count,
+                    categoryCount: categoriesSnapshot.data().count,
+                    packageCount: packagesSnapshot.data().count,
+                };
+                
+                setCounts(summaryCounts);
+
+                const aiInsights = await getDashboardInsights(summaryCounts);
+                setInsights(aiInsights);
+
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchData();
+    }, [user, authLoading]);
+
+    if (loading || authLoading) {
+        return (
+            <div className="flex flex-1 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
+    }
 
     if (!user) {
-        // This should be handled by the layout's auth guard, but as a fallback:
         return <div className="p-4">Please sign in to view the dashboard.</div>
     }
 
-    const counts = await getSummaryCounts(user.uid);
-    const insights = await getDashboardInsights(counts);
-  
-  return (
-    <>
-      <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-        <SummaryCard title="Total Leads" value={counts.leadCount} icon={Contact} />
-        <SummaryCard title="Total Services" value={counts.serviceCount} icon={ShoppingBag} />
-        <SummaryCard title="Total Categories" value={counts.categoryCount} icon={Shapes} />
-        <SummaryCard title="Total Packages" value={counts.packageCount} icon={Box} />
-      </div>
-      <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-        <AiInsights insights={insights.insights} />
-      </div>
-    </>
-  );
+    return (
+        <>
+            <div className="flex items-center">
+                <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
+            </div>
+            {counts && (
+                <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+                    <SummaryCard title="Total Leads" value={counts.leadCount} icon={Contact} />
+                    <SummaryCard title="Total Services" value={counts.serviceCount} icon={ShoppingBag} />
+                    <SummaryCard title="Total Categories" value={counts.categoryCount} icon={Shapes} />
+                    <SummaryCard title="Total Packages" value={counts.packageCount} icon={Box} />
+                </div>
+            )}
+            <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
+                {insights && <AiInsights insights={insights.insights} />}
+            </div>
+        </>
+    );
 }
