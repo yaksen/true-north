@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -6,7 +7,7 @@ import { AiInsights } from "@/components/dashboard/ai-insights";
 import { SummaryCard } from "@/components/dashboard/summary-card";
 import { collection, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Contact, ShoppingBag, Shapes, Box, Loader2 } from "lucide-react";
+import { Contact, ShoppingBag, Shapes, Box, Loader2, CheckSquare } from "lucide-react";
 import { useAuth } from '@/hooks/use-auth';
 
 interface SummaryCounts {
@@ -14,6 +15,7 @@ interface SummaryCounts {
     serviceCount: number;
     categoryCount: number;
     packageCount: number;
+    taskCount: number;
 }
 
 interface DashboardInsights {
@@ -41,12 +43,14 @@ export default function DashboardPage() {
                 const servicesCol = collection(db, `users/${user.uid}/services`);
                 const categoriesCol = collection(db, `users/${user.uid}/categories`);
                 const packagesCol = collection(db, `users/${user.uid}/packages`);
+                const tasksCol = collection(db, `users/${user.uid}/tasks`);
 
-                const [leadsSnapshot, servicesSnapshot, categoriesSnapshot, packagesSnapshot] = await Promise.all([
+                const [leadsSnapshot, servicesSnapshot, categoriesSnapshot, packagesSnapshot, tasksSnapshot] = await Promise.all([
                     getCountFromServer(leadsCol),
                     getCountFromServer(servicesCol),
                     getCountFromServer(categoriesCol),
                     getCountFromServer(packagesCol),
+                    getCountFromServer(tasksCol),
                 ]);
 
                 const summaryCounts = {
@@ -54,11 +58,17 @@ export default function DashboardPage() {
                     serviceCount: servicesSnapshot.data().count,
                     categoryCount: categoriesSnapshot.data().count,
                     packageCount: packagesSnapshot.data().count,
+                    taskCount: tasksSnapshot.data().count,
                 };
                 
                 setCounts(summaryCounts);
 
-                const aiInsights = await getDashboardInsights(summaryCounts);
+                const aiInsights = await getDashboardInsights({
+                    leadCount: summaryCounts.leadCount,
+                    serviceCount: summaryCounts.serviceCount,
+                    categoryCount: summaryCounts.categoryCount,
+                    packageCount: summaryCounts.packageCount,
+                });
                 setInsights(aiInsights);
 
             } catch (error) {
@@ -89,11 +99,12 @@ export default function DashboardPage() {
                 <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
             </div>
             {counts && (
-                <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-5">
                     <SummaryCard title="Total Leads" value={counts.leadCount} icon={Contact} />
                     <SummaryCard title="Total Services" value={counts.serviceCount} icon={ShoppingBag} />
                     <SummaryCard title="Total Categories" value={counts.categoryCount} icon={Shapes} />
                     <SummaryCard title="Total Packages" value={counts.packageCount} icon={Box} />
+                    <SummaryCard title="Total Tasks" value={counts.taskCount} icon={CheckSquare} />
                 </div>
             )}
             <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   BarChart,
   Box,
+  CheckSquare,
   ChevronDown,
   Contact,
   LayoutDashboard,
@@ -31,6 +33,7 @@ const navItems = [
   { href: '/dashboard/services', label: 'Services', icon: ShoppingBag },
   { href: '/dashboard/categories', label: 'Categories', icon: Shapes },
   { href: '/dashboard/packages', label: 'Packages', icon: Box },
+  { href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare },
 ];
 
 export default function DashboardLayout({

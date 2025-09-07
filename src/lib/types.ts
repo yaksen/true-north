@@ -1,4 +1,7 @@
+
 export type LeadState = 'new' | 'contacted' | 'interested' | 'lost' | 'converted';
+export type TaskStatus = 'pending' | 'in-progress' | 'done';
+export type TaskPriority = 'low' | 'medium' | 'high';
 
 export interface BaseEntity {
   id: string;
@@ -36,4 +39,12 @@ export interface Package extends BaseEntity {
   priceLKR: number;
   priceUSD: number;
   duration: string;
+}
+
+export interface Task extends BaseEntity {
+  title: string;
+  description?: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate?: Date;
 }
