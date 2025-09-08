@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -48,7 +48,7 @@ export default function CategoriesPage() {
     return () => unsubscribe();
   }, [user]);
 
-  const columns = getColumns({ setCategories });
+  const columns = useMemo(() => getColumns({ setCategories }), [setCategories]);
 
   return (
     <>

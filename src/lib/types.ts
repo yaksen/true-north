@@ -16,6 +16,8 @@ export interface UserProfile {
     email: string;
     role: UserRole;
     name?: string;
+    phoneNumber?: string;
+    photoURL?: string;
     lastLogin?: Date;
     createdAt: Date;
     updatedAt: Date;

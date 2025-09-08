@@ -32,10 +32,10 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/leads', label: 'Leads', icon: Contact },
   { href: '/dashboard/services', label: 'Services', icon: ShoppingBag },
-  { href: '/dashboard/categories', label: 'Categories', icon: Shapes },
-  { href: '/dashboard/packages', label: 'Packages', icon: Box },
+  { href_disabled: '/dashboard/categories', label: 'Categories', icon: Shapes },
+  { href_disabled: '/dashboard/packages', label: 'Packages', icon: Box },
   { href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare },
-  { href: '/dashboard/users', label: 'User Management', icon: Users, roles: ['admin'] },
+  { href: '/dashboard/users', label: 'User Management', icon: Users, roles: ['admin', 'manager'] },
 ];
 
 export default function DashboardLayout({

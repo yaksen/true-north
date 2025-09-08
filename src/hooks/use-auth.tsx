@@ -17,6 +17,7 @@ import {
   signOut as firebaseSignOut,
   GoogleAuthProvider,
   signInWithPopup,
+  updateProfile,
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -35,6 +36,7 @@ interface AuthContextType {
   signInWithEmail: (email: string, pass: string) => Promise<any>;
   signInWithGoogle: () => Promise<any>;
   signOut: () => Promise<void>;
+  updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 email: firebaseUser.email!,
                 role: 'manager', // Default role for new signups
                 name: firebaseUser.displayName ?? firebaseUser.email,
+                photoURL: firebaseUser.photoURL,
                 lastLogin: new Date(),
                 createdAt: new Date(),
                 updatedAt: new Date(),
@@ -79,6 +82,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => unsubscribe();
   }, []);
+
+  const updateUserProfile = async (updates: Partial<UserProfile>) => {
+    if (!user) throw new Error("Not authenticated");
+
+    const authUpdates: { displayName?: string, photoURL?: string } = {};
+    if (updates.name) authUpdates.displayName = updates.name;
+    if (updates.photoURL) authUpdates.photoURL = updates.photoURL;
+
+    // Update Firebase Auth profile
+    if (Object.keys(authUpdates).length > 0) {
+      await updateProfile(user, authUpdates);
+    }
+
+    // Update Firestore profile
+    const userRef = doc(db, 'users', user.uid);
+    await updateDoc(userRef, { ...updates, updatedAt: serverTimestamp() });
+    
+    // Refresh user state
+    const updatedUserDoc = await getDoc(userRef);
+    const updatedProfile = updatedUserDoc.data() as UserProfile;
+    setUser(prevUser => prevUser ? ({ ...prevUser, profile: updatedProfile }) : null);
+  };
 
   const signUpWithEmail = async (email: string, password: string): Promise<any> => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -123,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithEmail,
     signInWithGoogle,
     signOut,
+    updateUserProfile,
   };
 
   return (
