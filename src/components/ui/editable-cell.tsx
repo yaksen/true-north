@@ -11,12 +11,13 @@ import { cn } from '@/lib/utils';
 
 interface EditableCellProps {
   initialValue: any;
-  onSave: (value: any) => Promise<{ collection: string, docId: string, field: string, value: any }>;
+  onSave: (value: any) => { collection: string, docId: string, field: string, value: any, useRootCollection?: boolean };
   type?: 'text' | 'number';
   className?: string;
+  canEdit?: boolean;
 }
 
-export function EditableCell({ initialValue, onSave, type = 'text', className }: EditableCellProps) {
+export function EditableCell({ initialValue, onSave, type = 'text', className, canEdit = true }: EditableCellProps) {
   const [value, setValue] = useState(initialValue);
   const [isEditing, setIsEditing] = useState(false);
   const { user } = useAuth();
@@ -27,7 +28,9 @@ export function EditableCell({ initialValue, onSave, type = 'text', className }:
   }, [initialValue]);
 
   const handleDoubleClick = () => {
-    setIsEditing(true);
+    if (canEdit) {
+      setIsEditing(true);
+    }
   };
 
   const handleSave = async () => {
@@ -44,10 +47,11 @@ export function EditableCell({ initialValue, onSave, type = 'text', className }:
     }
 
     try {
-      const { collection, docId, field, value: updatedValue } = await onSave(value);
-      const docRef = doc(db, `users/${user.uid}/${collection}`, docId);
+      const { collection, docId, field, value: updatedValue, useRootCollection } = onSave(value);
+      const docPath = useRootCollection ? `${collection}/${docId}` : `users/${user.uid}/${collection}/${docId}`;
+      const docRef = doc(db, docPath);
       await updateDoc(docRef, { [field]: updatedValue });
-      toast({ title: 'Success', description: `${field} updated.` });
+      toast({ title: 'Success', description: `${field.charAt(0).toUpperCase() + field.slice(1)} updated.` });
     } catch (error) {
       console.error('Failed to update document:', error);
       toast({ variant: 'destructive', title: 'Update failed', description: 'Could not save changes.' });
@@ -83,7 +87,11 @@ export function EditableCell({ initialValue, onSave, type = 'text', className }:
   return (
     <div
       onDoubleClick={handleDoubleClick}
-      className={cn("min-h-[32px] cursor-pointer rounded-md px-3 py-2 hover:bg-muted/50", className)}
+      className={cn(
+        "min-h-[32px] rounded-md px-3 py-2",
+        canEdit && "cursor-pointer hover:bg-muted/50",
+        className
+      )}
     >
       {type === 'number' && (value === undefined || value === null) ? '0' : String(value)}
     </div>

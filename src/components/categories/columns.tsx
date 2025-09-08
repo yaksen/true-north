@@ -89,6 +89,8 @@ export const getColumns = ({ setCategories }: ColumnsProps): ColumnDef<Category>
         }
       };
 
+      const canDelete = userRole === 'admin' || userRole === 'manager';
+
       return (
         <>
           <DropdownMenu>
@@ -101,7 +103,7 @@ export const getColumns = ({ setCategories }: ColumnsProps): ColumnDef<Category>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
-               {userRole === 'admin' && (
+               {canDelete && (
                 <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem

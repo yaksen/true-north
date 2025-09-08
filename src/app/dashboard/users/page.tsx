@@ -64,8 +64,8 @@ export default function UsersPage() {
         usersData.push({ 
             id: doc.id,
             ...data,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || new Date(),
+            createdAt: data.createdAt?.toDate() || new 'date'(),
+            updatedAt: data.updatedAt?.toDate() || new 'date'(),
             lastLogin: data.lastLogin?.toDate(),
         } as UserProfile);
       });
