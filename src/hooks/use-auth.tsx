@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -18,7 +19,7 @@ import {
   signInWithPopup,
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -51,14 +52,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (userSnap.exists()) {
           const profile = userSnap.data() as UserProfile;
-          setUser({ ...firebaseUser, profile });
+          // Update last login timestamp
+          await updateDoc(userRef, { lastLogin: new Date() });
+          setUser({ ...firebaseUser, profile: {...profile, lastLogin: new Date()} });
         } else {
             // This case handles users who signed up before the profile collection existed.
             // Or if a user signed up with Google for the first time.
             const profile: UserProfile = {
                 id: firebaseUser.uid,
                 email: firebaseUser.email!,
-                role: 'employee', // Default role
+                role: 'manager', // Default role for new signups
+                name: firebaseUser.displayName ?? firebaseUser.email,
+                lastLogin: new Date(),
                 createdAt: new Date(),
                 updatedAt: new Date(),
             };
@@ -80,16 +85,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Create user profile document in Firestore
     const userRef = doc(db, "users", firebaseUser.uid);
-    const newUserProfile: Omit<UserProfile, 'createdAt' | 'updatedAt'> = {
+    const newUserProfile: Omit<UserProfile, 'createdAt' | 'updatedAt' | 'lastLogin'> = {
         id: firebaseUser.uid,
         email: email,
-        role: 'employee' // Assign default role
+        name: email, // Default name to email
+        role: 'manager' // Assign default role
     };
 
     await setDoc(userRef, {
         ...newUserProfile,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
     });
 
     return userCredential;

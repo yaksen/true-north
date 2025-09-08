@@ -6,16 +6,15 @@ import { useAuth } from '@/hooks/use-auth';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import {
-  BarChart,
   Box,
   CheckSquare,
   ChevronDown,
   Contact,
   LayoutDashboard,
   Menu,
+  Settings,
   Shapes,
   ShoppingBag,
-  Users,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -35,7 +34,7 @@ const navItems = [
   { href: '/dashboard/categories', label: 'Categories', icon: Shapes },
   { href: '/dashboard/packages', label: 'Packages', icon: Box },
   { href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare },
-  { href: '/dashboard/users', label: 'Users', icon: Users, roles: ['admin'] },
+  { href: '/dashboard/users', label: 'User Management', icon: Settings, roles: ['admin'] },
 ];
 
 export default function DashboardLayout({

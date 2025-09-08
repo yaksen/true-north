@@ -151,7 +151,7 @@ export const getColumns = ({ services, setPackages }: ColumnsProps): ColumnDef<P
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
-              {userRole !== 'employee' && (
+              {userRole === 'admin' && (
                 <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem

@@ -2,7 +2,7 @@
 export type LeadState = 'new' | 'contacted' | 'interested' | 'lost' | 'converted';
 export type TaskStatus = 'pending' | 'in-progress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
-export type UserRole = 'admin' | 'manager' | 'employee';
+export type UserRole = 'admin' | 'manager';
 
 export interface BaseEntity {
   id: string;
@@ -15,8 +15,15 @@ export interface UserProfile {
     email: string;
     role: UserRole;
     name?: string;
+    lastLogin?: Date;
     createdAt: Date;
     updatedAt: Date;
+}
+
+export interface CrmSettings {
+    isSignupEnabled: boolean;
+    maxLeads: number;
+    maxTasks: number;
 }
 
 export interface Lead extends BaseEntity {

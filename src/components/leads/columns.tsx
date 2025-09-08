@@ -146,7 +146,7 @@ export const getColumns = ({ setLeads }: ColumnsProps): ColumnDef<Lead>[] => [
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
-                    {userRole !== 'employee' && (
+                    {userRole === 'admin' && (
                         <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-destructive">Delete</DropdownMenuItem>
