@@ -19,7 +19,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, User } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { EditableCell } from '../ui/editable-cell';
@@ -29,9 +29,10 @@ import { db } from '@/lib/firebase';
 
 interface ColumnsProps {
     setUsers: React.Dispatch<React.SetStateAction<UserProfile[]>>;
+    currentUser: User | null;
 }
 
-export const getColumns = ({ setUsers }: ColumnsProps): ColumnDef<UserProfile>[] => [
+export const getColumns = ({ setUsers, currentUser }: ColumnsProps): ColumnDef<UserProfile>[] => [
   {
     accessorKey: 'email',
     header: 'Email',
@@ -42,6 +43,7 @@ export const getColumns = ({ setUsers }: ColumnsProps): ColumnDef<UserProfile>[]
             setUsers(prev => prev.map(u => u.id === userId ? { ...u, email: value } : u));
             return { collection: 'users', docId: userId, field: 'email', value };
         }}
+        canEdit={currentUser?.profile?.role === 'admin' || currentUser?.profile?.role === 'manager'}
     />,
   },
   {
@@ -54,6 +56,7 @@ export const getColumns = ({ setUsers }: ColumnsProps): ColumnDef<UserProfile>[]
             setUsers(prev => prev.map(u => u.id === userId ? { ...u, name: value } : u));
             return { collection: 'users', docId: userId, field: 'name', value };
         }}
+        canEdit={currentUser?.profile?.role === 'admin' || currentUser?.profile?.role === 'manager'}
     />,
   },
   {
@@ -61,12 +64,13 @@ export const getColumns = ({ setUsers }: ColumnsProps): ColumnDef<UserProfile>[]
     header: 'Role',
     cell: ({ row }) => {
       const role = row.getValue('role') as UserRole;
-      const variant = role === 'admin' ? 'default' : 'secondary';
-      const icon = role === 'admin' ? <ShieldCheck className="mr-2 h-4 w-4" /> : <UserCheck className="mr-2 h-4 w-4" />;
+      const isSuperUser = role === 'admin';
+      const variant = isSuperUser ? 'default' : 'secondary';
+      const icon = isSuperUser ? <ShieldCheck className="mr-2 h-4 w-4" /> : <UserCheck className="mr-2 h-4 w-4" />;
       return (
         <Badge variant={variant} className="capitalize">
             {icon}
-            {role}
+            {isSuperUser ? 'Super User' : 'Manager'}
         </Badge>
       );
     },
@@ -91,25 +95,25 @@ export const getColumns = ({ setUsers }: ColumnsProps): ColumnDef<UserProfile>[]
     id: 'actions',
     cell: function Actions({ row }) {
       const userProfile = row.original;
-      const { user } = useAuth();
+      const { user } = useAuth(); // We still use this to get the logged in user
       const { toast } = useToast();
       const [currentRole, setCurrentRole] = useState(userProfile.role);
 
       const handleRoleChange = async (newRole: UserRole) => {
-        if (!user || user.uid !== user.id) { // This is a double check, should be handled by UI visibility
-            toast({ variant: "destructive", title: "Permission Denied" });
+        if (user?.profile?.role !== 'admin') {
+            toast({ variant: "destructive", title: "Permission Denied", description: "Only Super Users can change roles." });
             return;
         }
         if (user.uid === userProfile.id) {
-            toast({ variant: "destructive", title: "Cannot change your own role." });
+            toast({ variant: "destructive", title: "Invalid Action", description: "You cannot change your own role." });
             return;
         }
         
         try {
             const userDocRef = doc(db, 'users', userProfile.id);
             await updateDoc(userDocRef, { role: newRole, updatedAt: new Date() });
-            toast({ title: "Success", description: `Role updated to ${newRole}.` });
-            setCurrentRole(newRole); // Update local state to reflect change
+            toast({ title: "Success", description: `User ${userProfile.name || userProfile.email} has been updated to ${newRole === 'admin' ? 'Super User' : 'Manager'}.` });
+            setCurrentRole(newRole);
             setUsers(prev => prev.map(u => u.id === userProfile.id ? { ...u, role: newRole } : u));
         } catch (error) {
             console.error("Error updating role: ", error);
@@ -117,25 +121,31 @@ export const getColumns = ({ setUsers }: ColumnsProps): ColumnDef<UserProfile>[]
         }
       };
 
+      const isSuperUser = currentUser?.profile?.role === 'admin';
+
       return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0" disabled={user?.uid === userProfile.id}>
+                <Button variant="ghost" className="h-8 w-8 p-0" 
+                    disabled={user?.uid === userProfile.id || !isSuperUser}
+                >
                     <span className="sr-only">Open menu</span>
                     <MoreHorizontal className="h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>Change Role</DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                        <DropdownMenuRadioGroup value={currentRole} onValueChange={(value) => handleRoleChange(value as UserRole)}>
-                            <DropdownMenuRadioItem value="admin">Admin</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="manager">Manager</DropdownMenuRadioItem>
-                        </DropdownMenuRadioGroup>
-                    </DropdownMenuSubContent>
-                </DropdownMenuSub>
+                 {isSuperUser && (
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>Promote/Demote</DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                            <DropdownMenuRadioGroup value={currentRole} onValueChange={(value) => handleRoleChange(value as UserRole)}>
+                                <DropdownMenuRadioItem value="admin">Super User</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="manager">Manager</DropdownMenuRadioItem>
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem disabled className="text-destructive">
                     Delete User (Not Implemented)

@@ -47,7 +47,9 @@ export default function UsersPage() {
   });
 
   useEffect(() => {
-    if (user?.profile?.role !== 'admin') {
+    if (!user) return;
+    
+    if (user?.profile?.role !== 'admin' && user?.profile?.role !== 'manager') {
       router.push('/dashboard');
       return;
     }
@@ -64,27 +66,31 @@ export default function UsersPage() {
             ...data,
             createdAt: data.createdAt?.toDate() || new Date(),
             updatedAt: data.updatedAt?.toDate() || new Date(),
+            lastLogin: data.lastLogin?.toDate(),
         } as UserProfile);
       });
       setUsers(usersData);
       setLoading(false);
     });
     
-    // Fetch settings
-    const settingsRef = doc(db, 'settings', 'crm');
-    const unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data() as CrmSettings;
-            setSettings(data);
-            reset(data); // Update form with fetched data
-        } else {
-            // Create default settings if they don't exist
-            const defaultSettings: CrmSettings = { isSignupEnabled: true, maxLeads: 100, maxTasks: 100 };
-            setDoc(settingsRef, defaultSettings);
-            setSettings(defaultSettings);
-            reset(defaultSettings);
-        }
-    });
+    // Fetch settings only if user is admin
+    let unsubscribeSettings = () => {};
+    if (user.profile?.role === 'admin') {
+        const settingsRef = doc(db, 'settings', 'crm');
+        unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data() as CrmSettings;
+                setSettings(data);
+                reset(data); // Update form with fetched data
+            } else {
+                // Create default settings if they don't exist
+                const defaultSettings: CrmSettings = { isSignupEnabled: true, maxLeads: 100, maxTasks: 100 };
+                setDoc(settingsRef, defaultSettings);
+                setSettings(defaultSettings);
+                reset(defaultSettings);
+            }
+        });
+    }
 
 
     return () => {
@@ -93,7 +99,7 @@ export default function UsersPage() {
     };
   }, [user, router, reset]);
 
-  if (user?.profile?.role !== 'admin') {
+  if (loading || !user) {
     return (
         <div className="flex flex-1 items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -102,6 +108,10 @@ export default function UsersPage() {
   }
 
   const handleSettingsUpdate = async (data: SettingsFormValues) => {
+    if (user?.profile?.role !== 'admin') {
+        toast({ variant: 'destructive', title: 'Permission Denied' });
+        return;
+    }
     try {
         const settingsRef = doc(db, 'settings', 'crm');
         await updateDoc(settingsRef, data);
@@ -112,7 +122,7 @@ export default function UsersPage() {
     }
   };
 
-  const columns = getColumns({ setUsers });
+  const columns = getColumns({ setUsers, currentUser: user });
 
   return (
     <>
@@ -120,70 +130,72 @@ export default function UsersPage() {
         <h1 className="text-lg font-semibold md:text-2xl">User Management</h1>
       </div>
       
-      <Card>
-        <CardHeader>
-            <CardTitle>Global Settings</CardTitle>
-            <CardDescription>Manage application-wide settings and limits.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            {loading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : (
-            <form onSubmit={handleSubmit(handleSettingsUpdate)} className="space-y-6">
-                <div className="flex items-center space-x-4 rounded-md border p-4">
-                    <AlertTriangle />
-                    <div className='flex-grow'>
-                        <Label htmlFor="signup-switch" className="font-bold">New User Signups</Label>
-                        <p className="text-sm text-muted-foreground">
-                            Globally enable or disable new user registrations.
-                        </p>
-                    </div>
-                    <Controller
-                        name="isSignupEnabled"
-                        control={control}
-                        render={({ field }) => (
-                            <Switch
-                                id="signup-switch"
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                            />
-                        )}
-                    />
-                </div>
-
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                    <div>
-                        <Label htmlFor="max-leads">Max Leads per User</Label>
+      {user.profile?.role === 'admin' && (
+        <Card>
+            <CardHeader>
+                <CardTitle>Global Settings</CardTitle>
+                <CardDescription>Manage application-wide settings and limits.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {loading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : (
+                <form onSubmit={handleSubmit(handleSettingsUpdate)} className="space-y-6">
+                    <div className="flex items-center space-x-4 rounded-md border p-4">
+                        <AlertTriangle />
+                        <div className='flex-grow'>
+                            <Label htmlFor="signup-switch" className="font-bold">New User Signups</Label>
+                            <p className="text-sm text-muted-foreground">
+                                Globally enable or disable new user registrations.
+                            </p>
+                        </div>
                         <Controller
-                            name="maxLeads"
+                            name="isSignupEnabled"
                             control={control}
                             render={({ field }) => (
-                                <Input id="max-leads" type="number" {...field} />
+                                <Switch
+                                    id="signup-switch"
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
                             )}
                         />
-                        {errors.maxLeads && <p className="text-sm text-destructive mt-1">{errors.maxLeads.message}</p>}
                     </div>
-                    <div>
-                        <Label htmlFor="max-tasks">Max Tasks per User</Label>
-                         <Controller
-                            name="maxTasks"
-                            control={control}
-                            render={({ field }) => (
-                                <Input id="max-tasks" type="number" {...field} />
-                            )}
-                        />
-                        {errors.maxTasks && <p className="text-sm text-destructive mt-1">{errors.maxTasks.message}</p>}
-                    </div>
-                </div>
 
-                <div className='flex justify-end'>
-                    <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Settings
-                    </Button>
-                </div>
-            </form>
-            )}
-        </CardContent>
-      </Card>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                        <div>
+                            <Label htmlFor="max-leads">Max Leads per User</Label>
+                            <Controller
+                                name="maxLeads"
+                                control={control}
+                                render={({ field }) => (
+                                    <Input id="max-leads" type="number" {...field} />
+                                )}
+                            />
+                            {errors.maxLeads && <p className="text-sm text-destructive mt-1">{errors.maxLeads.message}</p>}
+                        </div>
+                        <div>
+                            <Label htmlFor="max-tasks">Max Tasks per User</Label>
+                            <Controller
+                                name="maxTasks"
+                                control={control}
+                                render={({ field }) => (
+                                    <Input id="max-tasks" type="number" {...field} />
+                                )}
+                            />
+                            {errors.maxTasks && <p className="text-sm text-destructive mt-1">{errors.maxTasks.message}</p>}
+                        </div>
+                    </div>
+
+                    <div className='flex justify-end'>
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Settings
+                        </Button>
+                    </div>
+                </form>
+                )}
+            </CardContent>
+        </Card>
+      )}
 
 
       <DataTable columns={columns} data={users} filterColumn="email" filterColumnName="Email" />

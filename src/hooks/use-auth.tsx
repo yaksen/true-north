@@ -11,7 +11,7 @@ import {
 } from 'react';
 import {
   onAuthStateChanged,
-  User,
+  User as FirebaseUser,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -24,12 +24,12 @@ import type { UserProfile } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 // Extend the User object to include our custom UserProfile data
-export interface AuthUser extends User {
+export interface User extends FirebaseUser {
   profile?: UserProfile;
 }
 
 interface AuthContextType {
-  user: AuthUser | null;
+  user: User | null;
   loading: boolean;
   signUpWithEmail: (email: string, pass: string) => Promise<any>;
   signInWithEmail: (email: string, pass: string) => Promise<any>;
@@ -40,7 +40,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (userSnap.exists()) {
           const profile = userSnap.data() as UserProfile;
           // Update last login timestamp
-          await updateDoc(userRef, { lastLogin: new Date() });
+          await updateDoc(userRef, { lastLogin: serverTimestamp() });
           setUser({ ...firebaseUser, profile: {...profile, lastLogin: new Date()} });
         } else {
             // This case handles users who signed up before the profile collection existed.
@@ -85,8 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Create user profile document in Firestore
     const userRef = doc(db, "users", firebaseUser.uid);
-    const newUserProfile: Omit<UserProfile, 'createdAt' | 'updatedAt' | 'lastLogin'> = {
-        id: firebaseUser.uid,
+    const newUserProfile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt' | 'lastLogin'> = {
         email: email,
         name: email, // Default name to email
         role: 'manager' // Assign default role
@@ -94,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     await setDoc(userRef, {
         ...newUserProfile,
+        id: firebaseUser.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
