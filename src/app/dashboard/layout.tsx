@@ -34,7 +34,7 @@ const navItems = [
   { href: '/dashboard/categories', label: 'Categories', icon: Shapes },
   { href: '/dashboard/packages', label: 'Packages', icon: Box },
   { href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare },
-  { href: '/dashboard/users', label: 'User Management', icon: Settings, roles: ['admin'] },
+  { href: '/dashboard/users', label: 'User Management', icon: Settings, roles: ['admin', 'manager'] },
 ];
 
 export default function DashboardLayout({
