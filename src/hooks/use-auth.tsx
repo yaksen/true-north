@@ -45,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true);
       if (firebaseUser) {
         // User is signed in, now fetch their profile
         const userRef = doc(db, 'users', firebaseUser.uid);
@@ -67,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 createdAt: new Date(),
                 updatedAt: new Date(),
             };
-            await setDoc(userRef, { ...profile, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+            await setDoc(userRef, { ...profile, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), lastLogin: serverTimestamp() });
             setUser({ ...firebaseUser, profile });
         }
       } else {

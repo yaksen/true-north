@@ -50,7 +50,7 @@ export function EditableCell({ initialValue, onSave, type = 'text', className, c
       const { collection, docId, field, value: updatedValue, useRootCollection } = onSave(value);
       const docPath = useRootCollection ? `${collection}/${docId}` : `users/${user.uid}/${collection}/${docId}`;
       const docRef = doc(db, docPath);
-      await updateDoc(docRef, { [field]: updatedValue });
+      await updateDoc(docRef, { [field]: updatedValue, updatedAt: new Date() });
       toast({ title: 'Success', description: `${field.charAt(0).toUpperCase() + field.slice(1)} updated.` });
     } catch (error) {
       console.error('Failed to update document:', error);

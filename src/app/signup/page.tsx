@@ -18,6 +18,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { CrmSettings } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
+
 
 const signupSchema = z
   .object({
@@ -34,12 +36,18 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signUpWithEmail } = useAuth();
+  const { user, loading: authLoading, signUpWithEmail } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isSignupEnabled, setIsSignupEnabled] = useState(true);
   const [loadingSettings, setLoadingSettings] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     async function fetchSignupStatus() {
@@ -74,7 +82,7 @@ export default function SignupPage() {
         toast({
             variant: 'destructive',
             title: 'Signups Disabled',
-            description: 'New user registration is currently disabled.',
+            description: 'New user registration is currently disabled by the administrator.',
         });
         return;
     }
@@ -98,7 +106,7 @@ export default function SignupPage() {
     }
   };
 
-  if (loadingSettings) {
+  if (loadingSettings || authLoading || (!authLoading && user)) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -120,9 +128,10 @@ export default function SignupPage() {
 
         {!isSignupEnabled ? (
              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Signups Disabled</AlertTitle>
                 <AlertDescription>
-                    New user registration is currently not available. Please contact an administrator.
+                    New user registration is currently not available. Please contact an administrator if you believe this is an error.
                 </AlertDescription>
             </Alert>
         ) : (

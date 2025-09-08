@@ -86,7 +86,7 @@ export const getColumns = ({ setUsers, currentUser }: ColumnsProps): ColumnDef<U
       return (
         <Badge variant={variant} className="capitalize">
             {icon}
-            {isAdmin ? 'Admin' : 'Manager'}
+            {role}
         </Badge>
       );
     },
@@ -129,7 +129,7 @@ export const getColumns = ({ setUsers, currentUser }: ColumnsProps): ColumnDef<U
         try {
             const userDocRef = doc(db, 'users', userProfile.id);
             await updateDoc(userDocRef, { role: newRole, updatedAt: new Date() });
-            toast({ title: "Success", description: `User ${userProfile.name || userProfile.email} has been updated to ${newRole === 'admin' ? 'Admin' : 'Manager'}.` });
+            toast({ title: "Success", description: `User ${userProfile.name || userProfile.email} has been updated to ${newRole}.` });
             setCurrentRole(newRole);
             setUsers(prev => prev.map(u => u.id === userProfile.id ? { ...u, role: newRole } : u));
         } catch (error) {
@@ -160,13 +160,13 @@ export const getColumns = ({ setUsers, currentUser }: ColumnsProps): ColumnDef<U
       const isAdmin = currentUser?.profile?.role === 'admin';
       const isSelf = currentUser?.uid === userProfile.id;
 
+      if (isSelf) return null;
+
       return (
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0" 
-                        disabled={isSelf}
-                    >
+                    <Button variant="ghost" className="h-8 w-8 p-0">
                         <span className="sr-only">Open menu</span>
                         <MoreHorizontal className="h-4 w-4" />
                     </Button>
@@ -204,7 +204,7 @@ export const getColumns = ({ setUsers, currentUser }: ColumnsProps): ColumnDef<U
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+                    <AlertDialogAction onClick={handleDelete} className={buttonVariants({ variant: 'destructive' })}>Continue</AlertDialogAction>
                 </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
