@@ -19,6 +19,7 @@ export const DailyPlanInputSchema = z.object({
 export type DailyPlanInput = z.infer<typeof DailyPlanInputSchema>;
 
 const SubtaskSchema = z.object({
+    id: z.string().describe("A unique identifier for the subtask."),
     title: z.string().describe("The title of the subtask."),
     completed: z.boolean().describe("Whether the subtask is completed. This should always be false for new plans."),
 });
@@ -29,7 +30,7 @@ const PlannedTaskSchema = z.object({
     status: z.enum(['pending', 'in-progress', 'done']).describe("The current status of the task. This should always be 'pending' for new plans."),
     priority: z.enum(['low', 'medium', 'high']).describe("The priority level of the task."),
     dueDate: z.string().optional().describe("The due date for the task in 'YYYY-MM-DD' format. If no date is mentioned, this can be omitted."),
-    subtasks: z.array(SubtaskSchema).optional().describe("A list of subtasks, if any. Do not create IDs for subtasks."),
+    subtasks: z.array(SubtaskSchema).optional().describe("A list of subtasks, if any."),
     obstacles: z.array(z.string()).optional().describe("A list of potential obstacles or blockers for completing the task."),
     tips: z.array(z.string()).optional().describe("A list of helpful tips or suggestions for tackling the task efficiently."),
 });
@@ -54,7 +55,7 @@ const planDailyTasksPrompt = ai.definePrompt({
 
 Analyze the raw task list provided by the user. For each task you identify, you must:
 1.  **Structure the Task**: Create a clear, concise title. Determine an appropriate priority (low, medium, high) and set the status to 'pending'. If a due date is mentioned, format it as YYYY-MM-DD.
-2.  **Identify Subtasks**: If a task can be broken down into smaller steps, create a list of subtasks. Each subtask needs a title and its completed status must be set to false. Do not assign IDs to subtasks.
+2.  **Identify Subtasks**: If a task can be broken down into smaller steps, create a list of subtasks. Each subtask needs a title, a unique ID, and its completed status must be set to false.
 3.  **Identify Obstacles**: Think critically about what might prevent the user from completing the task. List 1-2 potential obstacles.
 4.  **Provide Tips**: Offer 1-2 actionable tips or suggestions to help the user complete the task efficiently.
 5.  **Order the Plan**: Arrange the final list of structured tasks in a logical and productive order for the day.

@@ -1,4 +1,5 @@
 
+
 export type LeadState = 'new' | 'contacted' | 'interested' | 'lost' | 'converted';
 export type TaskStatus = 'pending' | 'in-progress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';

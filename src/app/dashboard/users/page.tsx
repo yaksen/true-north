@@ -49,8 +49,7 @@ export default function UsersPage() {
   useEffect(() => {
     if (!user) return;
     
-    // This logic is now handled in the layout, but as a double-check.
-    if (user?.profile?.role !== 'admin' && user?.profile?.role !== 'manager') {
+    if (user?.profile?.role !== 'admin') {
       router.push('/dashboard');
       return;
     }
