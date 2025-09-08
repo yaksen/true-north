@@ -198,7 +198,7 @@ export default function UsersPage() {
       )}
 
 
-      <DataTable columns={columns} data={users} filterColumn="email" filterColumnName="Email" />
+      <DataTable columns={columns} data={users} />
     </>
   );
 }

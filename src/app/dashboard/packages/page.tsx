@@ -92,8 +92,6 @@ export default function PackagesPage() {
       <DataTable
         columns={columns}
         data={packages}
-        filterColumn="name"
-        filterColumnName="Name"
        />
     </>
   );

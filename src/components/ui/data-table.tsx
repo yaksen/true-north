@@ -12,6 +12,7 @@ import {
   type ColumnFiltersState,
   type SortingState,
   type VisibilityState,
+  type GlobalFilterTableState,
 } from '@tanstack/react-table';
 import { useState } from 'react';
 
@@ -38,22 +39,20 @@ import { ScrollArea } from './scroll-area';
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  filterColumn: string;
-  filterColumnName: string;
   toolbar?: React.ReactNode;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  filterColumn,
-  filterColumnName,
   toolbar,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
+  const [globalFilter, setGlobalFilter] = useState('');
+
 
   const table = useReactTable({
     data,
@@ -66,11 +65,13 @@ export function DataTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onGlobalFilterChange: setGlobalFilter,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      globalFilter,
     },
   });
 
@@ -80,10 +81,10 @@ export function DataTable<TData, TValue>({
         <div className="flex items-center justify-between p-6">
             <div className='flex items-center gap-2'>
                 <Input
-                    placeholder={`Filter by ${filterColumnName}...`}
-                    value={(table.getColumn(filterColumn)?.getFilterValue() as string) ?? ''}
+                    placeholder="Search all columns..."
+                    value={globalFilter ?? ''}
                     onChange={(event) =>
-                        table.getColumn(filterColumn)?.setFilterValue(event.target.value)
+                        setGlobalFilter(String(event.target.value))
                     }
                     className="max-w-sm"
                 />
@@ -101,6 +102,8 @@ export function DataTable<TData, TValue>({
                     .getAllColumns()
                     .filter((column) => column.getCanHide())
                     .map((column) => {
+                        // Create a more readable name for the column toggle
+                        const displayName = column.id.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
                         return (
                         <DropdownMenuCheckboxItem
                             key={column.id}
@@ -110,7 +113,7 @@ export function DataTable<TData, TValue>({
                             column.toggleVisibility(!!value)
                             }
                         >
-                            {column.id}
+                            {displayName}
                         </DropdownMenuCheckboxItem>
                         );
                     })}

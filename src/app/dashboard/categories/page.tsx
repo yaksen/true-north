@@ -72,7 +72,7 @@ export default function CategoriesPage() {
           </DialogContent>
         </Dialog>
       </div>
-      <DataTable columns={columns} data={categories} filterColumn="name" filterColumnName="Name" />
+      <DataTable columns={columns} data={categories} />
     </>
   );
 }

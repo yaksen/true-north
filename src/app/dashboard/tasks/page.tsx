@@ -133,8 +133,6 @@ export default function TasksPage() {
       <DataTable 
         columns={columns} 
         data={filteredTasks} 
-        filterColumn="title" 
-        filterColumnName="Title"
         toolbar={
             <div className='flex gap-2'>
                  <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as TaskStatus | 'all')}>

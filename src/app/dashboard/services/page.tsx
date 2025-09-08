@@ -100,8 +100,6 @@ export default function ServicesPage() {
       <DataTable
         columns={columns}
         data={filteredServices}
-        filterColumn="name"
-        filterColumnName="Name"
         toolbar={
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-[180px]">

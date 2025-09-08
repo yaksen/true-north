@@ -82,8 +82,6 @@ export default function LeadsPage() {
       <DataTable
         columns={columns}
         data={filteredLeads}
-        filterColumn="name"
-        filterColumnName="Name"
         toolbar={
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as LeadState | 'all')}>
                 <SelectTrigger className="w-[180px]">
