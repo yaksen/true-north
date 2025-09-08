@@ -4,7 +4,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 import type { Task, TaskPriority, TaskStatus, Subtask } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, ArrowUp, ArrowRight, ArrowDown, ShieldAlert, Sparkles, ChevronsRight, CheckCircle2 } from 'lucide-react';
+import { MoreHorizontal, ArrowUp, ArrowRight, ArrowDown, ShieldAlert, Sparkles, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -30,7 +30,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-  } from '@/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import { TaskForm } from './task-form';
 import { useAuth } from '@/hooks/use-auth';
 import { deleteDoc, doc, updateDoc } from 'firebase/firestore';
@@ -39,6 +39,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Checkbox } from '../ui/checkbox';
 import { EditableCell } from '../ui/editable-cell';
+import { v4 as uuidv4 } from 'uuid';
 
 const priorityIcons = {
     low: <ArrowDown className="h-4 w-4 text-muted-foreground" />,
@@ -53,9 +54,9 @@ interface ColumnProps {
 
 export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] => [
   {
-    accessorKey: 'status',
-    header: 'Status',
-    cell: function StatusCell({ row }) {
+    accessorKey: 'title',
+    header: 'Task',
+    cell: function TitleCell({ row }) {
         const task = row.original;
         const { user } = useAuth();
         const { toast } = useToast();
@@ -65,36 +66,11 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
             const taskRef = doc(db, `users/${user.uid}/tasks`, task.id);
             try {
                 await updateDoc(taskRef, { status: newStatus });
-                // Optimistic update
                 setTasks(prevTasks => prevTasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
             } catch (error) {
                 toast({ variant: 'destructive', title: 'Error updating status' });
             }
         };
-        
-        return (
-            <div className="flex items-center space-x-2">
-                 <Checkbox
-                    id={`status-${task.id}`}
-                    checked={task.status === 'done'}
-                    onCheckedChange={(checked) => {
-                        handleStatusChange(checked ? 'done' : 'pending');
-                    }}
-                />
-                <Badge variant={task.status === 'done' ? 'default': 'outline'} className="capitalize">
-                    {task.status}
-                </Badge>
-            </div>
-        );
-    },
-  },
-  {
-    accessorKey: 'title',
-    header: 'Title',
-    cell: function TitleCell({ row }) {
-        const task = row.original;
-        const { user } = useAuth();
-        const { toast } = useToast();
 
         const handleSubtaskToggle = async (subtaskId: string, completed: boolean) => {
             if (!user) return;
@@ -110,18 +86,40 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
             }
         };
 
+        const handleAddSubtask = async () => {
+            if(!user) return;
+            const newSubtask = { id: uuidv4(), title: 'New subtask', completed: false };
+            const updatedSubtasks = [...(task.subtasks || []), newSubtask];
+            const taskRef = doc(db, `users/${user.uid}/tasks`, task.id);
+             try {
+                await updateDoc(taskRef, { subtasks: updatedSubtasks });
+                setTasks(prev => prev.map(t => t.id === task.id ? {...t, subtasks: updatedSubtasks} : t));
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Error adding subtask' });
+            }
+        }
+
         return (
-            <div>
-                <EditableCell
-                    initialValue={task.title}
-                    onSave={(value) => {
-                        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, title: value } : t));
-                        return { collection: 'tasks', docId: task.id, field: 'title', value };
-                    }}
-                    className="font-medium"
-                />
+            <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                     <Checkbox
+                        id={`status-${task.id}`}
+                        checked={task.status === 'done'}
+                        onCheckedChange={(checked) => {
+                            handleStatusChange(checked ? 'done' : 'pending');
+                        }}
+                    />
+                    <EditableCell
+                        initialValue={task.title}
+                        onSave={(value) => {
+                            setTasks(prev => prev.map(t => t.id === task.id ? { ...t, title: value } : t));
+                            return { collection: 'tasks', docId: task.id, field: 'title', value };
+                        }}
+                        className={`font-medium ${task.status === 'done' ? 'text-muted-foreground line-through' : 'text-foreground'}`}
+                    />
+                </div>
                 {task.subtasks && task.subtasks.length > 0 && (
-                    <div className="mt-2 space-y-2">
+                    <div className="ml-6 space-y-2">
                         {task.subtasks.map(subtask => (
                             <div key={subtask.id} className="flex items-center gap-2">
                                 <Checkbox
@@ -142,8 +140,20 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
                         ))}
                     </div>
                 )}
+                 <Button variant="ghost" size="sm" className="ml-6 h-auto p-0" onClick={handleAddSubtask}>
+                    <PlusCircle className="mr-2 h-3.5 w-3.5" />
+                    <span className="text-xs">Add Subtask</span>
+                </Button>
             </div>
         );
+    }
+  },
+  {
+    accessorKey: 'status',
+    header: 'Status',
+    cell: function StatusCell({ row }) {
+        const status = row.getValue('status') as TaskStatus;
+        return <Badge variant={status === 'done' ? 'default': 'outline'} className="capitalize">{status}</Badge>
     }
   },
   {

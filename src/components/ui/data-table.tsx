@@ -33,6 +33,7 @@ import { Card, CardContent } from './card';
 import { Button } from './button';
 import { Input } from './input';
 import { ChevronDown } from 'lucide-react';
+import { ScrollArea } from './scroll-area';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -75,8 +76,8 @@ export function DataTable<TData, TValue>({
 
   return (
     <Card>
-      <CardContent>
-        <div className="flex items-center justify-between py-4">
+      <CardContent className="p-0">
+        <div className="flex items-center justify-between p-6">
             <div className='flex items-center gap-2'>
                 <Input
                     placeholder={`Filter by ${filterColumnName}...`}
@@ -118,6 +119,7 @@ export function DataTable<TData, TValue>({
             </div>
         </div>
 
+        <ScrollArea className="h-[calc(100vh-22rem)]">
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -146,7 +148,7 @@ export function DataTable<TData, TValue>({
                     data-state={row.getIsSelected() && 'selected'}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell key={cell.id} className="p-4 align-top">
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()
@@ -168,7 +170,8 @@ export function DataTable<TData, TValue>({
             </TableBody>
           </Table>
         </div>
-        <div className="flex items-center justify-end space-x-2 py-4">
+        </ScrollArea>
+        <div className="flex items-center justify-end space-x-2 p-4">
             <div className="flex-1 text-sm text-muted-foreground">
                 {table.getFilteredSelectedRowModel().rows.length} of{" "}
                 {table.getFilteredRowModel().rows.length} row(s) selected.
