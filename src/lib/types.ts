@@ -1,4 +1,5 @@
 
+
 export type LeadState = 'new' | 'contacted' | 'interested' | 'lost' | 'converted';
 export type ActionStatus = 'pending' | 'in-progress' | 'completed';
 export type ActionPriority = 'low' | 'medium' | 'high';
@@ -35,15 +36,20 @@ export interface SocialLink {
     id: string;
     platform: string;
     url: string;
+    icon: string;
 }
 
 export interface Lead extends BaseEntity {
   name: string;
   phoneNumbers: string[];
   emails: string[];
+  socialLinks?: SocialLink[];
   socials: string[];
   state: LeadState;
   notes: string;
+  tags?: string[];
+  lastContacted?: Date;
+  totalSpent?: number;
 }
 
 export interface Category extends BaseEntity {
@@ -123,4 +129,14 @@ export interface Invoice extends BaseEntity {
   totalUSD: number;
   notes?: string;
   paymentInstructions?: string;
+}
+
+export interface PdfTemplate {
+    id: string;
+    name: string;
+    htmlTemplate: string;
+    cssOverrides?: string;
+    headerLogoUrl?: string;
+    brandColor?: string;
+    defaultSize: 'A4' | 'card';
 }
