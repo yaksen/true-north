@@ -30,6 +30,9 @@ export interface CrmSettings {
     isSignupEnabled: boolean;
     maxLeads: number;
     maxTasks: number;
+    counters?: {
+        leadId: number;
+    }
 }
 
 export interface SocialLink {
@@ -40,6 +43,7 @@ export interface SocialLink {
 }
 
 export interface Lead extends BaseEntity {
+  leadId: string; // User-facing, simple, auto-incrementing ID
   name: string;
   phoneNumbers: string[];
   emails: string[];
