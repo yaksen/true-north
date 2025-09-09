@@ -5,3 +5,6 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+  # Pin the Node.js version for production builds.
+  # https://firebase.google.com/docs/app-hosting/configure#runtime-version
+  runtime: nodejs20
