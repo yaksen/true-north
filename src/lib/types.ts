@@ -1,12 +1,12 @@
 
 
-
 export type LeadState = 'new' | 'contacted' | 'interested' | 'lost' | 'converted';
 export type ActionStatus = 'pending' | 'in-progress' | 'completed';
 export type ActionPriority = 'low' | 'medium' | 'high';
 export type UserRole = 'admin' | 'manager';
 export type ActionType = 'call' | 'visit' | 'sale' | 'follow-up' | 'other';
 export type DiscountType = 'percentage' | 'flat';
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'void';
 
 export interface BaseEntity {
   id: string;
@@ -93,4 +93,29 @@ export interface Action extends BaseEntity {
   obstacles?: string[];
   tips?: string[];
   updatedAt: Date;
+}
+
+export interface LineItem {
+  id: string;
+  description: string;
+  quantity: number;
+  priceLKR: number;
+  priceUSD: number;
+}
+
+export interface Invoice extends BaseEntity {
+  invoiceNumber: string;
+  leadId: string;
+  status: InvoiceStatus;
+  issueDate: Date;
+  dueDate: Date;
+  lineItems: LineItem[];
+  discounts?: Discount[];
+  taxRate: number; // as a percentage, e.g., 15 for 15%
+  subtotalLKR: number;
+  subtotalUSD: number;
+  totalLKR: number;
+  totalUSD: number;
+  notes?: string;
+  paymentInstructions?: string;
 }
