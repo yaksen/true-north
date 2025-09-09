@@ -37,6 +37,9 @@ import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 import { Separator } from '../ui/separator';
 import { calculateInvoiceTotals } from '@/lib/billing';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { ScrollArea } from '../ui/scroll-area';
 
 const lineItemSchema = z.object({
   id: z.string(),
@@ -369,3 +372,5 @@ export function InvoiceForm({ invoice, closeForm, leads, services, packages }: I
     </Form>
   );
 }
+
+    
