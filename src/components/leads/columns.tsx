@@ -4,7 +4,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 import type { Lead, LeadState } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, View } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -38,6 +38,7 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { EditableCell } from '../ui/editable-cell';
+import { useRouter } from 'next/navigation';
 
 interface ColumnsProps {
     setLeads: React.Dispatch<React.SetStateAction<Lead[]>>;
@@ -116,6 +117,7 @@ export const getColumns = ({ setLeads }: ColumnsProps): ColumnDef<Lead>[] => [
     cell: function Actions({ row }) {
       const lead = row.original;
       const { user } = useAuth();
+      const router = useRouter();
       const { toast } = useToast();
       const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
       const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -150,6 +152,10 @@ export const getColumns = ({ setLeads }: ColumnsProps): ColumnDef<Lead>[] => [
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={() => router.push(`/dashboard/leads/${lead.id}`)}>
+                        <View className="mr-2 h-4 w-4" />
+                        View Details
+                    </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
                     {canDelete && (
                         <>

@@ -1,5 +1,6 @@
 
 
+
 export type LeadState = 'new' | 'contacted' | 'interested' | 'lost' | 'converted';
 export type ActionStatus = 'pending' | 'in-progress' | 'completed';
 export type ActionPriority = 'low' | 'medium' | 'high';
@@ -47,10 +48,11 @@ export interface Lead extends BaseEntity {
   name: string;
   phoneNumbers: string[];
   emails: string[];
-  socialLinks?: SocialLink[];
   socials: string[];
   state: LeadState;
   notes: string;
+  // DEPRECATED - to be removed in future migration
+  socialLinks?: SocialLink[];
   tags?: string[];
   lastContacted?: Date;
   totalSpent?: number;
@@ -108,6 +110,8 @@ export interface Action extends BaseEntity {
   obstacles?: string[];
   tips?: string[];
   updatedAt: Date;
+  amount?: number; // For sales
+  discount?: number; // For discounts
 }
 
 export interface LineItem {

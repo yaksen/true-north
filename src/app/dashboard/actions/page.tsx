@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Action, ActionPriority, ActionStatus } from '@/lib/types';
+import type { Action, ActionPriority, ActionStatus, Lead } from '@/lib/types';
 import { DataTable } from '@/components/ui/data-table';
 import { getColumns } from '@/components/actions/columns';
 import { Button } from '@/components/ui/button';
@@ -21,11 +21,13 @@ import {
 import { ActionForm } from '@/components/actions/action-form';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CreateActionDialog } from '@/components/actions/create-action-dialog';
 
 export default function ActionsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [actions, setActions] = useState<Action[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ActionStatus | 'all'>('all');
@@ -35,8 +37,8 @@ export default function ActionsPage() {
     if (!user) return;
 
     setLoading(true);
-    const q = query(collection(db, `users/${user.uid}/actions`));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const actionsQuery = query(collection(db, `users/${user.uid}/actions`));
+    const unsubscribeActions = onSnapshot(actionsQuery, (querySnapshot) => {
       const actionsData: Action[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -52,7 +54,16 @@ export default function ActionsPage() {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    const leadsQuery = query(collection(db, `users/${user.uid}/leads`));
+    const unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
+        const leadsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
+        setLeads(leadsData);
+    });
+
+    return () => {
+        unsubscribeActions();
+        unsubscribeLeads();
+    }
   }, [user]);
 
   const filteredActions = actions.filter(action => {
@@ -68,23 +79,7 @@ export default function ActionsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Actions</h1>
         <div className="flex items-center gap-2">
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                <Button size="sm" className="gap-1">
-                    <PlusCircle className="h-4 w-4" />
-                    New Action
-                </Button>
-                </DialogTrigger>
-                <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Create New Action</DialogTitle>
-                    <DialogDescription>
-                    Add the details of your new action below.
-                    </DialogDescription>
-                </DialogHeader>
-                <ActionForm closeForm={() => setIsCreateDialogOpen(false)} />
-                </DialogContent>
-            </Dialog>
+           <CreateActionDialog leads={leads} />
         </div>
       </div>
       <DataTable 

@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -10,9 +11,10 @@ interface SummaryCardProps {
   title: string;
   value: number;
   icon: LucideIcon;
+  prefix?: string;
 }
 
-export function SummaryCard({ title, value, icon: Icon }: SummaryCardProps) {
+export function SummaryCard({ title, value, icon: Icon, prefix }: SummaryCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -20,7 +22,10 @@ export function SummaryCard({ title, value, icon: Icon }: SummaryCardProps) {
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-2xl font-bold">
+            {prefix && `${prefix} `}
+            {value.toLocaleString()}
+        </div>
       </CardContent>
     </Card>
   )

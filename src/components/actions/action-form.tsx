@@ -51,24 +51,27 @@ const formSchema = z.object({
   status: z.enum(actionStatuses),
   priority: z.enum(actionPriorities),
   type: z.enum(actionTypes),
-  leadId: z.string().optional(),
+  leadId: z.string().nonempty({ message: 'A lead must be selected' }),
   dueDate: z.date().optional(),
   subtasks: z.array(subtaskSchema).optional(),
+  amount: z.coerce.number().optional(),
+  discount: z.coerce.number().optional(),
 });
 
 type ActionFormValues = z.infer<typeof formSchema>;
 
 interface ActionFormProps {
   action?: Action;
+  leads: Lead[];
+  defaultLeadId?: string;
   closeForm: () => void;
 }
 
-export function ActionForm({ action, closeForm }: ActionFormProps) {
+export function ActionForm({ action, leads, defaultLeadId, closeForm }: ActionFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [leads, setLeads] = useState<Lead[]>([]);
-
+  
   const form = useForm<ActionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -77,21 +80,15 @@ export function ActionForm({ action, closeForm }: ActionFormProps) {
       status: action?.status ?? 'pending',
       priority: action?.priority ?? 'medium',
       type: action?.type ?? 'other',
-      leadId: action?.leadId ?? '',
+      leadId: action?.leadId ?? defaultLeadId ?? '',
       dueDate: action?.dueDate,
       subtasks: action?.subtasks ?? [],
+      amount: action?.amount ?? undefined,
+      discount: action?.discount ?? undefined,
     },
   });
 
-  useEffect(() => {
-    if (!user) return;
-    const q = query(collection(db, `users/${user.uid}/leads`));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        const leadsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
-        setLeads(leadsData);
-    });
-    return () => unsubscribe();
-  }, [user]);
+  const watchActionType = form.watch('type');
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -107,7 +104,6 @@ export function ActionForm({ action, closeForm }: ActionFormProps) {
 
     const actionData: any = {
         ...values,
-        leadId: values.leadId === 'none' ? '' : values.leadId,
         userId: user.uid,
         assignedTo: user.uid, // Default assignment to self for now
     };
@@ -137,6 +133,29 @@ export function ActionForm({ action, closeForm }: ActionFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        
+        <FormField
+                control={form.control}
+                name="leadId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Related Lead</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!!defaultLeadId}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a lead" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {leads.map(lead => (
+                                <SelectItem key={lead.id} value={lead.id}>{lead.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
         <FormField
           control={form.control}
           name="title"
@@ -237,69 +256,62 @@ export function ActionForm({ action, closeForm }: ActionFormProps) {
             />
             <FormField
                 control={form.control}
-                name="leadId"
+                name="dueDate"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                    <FormLabel>Due Date</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button
+                            variant={"outline"}
+                            className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                            )}
+                            >
+                            {field.value ? (
+                                format(field.value, "PPP")
+                            ) : (
+                                <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date < new Date("1900-01-01")}
+                            initialFocus
+                        />
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+        </div>
+
+        {watchActionType === 'sale' && (
+             <FormField
+                control={form.control}
+                name="amount"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Related Lead</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || 'none'}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a lead" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {leads.map(lead => (
-                                <SelectItem key={lead.id} value={lead.id}>{lead.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <FormLabel>Sale Amount (LKR)</FormLabel>
+                    <FormControl>
+                        <Input type="number" placeholder="5000" {...field} />
+                    </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}
             />
-        </div>
+        )}
 
 
-        <FormField
-          control={form.control}
-          name="dueDate"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Due Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) => date < new Date("1900-01-01")}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         
         <div>
           <FormLabel>Subtasks</FormLabel>
@@ -342,3 +354,4 @@ export function ActionForm({ action, closeForm }: ActionFormProps) {
     </Form>
   );
 }
+
