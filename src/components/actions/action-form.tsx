@@ -107,6 +107,7 @@ export function ActionForm({ action, closeForm }: ActionFormProps) {
 
     const actionData: any = {
         ...values,
+        leadId: values.leadId === 'none' ? '' : values.leadId,
         userId: user.uid,
         assignedTo: user.uid, // Default assignment to self for now
     };
@@ -240,14 +241,14 @@ export function ActionForm({ action, closeForm }: ActionFormProps) {
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Related Lead</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || 'none'}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Select a lead" />
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {leads.map(lead => (
                                 <SelectItem key={lead.id} value={lead.id}>{lead.name}</SelectItem>
                             ))}
