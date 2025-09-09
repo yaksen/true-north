@@ -24,12 +24,23 @@ This checklist provides a set of steps to ensure the CRM application is ready fo
     - [ ] Filter functionality on all data tables.
     - [ ] AI Planner: Generate a plan and save the actions.
     - [ ] Discount Calculator: Apply discounts to packages and invoices and verify totals.
-    - [ ] CSV Export: Export leads and verify the CSV content.
+    - [ ] **Data Table Controls**:
+        - [ ] Verify page-size selector changes the number of items per page.
+        - [ ] Test pagination controls (next, previous) work correctly.
+        - [ ] Test "select all" on the current page.
+        - [ ] Test bulk delete for selected items and verify they are removed.
+    - [ ] **Exporting**:
+        - [ ] Export selected leads to CSV and verify the CSV content, including social media URLs.
+        - [ ] Export an invoice to PDF using a template and verify the output. Check that social links render with icons.
 - [ ] **Manual QA**: Perform manual testing on critical user flows.
     - [ ] Test on major browsers (Chrome, Firefox, Safari).
     - [ ] Test on mobile devices to check for responsiveness.
     - [ ] Verify that all UI elements are aligned and styled correctly.
     - [ ] Check that all forms handle validation and errors gracefully.
+    - [ ] **Template Admin**:
+        - [ ] Create a new PDF template and save it.
+        - [ ] Preview the template with sample data.
+        - [ ] Apply the new template during a PDF export and confirm it is used.
 
 ### 3. Security & Configuration
 - [ ] **Environment Variables**:
@@ -40,6 +51,10 @@ This checklist provides a set of steps to ensure the CRM application is ready fo
     - [ ] Pay special attention to rules for creating, updating, and deleting documents. Ensure admin/manager roles are respected.
 - [ ] **Firebase API Key Security**:
     - [ ] In the Google Cloud Console, restrict your Firebase API key to your application's domain to prevent unauthorized use.
+- [ ] **Firebase Storage Security**:
+    - [ ] Review and test Storage security rules to ensure that exported PDFs are only accessible to authorized users.
+    - [ ] Consider setting up lifecycle rules to automatically delete old exports if necessary.
+
 
 ### 4. Database & Backups
 - [ ] **Seed Data**: Ensure any production seed scripts are ready but disabled by default.
@@ -62,6 +77,10 @@ This checklist provides a set of steps to ensure the CRM application is ready fo
 - [ ] Deploy Firestore security rules, indexes, and any Cloud Functions.
   ```bash
   firebase deploy --only firestore:rules,firestore:indexes
+  ```
+- [ ] Deploy Storage rules.
+  ```bash
+  firebase deploy --only storage
   ```
 
 ## Phase 3: Post-Deployment
