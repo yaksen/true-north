@@ -1,5 +1,4 @@
 
-
 export type LeadState = 'new' | 'contacted' | 'interested' | 'lost' | 'converted';
 export type ActionStatus = 'pending' | 'in-progress' | 'completed';
 export type ActionPriority = 'low' | 'medium' | 'high';
@@ -30,6 +29,12 @@ export interface CrmSettings {
     isSignupEnabled: boolean;
     maxLeads: number;
     maxTasks: number;
+}
+
+export interface SocialLink {
+    id: string;
+    platform: string;
+    url: string;
 }
 
 export interface Lead extends BaseEntity {
