@@ -2,8 +2,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getDashboardInsights } from "@/ai/flows/dashboard-summary-insights";
-import { AiInsights } from "@/components/dashboard/ai-insights";
 import { SummaryCard } from "@/components/dashboard/summary-card";
 import { collection, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -18,14 +16,9 @@ interface SummaryCounts {
     actionCount: number;
 }
 
-interface DashboardInsights {
-    insights: string;
-}
-
 export default function DashboardPage() {
     const { user, loading: authLoading } = useAuth();
     const [counts, setCounts] = useState<SummaryCounts | null>(null);
-    const [insights, setInsights] = useState<DashboardInsights | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -63,14 +56,6 @@ export default function DashboardPage() {
                 
                 setCounts(summaryCounts);
 
-                const aiInsights = await getDashboardInsights({
-                    leadCount: summaryCounts.leadCount,
-                    serviceCount: summaryCounts.serviceCount,
-                    categoryCount: summaryCounts.categoryCount,
-                    packageCount: summaryCounts.packageCount,
-                });
-                setInsights(aiInsights);
-
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
             } finally {
@@ -107,9 +92,6 @@ export default function DashboardPage() {
                     <SummaryCard title="Total Actions" value={counts.actionCount} icon={CheckSquare} />
                 </div>
             )}
-            <div className="grid gap-4 md:gap-8">
-                {insights && <AiInsights insights={insights.insights} />}
-            </div>
         </>
     );
 }
