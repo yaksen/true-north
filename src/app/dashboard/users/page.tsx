@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import type { UserProfile, CrmSettings } from '@/lib/types';
@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const settingsSchema = z.object({
     isSignupEnabled: z.boolean(),
@@ -49,13 +50,15 @@ export default function UsersPage() {
   useEffect(() => {
     if (!user) return;
     
-    if (user?.profile?.role !== 'admin') {
+    const userRole = user?.profile?.role;
+
+    if (userRole !== 'admin' && userRole !== 'manager') {
       router.push('/dashboard');
       return;
     }
 
     setLoading(true);
-    // Fetch users
+    // Fetch users (only admins and managers can see this)
     const usersQuery = query(collection(db, `users`));
     const unsubscribeUsers = onSnapshot(usersQuery, (querySnapshot) => {
       const usersData: UserProfile[] = [];
@@ -130,7 +133,7 @@ export default function UsersPage() {
         <h1 className="text-lg font-semibold md:text-2xl">User Management</h1>
       </div>
       
-      {user.profile?.role === 'admin' && (
+      {user.profile?.role === 'admin' ? (
         <Card>
             <CardHeader>
                 <CardTitle>Global Settings</CardTitle>
@@ -195,6 +198,14 @@ export default function UsersPage() {
                 )}
             </CardContent>
         </Card>
+      ) : (
+        <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Admin Access Required</AlertTitle>
+            <AlertDescription>
+                You are viewing user data. Global settings can only be managed by an administrator.
+            </AlertDescription>
+        </Alert>
       )}
 
 

@@ -5,7 +5,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import type { UserProfile, UserRole } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { MoreHorizontal, ShieldCheck, UserCheck, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,7 +47,7 @@ export const getColumns = ({ setUsers, currentUser }: ColumnsProps): ColumnDef<U
     accessorKey: 'name',
     header: 'Name',
     cell: ({ row }) => {
-        const canEdit = currentUser?.profile?.role === 'admin' || currentUser?.profile?.role === 'manager';
+        const canEdit = currentUser?.profile?.role === 'admin';
         return <EditableCell
             initialValue={row.original.name ?? ''}
             onSave={(value) => {
@@ -63,16 +63,15 @@ export const getColumns = ({ setUsers, currentUser }: ColumnsProps): ColumnDef<U
     accessorKey: 'email',
     header: 'Email',
     cell: ({ row }) => {
-        const canEdit = currentUser?.profile?.role === 'admin' || currentUser?.profile?.role === 'manager';
-         return <EditableCell
-            initialValue={row.original.email}
-            onSave={(value) => {
-                const userId = row.original.id;
-                setUsers(prev => prev.map(u => u.id === userId ? { ...u, email: value } : u));
-                return { collection: 'users', docId: userId, field: 'email', value, useRootCollection: true };
-            }}
-            canEdit={canEdit}
-        />
+        return <EditableCell
+           initialValue={row.original.email}
+           onSave={(value) => {
+               const userId = row.original.id;
+               setUsers(prev => prev.map(u => u.id === userId ? { ...u, email: value } : u));
+               return { collection: 'users', docId: userId, field: 'email', value, useRootCollection: true };
+           }}
+           canEdit={false} // Email should not be editable
+       />
     },
   },
   {

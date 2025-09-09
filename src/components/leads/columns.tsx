@@ -33,13 +33,11 @@ import {
   } from '@/components/ui/alert-dialog';
 import { LeadForm } from './lead-form';
 import { useAuth } from '@/hooks/use-auth';
-import { deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { EditableCell } from '../ui/editable-cell';
-
-const leadStates: LeadState[] = ['new', 'contacted', 'interested', 'lost', 'converted'];
 
 interface ColumnsProps {
     setLeads: React.Dispatch<React.SetStateAction<Lead[]>>;
