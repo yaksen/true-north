@@ -9,7 +9,7 @@ import type { Action, ActionPriority, ActionStatus } from '@/lib/types';
 import { DataTable } from '@/components/ui/data-table';
 import { getColumns } from '@/components/actions/columns';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Wand2 } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { ActionForm } from '@/components/actions/action-form';
-import { AiPlanner } from '@/components/actions/ai-planner';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -29,7 +28,6 @@ export default function ActionsPage() {
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isAiPlannerOpen, setIsAiPlannerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ActionStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<ActionPriority | 'all'>('all');
 
@@ -57,30 +55,6 @@ export default function ActionsPage() {
     return () => unsubscribe();
   }, [user]);
 
-  const handleSaveAiActions = async (plannedActions: Omit<Action, 'id' | 'userId' | 'createdAt' | 'updatedAt'>[]) => {
-    if (!user) {
-        toast({ variant: 'destructive', title: 'Not authenticated' });
-        return;
-    }
-    
-    try {
-        for (const actionData of plannedActions) {
-            await addDoc(collection(db, `users/${user.uid}/actions`), {
-                ...actionData,
-                userId: user.uid,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            });
-        }
-        toast({ title: 'Success', description: 'AI-planned actions have been saved.' });
-        setIsAiPlannerOpen(false);
-    } catch (error) {
-        console.error("Error saving AI actions: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not save AI-planned actions.' });
-    }
-  };
-
-
   const filteredActions = actions.filter(action => {
       const statusMatch = statusFilter === 'all' || action.status === statusFilter;
       const priorityMatch = priorityFilter === 'all' || action.priority === priorityFilter;
@@ -94,24 +68,6 @@ export default function ActionsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Actions</h1>
         <div className="flex items-center gap-2">
-            <Dialog open={isAiPlannerOpen} onOpenChange={setIsAiPlannerOpen}>
-                <DialogTrigger asChild>
-                    <Button size="sm" variant="outline" className="gap-1">
-                        <Wand2 className="h-4 w-4" />
-                        Generate with AI
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle>Generate Daily Plan with AI</DialogTitle>
-                        <DialogDescription>
-                            Paste your raw action list below and let AI structure it for you.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <AiPlanner onSaveActions={handleSaveAiActions} />
-                </DialogContent>
-            </Dialog>
-
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
                 <Button size="sm" className="gap-1">
