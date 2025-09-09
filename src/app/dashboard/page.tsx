@@ -15,7 +15,7 @@ interface SummaryCounts {
     serviceCount: number;
     categoryCount: number;
     packageCount: number;
-    taskCount: number;
+    actionCount: number;
 }
 
 interface DashboardInsights {
@@ -43,14 +43,14 @@ export default function DashboardPage() {
                 const servicesCol = collection(db, `users/${user.uid}/services`);
                 const categoriesCol = collection(db, `users/${user.uid}/categories`);
                 const packagesCol = collection(db, `users/${user.uid}/packages`);
-                const tasksCol = collection(db, `users/${user.uid}/tasks`);
+                const actionsCol = collection(db, `users/${user.uid}/actions`);
 
-                const [leadsSnapshot, servicesSnapshot, categoriesSnapshot, packagesSnapshot, tasksSnapshot] = await Promise.all([
+                const [leadsSnapshot, servicesSnapshot, categoriesSnapshot, packagesSnapshot, actionsSnapshot] = await Promise.all([
                     getCountFromServer(leadsCol),
                     getCountFromServer(servicesCol),
                     getCountFromServer(categoriesCol),
                     getCountFromServer(packagesCol),
-                    getCountFromServer(tasksCol),
+                    getCountFromServer(actionsCol),
                 ]);
 
                 const summaryCounts = {
@@ -58,7 +58,7 @@ export default function DashboardPage() {
                     serviceCount: servicesSnapshot.data().count,
                     categoryCount: categoriesSnapshot.data().count,
                     packageCount: packagesSnapshot.data().count,
-                    taskCount: tasksSnapshot.data().count,
+                    actionCount: actionsSnapshot.data().count,
                 };
                 
                 setCounts(summaryCounts);
@@ -104,7 +104,7 @@ export default function DashboardPage() {
                     <SummaryCard title="Total Services" value={counts.serviceCount} icon={ShoppingBag} />
                     <SummaryCard title="Total Categories" value={counts.categoryCount} icon={Shapes} />
                     <SummaryCard title="Total Packages" value={counts.packageCount} icon={Box} />
-                    <SummaryCard title="Total Tasks" value={counts.taskCount} icon={CheckSquare} />
+                    <SummaryCard title="Total Actions" value={counts.actionCount} icon={CheckSquare} />
                 </div>
             )}
             <div className="grid gap-4 md:gap-8">

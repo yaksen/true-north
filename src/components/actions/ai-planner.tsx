@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Loader2, Sparkles } from 'lucide-react';
 import { planDailyTasks, DailyPlanOutputSchema } from '@/ai/flows/plan-daily-tasks';
 import { useToast } from '@/hooks/use-toast';
-import type { Task } from '@/lib/types';
+import type { Action } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
@@ -24,12 +24,12 @@ const formSchema = z.object({
 type AiPlannerFormValues = z.infer<typeof formSchema>;
 
 interface AiPlannerProps {
-  onSaveTasks: (tasks: Omit<Task, 'id' | 'userId' | 'createdAt'>[]) => Promise<void>;
+  onSaveActions: (actions: Omit<Action, 'id' | 'userId' | 'createdAt' | 'updatedAt'>[]) => Promise<void>;
 }
 
-export function AiPlanner({ onSaveTasks }: AiPlannerProps) {
+export function AiPlanner({ onSaveActions: onSaveActions }: AiPlannerProps) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [plannedTasks, setPlannedTasks] = useState<z.infer<typeof DailyPlanOutputSchema>['plannedTasks']>([]);
+  const [plannedActions, setPlannedActions] = useState<z.infer<typeof DailyPlanOutputSchema>['plannedTasks']>([]);
   const { toast } = useToast();
 
   const form = useForm<AiPlannerFormValues>({
@@ -41,16 +41,16 @@ export function AiPlanner({ onSaveTasks }: AiPlannerProps) {
 
   async function onSubmit(values: AiPlannerFormValues) {
     setIsGenerating(true);
-    setPlannedTasks([]);
+    setPlannedActions([]);
     try {
       const result = await planDailyTasks({ rawTasks: values.rawTasks });
       if (result && result.plannedTasks) {
         // Assign UUIDs to subtasks here
-        const tasksWithSubtaskIds = result.plannedTasks.map(task => ({
+        const actionsWithSubtaskIds = result.plannedTasks.map(task => ({
             ...task,
             subtasks: task.subtasks?.map(st => ({ ...st, id: uuidv4() }))
         }));
-        setPlannedTasks(tasksWithSubtaskIds);
+        setPlannedActions(actionsWithSubtaskIds);
       } else {
         toast({ variant: 'destructive', title: 'Error', description: 'AI could not generate a plan.' });
       }
@@ -63,14 +63,15 @@ export function AiPlanner({ onSaveTasks }: AiPlannerProps) {
   }
 
   const handleSave = () => {
-    const tasksToSave = plannedTasks.map(pt => {
-        const dueDate = pt.dueDate && !isNaN(new Date(pt.dueDate).getTime()) ? new Date(pt.dueDate) : undefined;
+    const actionsToSave = plannedActions.map(pa => {
+        const dueDate = pa.dueDate && !isNaN(new Date(pa.dueDate).getTime()) ? new Date(pa.dueDate) : undefined;
         return {
-            ...pt,
+            ...pa,
             dueDate,
+            type: 'other' as const, // Default type for AI generated tasks
         };
     });
-    onSaveTasks(tasksToSave);
+    onSaveActions(actionsToSave);
   };
 
   return (
@@ -107,31 +108,31 @@ export function AiPlanner({ onSaveTasks }: AiPlannerProps) {
         </form>
       </Form>
 
-      {plannedTasks.length > 0 && (
+      {plannedActions.length > 0 && (
         <div className="mt-6">
           <h3 className="text-lg font-semibold mb-2">AI-Generated Plan</h3>
           <ScrollArea className="h-72 rounded-md border p-4">
             <div className="space-y-4">
-                {plannedTasks.map((task, index) => (
+                {plannedActions.map((action, index) => (
                     <div key={index}>
-                        <div className="font-bold">{task.title}</div>
-                        <div className="text-sm text-muted-foreground">{task.description}</div>
+                        <div className="font-bold">{action.title}</div>
+                        <div className="text-sm text-muted-foreground">{action.description}</div>
                         <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="capitalize">{task.priority}</Badge>
-                            {task.dueDate && <Badge variant="secondary">{task.dueDate}</Badge>}
+                            <Badge variant="outline" className="capitalize">{action.priority}</Badge>
+                            {action.dueDate && <Badge variant="secondary">{action.dueDate}</Badge>}
                         </div>
-                         {task.subtasks && task.subtasks.length > 0 && (
+                         {action.subtasks && action.subtasks.length > 0 && (
                             <div className="mt-2 pl-4">
-                                {task.subtasks.map(st => <div key={st.id} className="text-sm text-muted-foreground"> - {st.title}</div>)}
+                                {action.subtasks.map(st => <div key={st.id} className="text-sm text-muted-foreground"> - {st.title}</div>)}
                             </div>
                          )}
-                         {task.obstacles && task.obstacles.length > 0 && (
-                            <div className="mt-1 text-xs italic text-amber-400">Obstacles: {task.obstacles.join(', ')}</div>
+                         {action.obstacles && action.obstacles.length > 0 && (
+                            <div className="mt-1 text-xs italic text-amber-400">Obstacles: {action.obstacles.join(', ')}</div>
                          )}
-                         {task.tips && task.tips.length > 0 && (
-                            <div className="mt-1 text-xs text-sky-400">Tips: {task.tips.join(', ')}</div>
+                         {action.tips && action.tips.length > 0 && (
+                            <div className="mt-1 text-xs text-sky-400">Tips: {action.tips.join(', ')}</div>
                          )}
-                         {index < plannedTasks.length - 1 && <Separator className="my-4" />}
+                         {index < plannedActions.length - 1 && <Separator className="my-4" />}
                     </div>
                 ))}
             </div>

@@ -2,7 +2,7 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import type { Task, TaskPriority, TaskStatus, Subtask } from '@/lib/types';
+import type { Action, ActionPriority, ActionStatus, Subtask } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { MoreHorizontal, ArrowUp, ArrowRight, ArrowDown, ShieldAlert, Sparkles, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,8 +30,8 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { TaskForm } from './task-form';
+  } from '@/components/ui/alert-dialog';
+import { ActionForm } from './action-form';
 import { useAuth } from '@/hooks/use-auth';
 import { deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -48,25 +48,25 @@ const priorityIcons = {
 }
 
 interface ColumnProps {
-    tasks: Task[];
-    setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
+    actions: Action[];
+    setActions: React.Dispatch<React.SetStateAction<Action[]>>;
 }
 
-export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] => [
+export const getColumns = ({ actions, setActions }: ColumnProps): ColumnDef<Action>[] => [
   {
     accessorKey: 'title',
-    header: 'Task',
+    header: 'Action',
     cell: function TitleCell({ row }) {
-        const task = row.original;
+        const action = row.original;
         const { user } = useAuth();
         const { toast } = useToast();
 
-        const handleStatusChange = async (newStatus: TaskStatus) => {
+        const handleStatusChange = async (newStatus: ActionStatus) => {
             if (!user) return;
-            const taskRef = doc(db, `users/${user.uid}/tasks`, task.id);
+            const actionRef = doc(db, `users/${user.uid}/actions`, action.id);
             try {
-                await updateDoc(taskRef, { status: newStatus });
-                setTasks(prevTasks => prevTasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+                await updateDoc(actionRef, { status: newStatus });
+                setActions(prevActions => prevActions.map(a => a.id === action.id ? { ...a, status: newStatus } : a));
             } catch (error) {
                 toast({ variant: 'destructive', title: 'Error updating status' });
             }
@@ -74,13 +74,13 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
 
         const handleSubtaskToggle = async (subtaskId: string, completed: boolean) => {
             if (!user) return;
-            const updatedSubtasks = task.subtasks?.map(st => 
+            const updatedSubtasks = action.subtasks?.map(st => 
                 st.id === subtaskId ? { ...st, completed } : st
             );
-            const taskRef = doc(db, `users/${user.uid}/tasks`, task.id);
+            const actionRef = doc(db, `users/${user.uid}/actions`, action.id);
             try {
-                await updateDoc(taskRef, { subtasks: updatedSubtasks });
-                setTasks(prev => prev.map(t => t.id === task.id ? {...t, subtasks: updatedSubtasks} : t));
+                await updateDoc(actionRef, { subtasks: updatedSubtasks });
+                setActions(prev => prev.map(a => a.id === action.id ? {...a, subtasks: updatedSubtasks} : a));
             } catch (error) {
                 toast({ variant: 'destructive', title: 'Error updating subtask' });
             }
@@ -89,11 +89,11 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
         const handleAddSubtask = async () => {
             if(!user) return;
             const newSubtask = { id: uuidv4(), title: 'New subtask', completed: false };
-            const updatedSubtasks = [...(task.subtasks || []), newSubtask];
-            const taskRef = doc(db, `users/${user.uid}/tasks`, task.id);
+            const updatedSubtasks = [...(action.subtasks || []), newSubtask];
+            const actionRef = doc(db, `users/${user.uid}/actions`, action.id);
              try {
-                await updateDoc(taskRef, { subtasks: updatedSubtasks });
-                setTasks(prev => prev.map(t => t.id === task.id ? {...t, subtasks: updatedSubtasks} : t));
+                await updateDoc(actionRef, { subtasks: updatedSubtasks });
+                setActions(prev => prev.map(a => a.id === action.id ? {...a, subtasks: updatedSubtasks} : a));
             } catch (error) {
                 toast({ variant: 'destructive', title: 'Error adding subtask' });
             }
@@ -103,24 +103,24 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
             <div className="space-y-2">
                 <div className="flex items-center gap-2">
                      <Checkbox
-                        id={`status-${task.id}`}
-                        checked={task.status === 'done'}
+                        id={`status-${action.id}`}
+                        checked={action.status === 'completed'}
                         onCheckedChange={(checked) => {
-                            handleStatusChange(checked ? 'done' : 'pending');
+                            handleStatusChange(checked ? 'completed' : 'pending');
                         }}
                     />
                     <EditableCell
-                        initialValue={task.title}
+                        initialValue={action.title}
                         onSave={(value) => {
-                            setTasks(prev => prev.map(t => t.id === task.id ? { ...t, title: value } : t));
-                            return { collection: 'tasks', docId: task.id, field: 'title', value };
+                            setActions(prev => prev.map(a => a.id === action.id ? { ...a, title: value } : a));
+                            return { collection: 'actions', docId: action.id, field: 'title', value };
                         }}
-                        className={`font-medium ${task.status === 'done' ? 'text-muted-foreground line-through' : 'text-foreground'}`}
+                        className={`font-medium ${action.status === 'completed' ? 'text-muted-foreground line-through' : 'text-foreground'}`}
                     />
                 </div>
-                {task.subtasks && task.subtasks.length > 0 && (
+                {action.subtasks && action.subtasks.length > 0 && (
                     <div className="ml-6 space-y-2">
-                        {task.subtasks.map(subtask => (
+                        {action.subtasks.map(subtask => (
                             <div key={subtask.id} className="flex items-center gap-2">
                                 <Checkbox
                                     id={subtask.id}
@@ -130,9 +130,9 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
                                 <EditableCell
                                     initialValue={subtask.title}
                                     onSave={(value) => {
-                                        const updatedSubtasks = task.subtasks?.map(st => st.id === subtask.id ? {...st, title: value} : st)
-                                        setTasks(prev => prev.map(t => t.id === task.id ? {...t, subtasks: updatedSubtasks} : t));
-                                        return { collection: 'tasks', docId: task.id, field: 'subtasks', value: updatedSubtasks };
+                                        const updatedSubtasks = action.subtasks?.map(st => st.id === subtask.id ? {...st, title: value} : st)
+                                        setActions(prev => prev.map(a => a.id === action.id ? {...a, subtasks: updatedSubtasks} : a));
+                                        return { collection: 'actions', docId: action.id, field: 'subtasks', value: updatedSubtasks };
                                     }}
                                     className={`text-sm ${subtask.completed ? 'text-muted-foreground line-through' : 'text-foreground'}`}
                                 />
@@ -152,34 +152,42 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
     accessorKey: 'status',
     header: 'Status',
     cell: function StatusCell({ row }) {
-        const status = row.getValue('status') as TaskStatus;
-        return <Badge variant={status === 'done' ? 'default': 'outline'} className="capitalize">{status}</Badge>
+        const status = row.getValue('status') as ActionStatus;
+        return <Badge variant={status === 'completed' ? 'default': 'outline'} className="capitalize">{status}</Badge>
+    }
+  },
+  {
+    accessorKey: 'type',
+    header: 'Type',
+    cell: function TypeCell({ row }) {
+        const type = row.getValue('type') as ActionStatus;
+        return <Badge variant="secondary" className="capitalize">{type}</Badge>
     }
   },
   {
     accessorKey: 'ai-insights',
     header: 'AI Insights',
     cell: ({ row }) => {
-        const task = row.original;
-        const hasInsights = task.obstacles?.length || task.tips?.length;
+        const action = row.original;
+        const hasInsights = action.obstacles?.length || action.tips?.length;
 
         if (!hasInsights) return <span className="text-muted-foreground/50">None</span>;
 
         return (
             <div className="space-y-2">
-                {task.obstacles && task.obstacles.length > 0 && (
+                {action.obstacles && action.obstacles.length > 0 && (
                     <div className="flex items-start gap-2">
                         <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
                         <p className="text-xs text-muted-foreground italic">
-                           {task.obstacles.join(', ')}
+                           {action.obstacles.join(', ')}
                         </p>
                     </div>
                 )}
-                {task.tips && task.tips.length > 0 && (
+                {action.tips && action.tips.length > 0 && (
                      <div className="flex items-start gap-2">
                         <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                         <p className="text-xs text-muted-foreground">
-                            {task.tips.join(', ')}
+                            {action.tips.join(', ')}
                         </p>
                     </div>
                 )}
@@ -191,7 +199,7 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
     accessorKey: 'priority',
     header: 'Priority',
     cell: ({ row }) => {
-      const priority = row.getValue('priority') as TaskPriority;
+      const priority = row.getValue('priority') as ActionPriority;
       return (
         <div className="flex items-center gap-2 capitalize">
             {priorityIcons[priority]}
@@ -211,7 +219,7 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
   {
     id: 'actions',
     cell: function Actions({ row }) {
-      const task = row.original;
+      const action = row.original;
       const { user } = useAuth();
       const { toast } = useToast();
       const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -225,10 +233,10 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
             return;
         }
         try {
-            await deleteDoc(doc(db, `users/${user.uid}/tasks`, task.id));
-            toast({ title: "Task deleted successfully" });
+            await deleteDoc(doc(db, `users/${user.uid}/actions`, action.id));
+            toast({ title: "Action deleted successfully" });
         } catch (error) {
-            toast({ variant: "destructive", title: "Error deleting task" });
+            toast({ variant: "destructive", title: "Error deleting action" });
         } finally {
             setIsDeleteDialogOpen(false);
         }
@@ -260,12 +268,12 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                    <DialogTitle>Edit Task</DialogTitle>
+                    <DialogTitle>Edit Action</DialogTitle>
                     <DialogDescription>
-                        Update the details of your task below.
+                        Update the details of your action below.
                     </DialogDescription>
                     </DialogHeader>
-                    <TaskForm task={task} closeForm={() => setIsEditDialogOpen(false)} />
+                    <ActionForm action={action} closeForm={() => setIsEditDialogOpen(false)} />
                 </DialogContent>
             </Dialog>
 
@@ -274,8 +282,8 @@ export const getColumns = ({ tasks, setTasks }: ColumnProps): ColumnDef<Task>[] 
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this task.
-                        </AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this action.
+                        </d:AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>

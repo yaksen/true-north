@@ -1,9 +1,10 @@
 
 
 export type LeadState = 'new' | 'contacted' | 'interested' | 'lost' | 'converted';
-export type TaskStatus = 'pending' | 'in-progress' | 'done';
-export type TaskPriority = 'low' | 'medium' | 'high';
+export type ActionStatus = 'pending' | 'in-progress' | 'completed';
+export type ActionPriority = 'low' | 'medium' | 'high';
 export type UserRole = 'admin' | 'manager';
+export type ActionType = 'call' | 'visit' | 'sale' | 'follow-up' | 'other';
 
 export interface BaseEntity {
   id: string;
@@ -67,13 +68,19 @@ export interface Subtask {
     completed: boolean;
 }
 
-export interface Task extends BaseEntity {
+export interface Action extends BaseEntity {
   title: string;
   description?: string;
-  status: TaskStatus;
-  priority: TaskPriority;
+  status: ActionStatus;
+  priority: ActionPriority;
+  type: ActionType;
+  leadId?: string; // Links action to a customer/lead
+  assignedTo?: string; // User ID of the assignee
+  relatedInvoiceId?: string;
+  tags?: string[];
   dueDate?: Date;
   subtasks?: Subtask[];
   obstacles?: string[];
   tips?: string[];
+  updatedAt: Date;
 }

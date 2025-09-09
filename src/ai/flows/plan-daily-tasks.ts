@@ -11,7 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { Task, Subtask } from '@/lib/types';
+import { Action, Subtask } from '@/lib/types';
 
 export const DailyPlanInputSchema = z.object({
   rawTasks: z.string().describe('A raw, unstructured list of tasks for the day.'),
@@ -24,10 +24,10 @@ const SubtaskSchema = z.object({
     completed: z.boolean().describe("Whether the subtask is completed. This should always be false for new plans."),
 });
 
-const PlannedTaskSchema = z.object({
+const PlannedActionSchema = z.object({
     title: z.string().describe("A clear, concise title for the task."),
     description: z.string().optional().describe("A brief description of the task."),
-    status: z.enum(['pending', 'in-progress', 'done']).describe("The current status of the task. This should always be 'pending' for new plans."),
+    status: z.enum(['pending', 'in-progress', 'completed']).describe("The current status of the task. This should always be 'pending' for new plans."),
     priority: z.enum(['low', 'medium', 'high']).describe("The priority level of the task."),
     dueDate: z.string().optional().describe("The due date for the task in 'YYYY-MM-DD' format. If no date is mentioned, this can be omitted."),
     subtasks: z.array(SubtaskSchema).optional().describe("A list of subtasks, if any."),
@@ -36,7 +36,7 @@ const PlannedTaskSchema = z.object({
 });
 
 export const DailyPlanOutputSchema = z.object({
-  plannedTasks: z.array(PlannedTaskSchema).describe('An ordered list of structured tasks.'),
+  plannedTasks: z.array(PlannedActionSchema).describe('An ordered list of structured tasks.'),
 });
 export type DailyPlanOutput = z.infer<typeof DailyPlanOutputSchema>;
 

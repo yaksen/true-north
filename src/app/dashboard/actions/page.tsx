@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Task, TaskPriority, TaskStatus } from '@/lib/types';
+import type { Action, ActionPriority, ActionStatus } from '@/lib/types';
 import { DataTable } from '@/components/ui/data-table';
-import { getColumns } from '@/components/tasks/columns';
+import { getColumns } from '@/components/actions/columns';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Wand2 } from 'lucide-react';
 import {
@@ -18,80 +18,81 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { TaskForm } from '@/components/tasks/task-form';
-import { AiPlanner } from '@/components/tasks/ai-planner';
+import { ActionForm } from '@/components/actions/action-form';
+import { AiPlanner } from '@/components/actions/ai-planner';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export default function TasksPage() {
+export default function ActionsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isAiPlannerOpen, setIsAiPlannerOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
-  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<ActionStatus | 'all'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<ActionPriority | 'all'>('all');
 
   useEffect(() => {
     if (!user) return;
 
     setLoading(true);
-    const q = query(collection(db, `users/${user.uid}/tasks`));
+    const q = query(collection(db, `users/${user.uid}/actions`));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const tasksData: Task[] = [];
+      const actionsData: Action[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        tasksData.push({ 
+        actionsData.push({ 
             id: doc.id,
             ...data,
             createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date(),
             dueDate: data.dueDate?.toDate(),
-        } as Task);
+        } as Action);
       });
-      setTasks(tasksData);
+      setActions(actionsData);
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, [user]);
 
-  const handleSaveAiTasks = async (plannedTasks: Omit<Task, 'id' | 'userId' | 'createdAt'>[]) => {
+  const handleSaveAiActions = async (plannedActions: Omit<Action, 'id' | 'userId' | 'createdAt' | 'updatedAt'>[]) => {
     if (!user) {
         toast({ variant: 'destructive', title: 'Not authenticated' });
         return;
     }
     
     try {
-        for (const taskData of plannedTasks) {
-            await addDoc(collection(db, `users/${user.uid}/tasks`), {
-                ...taskData,
+        for (const actionData of plannedActions) {
+            await addDoc(collection(db, `users/${user.uid}/actions`), {
+                ...actionData,
                 userId: user.uid,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
         }
-        toast({ title: 'Success', description: 'AI-planned tasks have been saved.' });
+        toast({ title: 'Success', description: 'AI-planned actions have been saved.' });
         setIsAiPlannerOpen(false);
     } catch (error) {
-        console.error("Error saving AI tasks: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not save AI-planned tasks.' });
+        console.error("Error saving AI actions: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not save AI-planned actions.' });
     }
   };
 
 
-  const filteredTasks = tasks.filter(task => {
-      const statusMatch = statusFilter === 'all' || task.status === statusFilter;
-      const priorityMatch = priorityFilter === 'all' || task.priority === priorityFilter;
+  const filteredActions = actions.filter(action => {
+      const statusMatch = statusFilter === 'all' || action.status === statusFilter;
+      const priorityMatch = priorityFilter === 'all' || action.priority === priorityFilter;
       return statusMatch && priorityMatch;
   })
 
-  const columns = getColumns({ tasks, setTasks });
+  const columns = getColumns({ actions, setActions });
 
   return (
     <>
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold md:text-2xl">Tasks</h1>
+        <h1 className="text-lg font-semibold md:text-2xl">Actions</h1>
         <div className="flex items-center gap-2">
             <Dialog open={isAiPlannerOpen} onOpenChange={setIsAiPlannerOpen}>
                 <DialogTrigger asChild>
@@ -104,10 +105,10 @@ export default function TasksPage() {
                     <DialogHeader>
                         <DialogTitle>Generate Daily Plan with AI</DialogTitle>
                         <DialogDescription>
-                            Paste your raw task list below and let AI structure it for you.
+                            Paste your raw action list below and let AI structure it for you.
                         </DialogDescription>
                     </DialogHeader>
-                    <AiPlanner onSaveTasks={handleSaveAiTasks} />
+                    <AiPlanner onSaveActions={handleSaveAiActions} />
                 </DialogContent>
             </Dialog>
 
@@ -115,27 +116,27 @@ export default function TasksPage() {
                 <DialogTrigger asChild>
                 <Button size="sm" className="gap-1">
                     <PlusCircle className="h-4 w-4" />
-                    New Task
+                    New Action
                 </Button>
                 </DialogTrigger>
                 <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Create New Task</DialogTitle>
+                    <DialogTitle>Create New Action</DialogTitle>
                     <DialogDescription>
-                    Add the details of your new task below.
+                    Add the details of your new action below.
                     </DialogDescription>
                 </DialogHeader>
-                <TaskForm closeForm={() => setIsCreateDialogOpen(false)} />
+                <ActionForm closeForm={() => setIsCreateDialogOpen(false)} />
                 </DialogContent>
             </Dialog>
         </div>
       </div>
       <DataTable 
         columns={columns} 
-        data={filteredTasks} 
+        data={filteredActions} 
         toolbar={
             <div className='flex gap-2'>
-                 <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as TaskStatus | 'all')}>
+                 <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ActionStatus | 'all')}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Filter by status" />
                     </SelectTrigger>
@@ -143,10 +144,10 @@ export default function TasksPage() {
                         <SelectItem value="all">All Statuses</SelectItem>
                         <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="in-progress">In Progress</SelectItem>
-                        <SelectItem value="done">Done</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
                     </SelectContent>
                 </Select>
-                <Select value={priorityFilter} onValueChange={(value) => setPriorityFilter(value as TaskPriority | 'all')}>
+                <Select value={priorityFilter} onValueChange={(value) => setPriorityFilter(value as ActionPriority | 'all')}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Filter by priority" />
                     </SelectTrigger>
