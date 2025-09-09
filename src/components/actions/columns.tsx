@@ -283,7 +283,7 @@ export const getColumns = ({ actions, setActions }: ColumnProps): ColumnDef<Acti
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
                             This action cannot be undone. This will permanently delete this action.
-                        </d:AlertDialogDescription>
+                        </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
