@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -21,10 +21,20 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { Checkbox } from '../ui/checkbox';
 import { ScrollArea } from '../ui/scroll-area';
 import { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Separator } from '../ui/separator';
+
+const discountSchema = z.object({
+    id: z.string(),
+    type: z.enum(['percentage', 'flat']),
+    value: z.coerce.number().min(0, 'Discount value must be positive.'),
+    label: z.string().min(1, 'Label is required.'),
+});
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -35,6 +45,7 @@ const formSchema = z.object({
   serviceIds: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: 'You have to select at least one service.',
   }),
+  discounts: z.array(discountSchema).optional(),
 });
 
 type PackageFormValues = z.infer<typeof formSchema>;
@@ -59,7 +70,13 @@ export function PackageForm({ pkg, services, closeForm }: PackageFormProps) {
       priceLKR: pkg?.priceLKR ?? 0,
       priceUSD: pkg?.priceUSD ?? 0,
       serviceIds: pkg?.serviceIds ?? [],
+      discounts: pkg?.discounts ?? [],
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "discounts",
   });
 
   async function onSubmit(values: PackageFormValues) {
@@ -197,7 +214,7 @@ export function PackageForm({ pkg, services, closeForm }: PackageFormProps) {
                             checked={field.value?.includes(service.id)}
                             onCheckedChange={(checked) => {
                               return checked
-                                ? field.onChange([...field.value, service.id])
+                                ? field.onChange([...(field.value || []), service.id])
                                 : field.onChange(
                                     field.value?.filter(
                                       (value) => value !== service.id
@@ -219,6 +236,74 @@ export function PackageForm({ pkg, services, closeForm }: PackageFormProps) {
             </FormItem>
           )}
         />
+
+        <Separator />
+
+        <div>
+            <FormLabel>Discounts</FormLabel>
+            <div className="space-y-4 mt-2">
+                {fields.map((field, index) => (
+                    <div key={field.id} className="flex flex-col gap-2 rounded-md border p-4">
+                         <div className='flex items-end gap-2'>
+                            <FormField
+                                control={form.control}
+                                name={`discounts.${index}.label`}
+                                render={({ field }) => (
+                                    <FormItem className='flex-grow'>
+                                        <FormLabel>Label</FormLabel>
+                                        <FormControl><Input {...field} placeholder="e.g. Seasonal Offer" /></FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                         </div>
+                         <div className='flex items-end gap-2'>
+                            <FormField
+                                control={form.control}
+                                name={`discounts.${index}.type`}
+                                render={({ field }) => (
+                                    <FormItem className='w-1/3'>
+                                        <FormLabel>Type</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="percentage">Percentage (%)</SelectItem>
+                                                <SelectItem value="flat">Flat (LKR)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name={`discounts.${index}.value`}
+                                render={({ field }) => (
+                                    <FormItem className='flex-grow'>
+                                        <FormLabel>Value</FormLabel>
+                                        <FormControl><Input type="number" {...field} /></FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                         <FormMessage>{form.formState.errors.discounts?.[index]?.label?.message}</FormMessage>
+                         <FormMessage>{form.formState.errors.discounts?.[index]?.value?.message}</FormMessage>
+                    </div>
+                ))}
+            </div>
+             <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => append({ id: uuidv4(), label: '', type: 'percentage', value: 0 })}
+            >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Discount
+            </Button>
+        </div>
+
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>

@@ -1,10 +1,12 @@
 
 
+
 export type LeadState = 'new' | 'contacted' | 'interested' | 'lost' | 'converted';
 export type ActionStatus = 'pending' | 'in-progress' | 'completed';
 export type ActionPriority = 'low' | 'medium' | 'high';
 export type UserRole = 'admin' | 'manager';
 export type ActionType = 'call' | 'visit' | 'sale' | 'follow-up' | 'other';
+export type DiscountType = 'percentage' | 'flat';
 
 export interface BaseEntity {
   id: string;
@@ -53,6 +55,13 @@ export interface Service extends BaseEntity {
   notes: string;
 }
 
+export interface Discount {
+  id: string;
+  type: DiscountType;
+  value: number;
+  label: string;
+}
+
 export interface Package extends BaseEntity {
   name: string;
   description: string;
@@ -60,6 +69,7 @@ export interface Package extends BaseEntity {
   priceLKR: number;
   priceUSD: number;
   duration: string;
+  discounts?: Discount[];
 }
 
 export interface Subtask {

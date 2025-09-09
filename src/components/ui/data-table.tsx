@@ -12,7 +12,7 @@ import {
   type ColumnFiltersState,
   type SortingState,
   type VisibilityState,
-  type GlobalFilterTableState,
+  type RowSelectionState,
 } from '@tanstack/react-table';
 import { useState } from 'react';
 
@@ -33,8 +33,9 @@ import {
 import { Card, CardContent } from './card';
 import { Button } from './button';
 import { Input } from './input';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, FileDown } from 'lucide-react';
 import { ScrollArea } from './scroll-area';
+import { Checkbox } from './checkbox';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -43,16 +44,41 @@ interface DataTableProps<TData, TValue> {
 }
 
 export function DataTable<TData, TValue>({
-  columns,
+  columns: userColumns,
   data,
   toolbar,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [globalFilter, setGlobalFilter] = useState('');
 
+  const columns: ColumnDef<TData, TValue>[] = [
+    {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && 'indeterminate')
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
+    ...userColumns
+  ]
 
   const table = useReactTable({
     data,
@@ -75,6 +101,40 @@ export function DataTable<TData, TValue>({
     },
   });
 
+  const handleExport = () => {
+    const selectedRows = table.getFilteredSelectedRowModel().rows;
+    if (selectedRows.length === 0) {
+        alert("Please select rows to export.");
+        return;
+    }
+
+    const headers = userColumns.map(col => (col as any).accessorKey).filter(Boolean).join(',');
+    const csvContent = [
+        headers,
+        ...selectedRows.map(row => 
+            userColumns.map(col => {
+                const key = (col as any).accessorKey;
+                if (!key) return '';
+                const value = row.original[key as keyof TData];
+                if (Array.isArray(value)) return `"${value.join(', ')}"`;
+                return `"${value}"`;
+            }).filter(val => val !== '""').join(',')
+        )
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `leads-export-${new Date().toISOString()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  const isExportDisabled = table.getFilteredSelectedRowModel().rows.length === 0;
+
   return (
     <Card>
       <CardContent className="p-0">
@@ -91,6 +151,10 @@ export function DataTable<TData, TValue>({
                 {toolbar}
             </div>
             <div className='flex items-center gap-2'>
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={isExportDisabled}>
+                    <FileDown className='mr-2 h-4 w-4' />
+                    Export
+                </Button>
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline">

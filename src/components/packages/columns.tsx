@@ -3,7 +3,7 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import type { Package, Service } from '@/lib/types';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -38,6 +38,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Badge } from '../ui/badge';
 import { EditableCell } from '../ui/editable-cell';
+import { calculateDiscountedTotal } from '@/lib/billing';
 
 interface ColumnsProps {
     services: Service[];
@@ -60,30 +61,47 @@ export const getColumns = ({ services, setPackages }: ColumnsProps): ColumnDef<P
   {
     accessorKey: 'priceLKR',
     header: 'Price (LKR)',
-    cell: ({ row }) => <EditableCell
-        initialValue={row.original.priceLKR}
-        onSave={(value) => {
-            const packageId = row.original.id;
-            const numericValue = Number(value);
-            setPackages(prev => prev.map(p => p.id === packageId ? { ...p, priceLKR: numericValue } : p));
-            return { collection: 'packages', docId: packageId, field: 'priceLKR', value: numericValue };
-        }}
-        type="number"
-    />,
+    cell: ({ row }) => {
+        const pkg = row.original;
+        const { discountedPriceLKR, totalDiscountLKR } = calculateDiscountedTotal(pkg);
+        const hasDiscount = totalDiscountLKR > 0;
+
+        return (
+            <div className='flex flex-col'>
+                {hasDiscount && (
+                    <span className="line-through text-muted-foreground text-xs">
+                        {pkg.priceLKR.toLocaleString()}
+                    </span>
+                )}
+                 <span className="font-medium">{discountedPriceLKR.toLocaleString()}</span>
+                 {hasDiscount && (
+                    <Badge variant="secondary" className="w-fit mt-1">
+                        <Tag className="mr-1 h-3 w-3" /> -{totalDiscountLKR.toLocaleString()}
+                    </Badge>
+                 )}
+            </div>
+        )
+    }
   },
   {
     accessorKey: 'priceUSD',
     header: 'Price (USD)',
-    cell: ({ row }) => <EditableCell
-        initialValue={row.original.priceUSD}
-        onSave={(value) => {
-            const packageId = row.original.id;
-            const numericValue = Number(value);
-            setPackages(prev => prev.map(p => p.id === packageId ? { ...p, priceUSD: numericValue } : p));
-            return { collection: 'packages', docId: packageId, field: 'priceUSD', value: numericValue };
-        }}
-        type="number"
-    />,
+    cell: ({ row }) => {
+       const pkg = row.original;
+        const { discountedPriceUSD, totalDiscountUSD } = calculateDiscountedTotal(pkg);
+        const hasDiscount = totalDiscountUSD > 0;
+
+        return (
+            <div className='flex flex-col'>
+                {hasDiscount && (
+                    <span className="line-through text-muted-foreground text-xs">
+                        ${pkg.priceUSD.toLocaleString()}
+                    </span>
+                )}
+                 <span className="font-medium">${discountedPriceUSD.toLocaleString()}</span>
+            </div>
+        )
+    }
   },
   {
     accessorKey: 'serviceIds',

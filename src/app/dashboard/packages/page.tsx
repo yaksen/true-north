@@ -70,7 +70,7 @@ export default function PackagesPage() {
         <h1 className="text-lg font-semibold md:text-2xl">Packages</h1>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" variant="destructive" className="gap-1">
+            <Button size="sm" className="gap-1">
               <PlusCircle className="h-4 w-4" />
               New Package
             </Button>
