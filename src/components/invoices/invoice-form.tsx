@@ -372,5 +372,3 @@ export function InvoiceForm({ invoice, closeForm, leads, services, packages }: I
     </Form>
   );
 }
-
-    
