@@ -25,7 +25,8 @@ export default function PackagesPage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isFixedDialogOpen, setIsFixedDialogOpen] = useState(false);
+  const [isCustomDialogOpen, setIsCustomDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -68,26 +69,50 @@ export default function PackagesPage() {
     <>
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Packages</h1>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-1">
-              <PlusCircle className="h-4 w-4" />
-              New Package
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Create New Package</DialogTitle>
-              <DialogDescription>
-                Add the details of your new package below.
-              </DialogDescription>
-            </DialogHeader>
-            <PackageForm
-              closeForm={() => setIsCreateDialogOpen(false)}
-              services={services}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Dialog open={isFixedDialogOpen} onOpenChange={setIsFixedDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1">
+                <PlusCircle className="h-4 w-4" />
+                New Fixed Package
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Create New Fixed Package</DialogTitle>
+                <DialogDescription>
+                  Add the details of your new package below.
+                </DialogDescription>
+              </DialogHeader>
+              <PackageForm
+                closeForm={() => setIsFixedDialogOpen(false)}
+                services={services}
+                packageCategory="fixed"
+              />
+            </DialogContent>
+          </Dialog>
+           <Dialog open={isCustomDialogOpen} onOpenChange={setIsCustomDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-1">
+                <PlusCircle className="h-4 w-4" />
+                New Custom Package
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Create New Custom Package</DialogTitle>
+                <DialogDescription>
+                  Add the details of your new custom package below.
+                </DialogDescription>
+              </DialogHeader>
+              <PackageForm
+                closeForm={() => setIsCustomDialogOpen(false)}
+                services={services}
+                packageCategory="custom"
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       <DataTable
         columns={columns}

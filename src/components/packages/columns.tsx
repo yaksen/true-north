@@ -2,7 +2,7 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import type { Package, Service } from '@/lib/types';
+import type { Package, Service, PackageCategory } from '@/lib/types';
 import { MoreHorizontal, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -62,6 +62,14 @@ export const getColumns = ({ services, setPackages }: ColumnsProps): ColumnDef<P
             return { collection: 'packages', docId: packageId, field: 'name', value };
         }}
     />,
+  },
+  {
+    accessorKey: 'category',
+    header: 'Category',
+    cell: ({ row }) => {
+      const category = row.getValue('category') as PackageCategory;
+      return <Badge variant={category === 'fixed' ? 'default' : 'secondary'} className="capitalize">{category}</Badge>;
+    },
   },
   {
     accessorKey: 'priceLKR',
@@ -202,6 +210,7 @@ export const getColumns = ({ services, setPackages }: ColumnsProps): ColumnDef<P
                 pkg={pkg}
                 services={services}
                 closeForm={() => setIsEditDialogOpen(false)}
+                packageCategory={pkg.category}
               />
             </DialogContent>
           </Dialog>

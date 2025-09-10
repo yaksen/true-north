@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Package, Service, CrmSettings } from '@/lib/types';
+import type { Package, Service, CrmSettings, PackageCategory } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc, runTransaction } from 'firebase/firestore';
@@ -54,9 +54,10 @@ interface PackageFormProps {
   pkg?: Package;
   services: Service[];
   closeForm: () => void;
+  packageCategory: PackageCategory;
 }
 
-export function PackageForm({ pkg, services, closeForm }: PackageFormProps) {
+export function PackageForm({ pkg, services, closeForm, packageCategory }: PackageFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,6 +113,7 @@ export function PackageForm({ pkg, services, closeForm }: PackageFormProps) {
         // Update existing package
         const packageData = {
           ...values,
+          category: packageCategory,
           userId: user.uid,
         };
         const packageRef = doc(db, `users/${user.uid}/packages`, pkg.id);
@@ -123,6 +125,7 @@ export function PackageForm({ pkg, services, closeForm }: PackageFormProps) {
         const packageData = {
           ...values,
           packageId: newPackageId,
+          category: packageCategory,
           userId: user.uid,
         };
         await addDoc(collection(db, `users/${user.uid}/packages`), {
