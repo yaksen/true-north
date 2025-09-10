@@ -10,6 +10,7 @@ import {
   CheckSquare,
   ChevronDown,
   Contact,
+  DollarSign,
   FileText,
   LayoutDashboard,
   Menu,
@@ -37,6 +38,7 @@ const navItems = [
   { href: '/dashboard/packages', label: 'Packages', icon: Box },
   { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
   { href: '/dashboard/actions', label: 'Actions', icon: CheckSquare },
+  { href: '/dashboard/financials', label: 'Financials', icon: DollarSign },
   { href: '/dashboard/users', label: 'User Management', icon: Users, roles: ['admin', 'manager'] },
 ];
 
