@@ -43,9 +43,10 @@ import { calculateDiscountedTotal } from '@/lib/billing';
 interface ColumnsProps {
     services: Service[];
     setPackages: React.Dispatch<React.SetStateAction<Package[]>>;
+    onPackageSelect: (pkg: Package) => void;
 }
 
-export const getColumns = ({ services, setPackages }: ColumnsProps): ColumnDef<Package>[] => [
+export const getColumns = ({ services, setPackages, onPackageSelect }: ColumnsProps): ColumnDef<Package>[] => [
   {
     accessorKey: 'packageId',
     header: 'Package ID',
@@ -54,14 +55,17 @@ export const getColumns = ({ services, setPackages }: ColumnsProps): ColumnDef<P
   {
     accessorKey: 'name',
     header: 'Name',
-    cell: ({ row }) => <EditableCell
-        initialValue={row.original.name}
-        onSave={(value) => {
-            const packageId = row.original.id;
-            setPackages(prev => prev.map(p => p.id === packageId ? { ...p, name: value } : p));
-            return { collection: 'packages', docId: packageId, field: 'name', value };
-        }}
-    />,
+    cell: ({ row }) => {
+        const pkg = row.original;
+        return (
+             <div
+                onClick={() => onPackageSelect(pkg)}
+                className="font-medium cursor-pointer hover:underline"
+            >
+                {pkg.name}
+            </div>
+        )
+    }
   },
   {
     accessorKey: 'category',
@@ -183,6 +187,7 @@ export const getColumns = ({ services, setPackages }: ColumnsProps): ColumnDef<P
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => onPackageSelect(pkg)}>View Details</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
               {canDelete && (
                 <>

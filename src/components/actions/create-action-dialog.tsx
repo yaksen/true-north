@@ -13,16 +13,20 @@ import { Button } from '../ui/button';
 import { PlusCircle } from 'lucide-react';
 import { ActionForm } from './action-form';
 import { useState } from 'react';
-import { Lead } from '@/lib/types';
+import { Lead, Action } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
 
 interface CreateActionDialogProps {
     leads: Lead[];
     defaultLeadId?: string;
+    buttonText?: string;
+    dialogTitle?: string;
+    dialogDescription?: string;
+    defaultAction?: Partial<Action>;
 }
 
-export function CreateActionDialog({ leads, defaultLeadId }: CreateActionDialogProps) {
+export function CreateActionDialog({ leads, defaultLeadId, buttonText, dialogTitle, dialogDescription, defaultAction }: CreateActionDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedLeadId, setSelectedLeadId] = useState<string | undefined>(defaultLeadId);
 
@@ -39,16 +43,16 @@ export function CreateActionDialog({ leads, defaultLeadId }: CreateActionDialogP
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-                <Button size="sm" className="gap-1">
+                <Button size="sm" className="gap-1 w-full justify-center">
                     <PlusCircle className="h-4 w-4" />
-                    New Action
+                    {buttonText || 'New Action'}
                 </Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Create New Action</DialogTitle>
+                    <DialogTitle>{dialogTitle || 'Create New Action'}</DialogTitle>
                     <DialogDescription>
-                        {defaultLeadId ? 'Add a new action for this lead.' : 'Select a lead to create a new action.'}
+                        {dialogDescription || (defaultLeadId ? 'Add a new action for this lead.' : 'Select a lead to create a new action.')}
                     </DialogDescription>
                 </DialogHeader>
                 
@@ -70,6 +74,7 @@ export function CreateActionDialog({ leads, defaultLeadId }: CreateActionDialogP
                 
                 {(selectedLeadId || defaultLeadId) && (
                      <ActionForm 
+                        action={defaultAction as Action}
                         leads={leads}
                         defaultLeadId={selectedLeadId || defaultLeadId}
                         closeForm={() => setIsOpen(false)} 

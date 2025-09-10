@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Package, Service } from '@/lib/types';
+import type { Lead, Package, Service } from '@/lib/types';
 import { DataTable } from '@/components/ui/data-table';
 import { getColumns } from '@/components/packages/columns';
 import { Button } from '@/components/ui/button';
@@ -19,14 +19,17 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { PackageForm } from '@/components/packages/package-form';
+import { PackageDetailDialog } from '@/components/packages/package-detail-dialog';
 
 export default function PackagesPage() {
   const { user } = useAuth();
   const [packages, setPackages] = useState<Package[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFixedDialogOpen, setIsFixedDialogOpen] = useState(false);
   const [isCustomDialogOpen, setIsCustomDialogOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -34,6 +37,7 @@ export default function PackagesPage() {
     setLoading(true);
     const packagesQuery = query(collection(db, `users/${user.uid}/packages`));
     const servicesQuery = query(collection(db, `users/${user.uid}/services`));
+    const leadsQuery = query(collection(db, `users/${user.uid}/leads`));
 
     const unsubscribePackages = onSnapshot(packagesQuery, (querySnapshot) => {
       const packagesData: Package[] = [];
@@ -56,14 +60,20 @@ export default function PackagesPage() {
       });
       setServices(servicesData);
     });
+    
+    const unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
+      const leadsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
+      setLeads(leadsData);
+    });
 
     return () => {
       unsubscribePackages();
       unsubscribeServices();
+      unsubscribeLeads();
     };
   }, [user]);
 
-  const columns = getColumns({ services, setPackages });
+  const columns = getColumns({ services, setPackages, onPackageSelect: setSelectedPackage });
 
   return (
     <>
@@ -118,6 +128,19 @@ export default function PackagesPage() {
         columns={columns}
         data={packages}
        />
+       {selectedPackage && (
+          <PackageDetailDialog
+            pkg={selectedPackage}
+            services={services}
+            leads={leads}
+            isOpen={!!selectedPackage}
+            onOpenChange={(open) => {
+                if (!open) {
+                    setSelectedPackage(null);
+                }
+            }}
+          />
+       )}
     </>
   );
 }
