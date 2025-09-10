@@ -47,6 +47,11 @@ interface ColumnsProps {
 
 export const getColumns = ({ services, setPackages }: ColumnsProps): ColumnDef<Package>[] => [
   {
+    accessorKey: 'packageId',
+    header: 'Package ID',
+    cell: ({ row }) => <div className="font-mono text-muted-foreground">#{row.original.packageId}</div>,
+  },
+  {
     accessorKey: 'name',
     header: 'Name',
     cell: ({ row }) => <EditableCell

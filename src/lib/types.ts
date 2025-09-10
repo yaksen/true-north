@@ -1,6 +1,7 @@
 
 
 
+
 export type LeadState = 'new' | 'contacted' | 'interested' | 'lost' | 'converted';
 export type ActionStatus = 'pending' | 'in-progress' | 'completed';
 export type ActionPriority = 'low' | 'medium' | 'high';
@@ -33,6 +34,7 @@ export interface CrmSettings {
     maxTasks: number;
     counters?: {
         leadId: number;
+        packageId: number;
     }
 }
 
@@ -80,6 +82,7 @@ export interface Discount {
 }
 
 export interface Package extends BaseEntity {
+  packageId: string;
   name: string;
   description: string;
   serviceIds: string[];

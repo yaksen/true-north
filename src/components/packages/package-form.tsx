@@ -16,10 +16,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Package, Service } from '@/lib/types';
+import type { Package, Service, CrmSettings } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, serverTimestamp, updateDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { Checkbox } from '../ui/checkbox';
@@ -79,6 +79,27 @@ export function PackageForm({ pkg, services, closeForm }: PackageFormProps) {
     name: "discounts",
   });
 
+  async function getNextPackageId(): Promise<string> {
+    const settingsRef = doc(db, 'settings', 'crm');
+    let newPackageIdNumber = 1;
+
+    await runTransaction(db, async (transaction) => {
+        const settingsDoc = await transaction.get(settingsRef);
+        
+        if (!settingsDoc.exists() || !settingsDoc.data()?.counters?.packageId) {
+            const initialSettings: Partial<CrmSettings> = { 
+                counters: { packageId: 1, leadId: settingsDoc.data()?.counters?.leadId || 0 }
+            };
+            transaction.set(settingsRef, initialSettings, { merge: true });
+        } else {
+            const settings = settingsDoc.data() as CrmSettings;
+            newPackageIdNumber = (settings.counters?.packageId || 0) + 1;
+            transaction.update(settingsRef, { "counters.packageId": newPackageIdNumber });
+        }
+    });
+    return newPackageIdNumber.toString().padStart(4, '0');
+  }
+
   async function onSubmit(values: PackageFormValues) {
     if (!user) {
       toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
@@ -86,22 +107,29 @@ export function PackageForm({ pkg, services, closeForm }: PackageFormProps) {
     }
     setIsSubmitting(true);
 
-    const packageData = {
-      ...values,
-      userId: user.uid,
-    };
-
     try {
       if (pkg) {
+        // Update existing package
+        const packageData = {
+          ...values,
+          userId: user.uid,
+        };
         const packageRef = doc(db, `users/${user.uid}/packages`, pkg.id);
         await updateDoc(packageRef, packageData);
         toast({ title: 'Success', description: 'Package updated successfully.' });
       } else {
+        // Create new package
+        const newPackageId = await getNextPackageId();
+        const packageData = {
+          ...values,
+          packageId: newPackageId,
+          userId: user.uid,
+        };
         await addDoc(collection(db, `users/${user.uid}/packages`), {
           ...packageData,
           createdAt: serverTimestamp(),
         });
-        toast({ title: 'Success', description: 'Package created successfully.' });
+        toast({ title: 'Success', description: `Package #${newPackageId} created successfully.` });
       }
       closeForm();
     } catch (error) {
