@@ -1,16 +1,11 @@
 
-
-
-
-
 export type LeadState = 'new' | 'contacted' | 'interested' | 'lost' | 'converted';
-export type ActionStatus = 'pending' | 'in-progress' | 'completed';
-export type ActionPriority = 'low' | 'medium' | 'high';
 export type UserRole = 'admin' | 'manager';
-export type ActionType = 'call' | 'visit' | 'sale' | 'follow-up' | 'other';
-export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'void';
 export type PackageCategory = 'fixed' | 'custom';
+export type DiscountType = 'percentage' | 'flat';
+
+export type ActivityCategory = 'Sales' | 'Expenses' | 'Tasks' | 'Customer Service' | 'HR & Team';
 
 export interface BaseEntity {
   id: string;
@@ -40,26 +35,14 @@ export interface CrmSettings {
     }
 }
 
-export interface SocialLink {
-    id: string;
-    platform: string;
-    url: string;
-    icon: string;
-}
-
 export interface Lead extends BaseEntity {
-  leadId: string; // User-facing, simple, auto-incrementing ID
+  leadId: string;
   name: string;
   phoneNumbers: string[];
   emails: string[];
   socials: string[];
   state: LeadState;
   notes: string;
-  // DEPRECATED - to be removed in future migration
-  socialLinks?: SocialLink[];
-  tags?: string[];
-  lastContacted?: Date;
-  totalSpent?: number;
 }
 
 export interface Category extends BaseEntity {
@@ -95,30 +78,63 @@ export interface Package extends BaseEntity {
   discounts?: Discount[];
 }
 
-export interface Subtask {
-    id: string;
-    title: string;
-    completed: boolean;
+export interface Action<T extends ActivityCategory = ActivityCategory> extends BaseEntity {
+  category: T;
+  status: string;
+  assignedTo: string;
+  date?: Date;
+  deadline?: Date;
+  notes?: string;
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical';
+  details: T extends 'Sales' ? SalesDetails :
+           T extends 'Expenses' ? ExpenseDetails :
+           T extends 'Tasks' ? TaskDetails :
+           T extends 'Customer Service' ? CustomerServiceDetails :
+           T extends 'HR & Team' ? HRDetails :
+           any;
+  updatedAt: Date;
 }
 
-export interface Action extends BaseEntity {
-  title: string;
-  description?: string;
-  status: ActionStatus;
-  priority: ActionPriority;
-  type: ActionType;
-  leadId?: string; // Links action to a customer/lead
-  assignedTo?: string; // User ID of the assignee
-  relatedInvoiceId?: string;
-  tags?: string[];
-  dueDate?: Date;
-  subtasks?: Subtask[];
-  obstacles?: string[];
-  tips?: string[];
-  updatedAt: Date;
-  amount?: number; // For sales
-  discount?: number; // For discounts
+export interface SalesDetails {
+    leadId: string;
+    productOrService: string;
+    amount: number;
 }
+
+export interface ExpenseDetails {
+    expenseType: 'Marketing' | 'Operations' | 'HR' | 'Other';
+    amount: number;
+}
+
+export interface TaskDetails {
+    description: string;
+    relatedLeadId?: string;
+}
+
+export interface CustomerServiceDetails {
+    leadId: string;
+    issueType: 'Complaint' | 'Request' | 'Feedback';
+}
+
+export interface HRDetails {
+    teamMember: string;
+    actionType: 'Recruitment' | 'Training' | 'Performance Review';
+}
+
+
+export interface Transaction {
+    id: string;
+    userId: string;
+    type: 'income' | 'expense';
+    category: string;
+    amount: number;
+    date: Date;
+    description: string;
+    relatedInvoiceId?: string;
+    relatedActionId?: string;
+    createdAt: Date;
+}
+
 
 export interface LineItem {
   id: string;
@@ -136,21 +152,11 @@ export interface Invoice extends BaseEntity {
   dueDate: Date;
   lineItems: LineItem[];
   discounts?: Discount[];
-  taxRate: number; // as a percentage, e.g., 15 for 15%
+  taxRate: number;
   subtotalLKR: number;
   subtotalUSD: number;
   totalLKR: number;
   totalUSD: number;
   notes?: string;
   paymentInstructions?: string;
-}
-
-export interface PdfTemplate {
-    id: string;
-    name: string;
-    htmlTemplate: string;
-    cssOverrides?: string;
-    headerLogoUrl?: string;
-    brandColor?: string;
-    defaultSize: 'A4' | 'card';
 }
