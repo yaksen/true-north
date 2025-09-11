@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { CreateActionDialog } from '../actions/create-action-dialog';
+import { LogActivityDialog } from '../actions/log-activity-dialog';
 
 interface PackageDetailDialogProps {
   pkg: Package;
@@ -112,16 +112,10 @@ export function PackageDetailDialog({ pkg, services, leads, isOpen, onOpenChange
                     <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <CreateActionDialog 
+                    <LogActivityDialog
                         leads={leads}
-                        buttonText='Create Sale'
-                        dialogTitle='Create a New Sale'
-                        dialogDescription={`Record a sale for the '${pkg.name}' package.`}
-                        defaultAction={{
-                            title: `Sale: ${pkg.name}`,
-                            type: 'sale',
-                            amount: discountedPriceLKR
-                        }}
+                        services={services}
+                        packages={[pkg]}
                     />
                 </CardContent>
             </Card>

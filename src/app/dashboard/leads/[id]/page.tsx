@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, collection, query, where, onSnapshot, getCountFromServer } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Lead, Action } from '@/lib/types';
+import type { Lead, Action, Service, Package } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Edit, Mail, Phone, PlusCircle, Globe } from 'lucide-react';
@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { getColumns } from '@/components/actions/columns';
 import { DataTable } from '@/components/ui/data-table';
 import { SummaryCard } from '@/components/dashboard/summary-card';
-import { CreateActionDialog } from '@/components/actions/create-action-dialog';
+import { LogActivityDialog } from '@/components/actions/log-activity-dialog';
 
 export default function LeadDetailPage() {
   const { user } = useAuth();
@@ -28,6 +28,8 @@ export default function LeadDetailPage() {
   const [actions, setActions] = useState<Action[]>([]);
   const [stats, setStats] = useState({ totalSpent: 0, actionCount: 0 });
   const [loading, setLoading] = useState(true);
+  const [services, setServices] = useState<Service[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
 
   useEffect(() => {
     if (!user || !id) return;
@@ -47,41 +49,55 @@ export default function LeadDetailPage() {
       setLoading(false);
     });
 
-    const actionsQuery = query(collection(db, `users/${user.uid}/actions`), where('leadId', '==', id));
+    const actionsQuery = query(collection(db, `users/${user.uid}/actions`), where('details.leadId', '==', id));
     const unsubscribeActions = onSnapshot(actionsQuery, (snapshot) => {
       const actionsData = snapshot.docs.map(doc => ({ 
         id: doc.id,
          ...doc.data(),
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        dueDate: doc.data().dueDate?.toDate(),
+        deadline: doc.data().deadline?.toDate(),
+        date: doc.data().date?.toDate(),
       } as Action));
       
       setActions(actionsData);
 
       // Calculate stats
       const totalSpent = actionsData
-        .filter(a => a.type === 'sale' && a.amount)
-        .reduce((sum, a) => sum + a.amount!, 0);
+        .filter(a => a.category === 'Sales' && a.status === 'Won' && a.details.amount)
+        .reduce((sum, a) => sum + a.details.amount!, 0);
 
       setStats({ totalSpent, actionCount: actionsData.length });
+    });
+    
+    const servicesQuery = query(collection(db, `users/${user.uid}/services`));
+    const unsubscribeServices = onSnapshot(servicesQuery, (snapshot) => {
+        setServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service)));
+    });
+
+    const packagesQuery = query(collection(db, `users/${user.uid}/packages`));
+    const unsubscribePackages = onSnapshot(packagesQuery, (snapshot) => {
+        setPackages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Package)));
     });
 
     return () => {
       unsubscribeLead();
       unsubscribeActions();
+      unsubscribeServices();
+      unsubscribePackages();
     };
   }, [user, id, router]);
 
   const getInitials = (name: string) => {
+    if (!name) return '';
     const nameParts = name.split(' ');
     if (nameParts.length > 1 && nameParts[0] && nameParts[1]) {
       return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
     }
-    return name[0].toUpperCase();
+    return name[0]?.toUpperCase() || '';
   };
   
-  const columns = getColumns({ actions, setActions });
+  const columns = getColumns({ setActions });
 
   if (loading) {
     return <div>Loading...</div>;
@@ -103,7 +119,11 @@ export default function LeadDetailPage() {
                 <Edit className='mr-2 h-4 w-4' />
                 Edit Lead
             </Button>
-             <CreateActionDialog leads={[lead]} defaultLeadId={lead.id} />
+            <LogActivityDialog
+                leads={[lead]}
+                services={services}
+                packages={packages}
+            />
         </div>
       </div>
 
