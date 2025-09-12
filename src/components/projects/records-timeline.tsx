@@ -15,6 +15,9 @@ import {
   FileUp,
   Tag,
   ReceiptText,
+  UserPlus,
+  UserX,
+  Trash2,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -38,6 +41,7 @@ const recordDetails: Record<
 > = {
   project_created: { icon: Briefcase, message: (p) => `Project "${p.name}" was created.` },
   project_updated: { icon: Briefcase, message: (p) => `Project "${p.name}" was updated.` },
+  project_deleted: { icon: Trash2, message: (p) => `Project "${p.name}" was deleted.` },
   task_created: { icon: ListChecks, message: (p) => `Task "${p.title}" was created.` },
   task_updated: { icon: ListChecks, message: (p) => `Task "${p.title}" was updated.` },
   task_deleted: { icon: ListChecks, message: (p) => `Task "${p.title}" was deleted.` },
@@ -62,6 +66,9 @@ const recordDetails: Record<
   invoice_created: { icon: ReceiptText, message: (p) => `Invoice "${p.invoiceNumber}" was created.` },
   invoice_updated: { icon: ReceiptText, message: (p) => `Invoice "${p.invoiceNumber}" was updated to status: ${p.status}.` },
   invoice_deleted: { icon: ReceiptText, message: (p) => `Invoice "${p.invoiceNumber}" was deleted.` },
+  member_invited: { icon: UserPlus, message: (p) => `Invited ${p.email} to the project.` },
+  member_added: { icon: UserPlus, message: (p) => `Added ${p.email} to the project.` },
+  member_removed: { icon: UserX, message: (p) => `Removed ${p.email} from the project.` },
 };
 
 export function RecordsTimeline({ items }: RecordsTimelineProps) {
