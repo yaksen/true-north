@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import type { Project, Finance, Task } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Briefcase, Users, Lock } from 'lucide-react';
+import { PlusCircle, Briefcase, Users, Lock, MoreVertical } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -92,6 +92,8 @@ export default function ProjectsPage() {
             ...project,
             profitLoss,
             taskCompletionRate,
+            totalTasks: projectTasks.length,
+            completedTasks,
         }
     });
   }, [projects, finances, tasks]);
@@ -131,37 +133,43 @@ export default function ProjectsPage() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-4">
+        <div className="flex flex-col gap-4 mt-4">
             {projectSummaries.map(summary => (
                 <Card key={summary.id}>
-                    <CardHeader>
-                        <div className='flex items-start justify-between'>
-                            <div className="flex items-center gap-3">
-                                <span className="text-2xl">{summary.emoji || <Briefcase className="h-7 w-7 text-muted-foreground" />}</span>
-                                <CardTitle className="leading-tight">{summary.name}</CardTitle>
+                    <div className='flex items-center p-4'>
+                        <div className="flex items-center gap-4 flex-1">
+                            <span className="text-2xl">{summary.emoji || <Briefcase className="h-7 w-7 text-muted-foreground" />}</span>
+                            <div className='flex-1'>
+                                <div className='flex items-center gap-2'>
+                                    <p className="font-semibold">{summary.name}</p>
+                                    {summary.private && <Badge variant="secondary" className="text-xs"><Lock className='h-3 w-3 mr-1' />Private</Badge>}
+                                </div>
+                                <p className='text-sm text-muted-foreground line-clamp-1'>{summary.description}</p>
                             </div>
-                            {summary.private && <Badge variant="secondary" className="text-xs"><Lock className='h-3 w-3 mr-1' />Private</Badge>}
                         </div>
-                        <CardDescription className='line-clamp-2 h-10 pt-1'>{summary.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <p className="text-xs text-muted-foreground">Profit / Loss</p>
-                            <p className={`font-semibold ${summary.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {formatCurrency(summary.profitLoss, summary.currency)}
-                            </p>
+
+                        <div className='hidden md:flex items-center gap-8 mx-8'>
+                             <div>
+                                <p className="text-xs text-muted-foreground">Profit / Loss</p>
+                                <p className={`font-semibold ${summary.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    {formatCurrency(summary.profitLoss, summary.currency)}
+                                </p>
+                            </div>
+                            <div className='w-40'>
+                                <div className='flex justify-between items-center mb-1'>
+                                    <p className='text-xs text-muted-foreground'>Task Completion</p>
+                                    <p className='text-xs font-medium'>{summary.completedTasks}/{summary.totalTasks}</p>
+                                </div>
+                                <Progress value={summary.taskCompletionRate} />
+                            </div>
                         </div>
-                         <div>
-                            <p className='text-xs text-muted-foreground mb-1'>Task Completion</p>
-                            <Progress value={summary.taskCompletionRate} />
-                            <p className='text-xs text-muted-foreground text-right mt-1'>{summary.taskCompletionRate.toFixed(0)}%</p>
+
+                        <div className='flex items-center gap-2'>
+                            <Button asChild variant="outline" size="sm">
+                                <Link href={`/dashboard/projects/${summary.id}`}>Open</Link>
+                            </Button>
                         </div>
-                    </CardContent>
-                    <CardFooter>
-                        <Button asChild variant="outline" size="sm" className='w-full'>
-                            <Link href={`/dashboard/projects/${summary.id}`}>Open Project</Link>
-                        </Button>
-                    </CardFooter>
+                    </div>
                 </Card>
             ))}
             {projectSummaries.length === 0 && !loading && (
