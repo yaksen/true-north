@@ -32,7 +32,10 @@ export function DashboardClient({ projects, tasks, finances }: DashboardClientPr
         const d = new Date();
         d.setMonth(d.getMonth() - i);
         const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        const monthFinances = projectFinances.filter(f => new Date(f.date).toISOString().startsWith(monthKey));
+        const monthFinances = projectFinances.filter(f => {
+            if (!f.date) return false;
+            return new Date(f.date).toISOString().startsWith(monthKey)
+        });
         const income = monthFinances.filter(f => f.type === 'income').reduce((s, f) => s + f.amount, 0);
         const expense = monthFinances.filter(f => f.type === 'expense').reduce((s, f) => s + f.amount, 0);
         return { name: d.toLocaleString('default', { month: 'short' }), pl: income - expense };
@@ -71,15 +74,17 @@ export function DashboardClient({ projects, tasks, finances }: DashboardClientPr
   }, [projectSummaries, projects.length]);
 
   return (
-    <div className="flex-1 space-y-4 pt-6">
+    <div className="flex-1 space-y-6 p-4 lg:p-6">
       <SummaryCards summary={globalSummary} />
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-12 lg:col-span-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projectSummaries.map(summary => (
-                <ProjectCard key={summary.project.id} summary={summary} />
-            ))}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {projectSummaries.map(summary => (
+                    <ProjectCard key={summary.project.id} summary={summary} />
+                ))}
+            </div>
         </div>
-        <div className="col-span-12 lg:col-span-2 space-y-4">
+        <div className="lg:col-span-1 space-y-6">
             <TopProjects summaries={projectSummaries} />
             <ForecastWidget summaries={projectSummaries} />
         </div>
