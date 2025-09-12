@@ -1,9 +1,11 @@
 
+
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Planning' | 'In-Progress' | 'Completed' | 'On-Hold';
 export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
 export type FinanceType = 'income' | 'expense';
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
+export type DiscountType = 'percentage' | 'flat';
 
 export interface UserProfile {
     id: string;
@@ -69,15 +71,53 @@ export interface Lead {
     updatedAt: Date;
 }
 
-
-export interface Product {
-    id:string;
+export interface Category {
+    id: string;
     projectId: string;
-    // ... other fields
+    name: string;
+    notes?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface Service {
+    id: string;
+    projectId: string;
+    name: string;
+    categoryId: string;
+    finishTime: string;
+    priceLKR: number;
+    priceUSD: number;
+    notes?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface Discount {
+    id: string;
+    name: string;
+    type: DiscountType;
+    value: number; // Percentage or flat amount
 }
 
 export interface Package {
     id: string;
+    projectId: string;
+    name: string;
+    description: string;
+    services: string[]; // Array of service IDs
+    priceLKR: number;
+    priceUSD: number;
+    duration: string;
+    custom: boolean;
+    discounts?: Discount[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+
+export interface Product {
+    id:string;
     projectId: string;
     // ... other fields
 }

@@ -6,13 +6,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead } from '@/lib/types';
+import type { Project, Task, Finance, Lead, Category, Service, Package } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProjectDashboard } from '@/components/projects/project-dashboard';
 import { ProjectLeads } from '@/components/projects/project-leads';
+import { ProjectProducts } from '@/components/projects/project-products';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -24,6 +25,9 @@ export default function ProjectDetailPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [finances, setFinances] = useState<Finance[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,29 +48,30 @@ export default function ProjectDetailPage() {
       setLoading(false);
     });
 
-    const tasksQuery = query(collection(db, 'tasks'), where('projectId', '==', id));
-    const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
-        const tasksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-        setTasks(tasksData);
-    });
+    const createCollectionSubscription = <T>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
+        const q = query(collection(db, collectionName), where('projectId', '==', id));
+        return onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+            setter(data);
+        });
+    };
 
-    const financesQuery = query(collection(db, 'finances'), where('projectId', '==', id));
-    const unsubscribeFinances = onSnapshot(financesQuery, (snapshot) => {
-        const financesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Finance));
-        setFinances(financesData);
-    });
-    
-    const leadsQuery = query(collection(db, 'leads'), where('projectId', '==', id));
-    const unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
-        const leadsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
-        setLeads(leadsData);
-    });
+    const unsubscribeTasks = createCollectionSubscription<Task>('tasks', setTasks);
+    const unsubscribeFinances = createCollectionSubscription<Finance>('finances', setFinances);
+    const unsubscribeLeads = createCollectionSubscription<Lead>('leads', setLeads);
+    const unsubscribeCategories = createCollectionSubscription<Category>('categories', setCategories);
+    const unsubscribeServices = createCollectionSubscription<Service>('services', setServices);
+    const unsubscribePackages = createCollectionSubscription<Package>('packages', setPackages);
+
 
     return () => {
         unsubscribeProject();
         unsubscribeTasks();
         unsubscribeFinances();
         unsubscribeLeads();
+        unsubscribeCategories();
+        unsubscribeServices();
+        unsubscribePackages();
     };
   }, [user, id, router]);
 
@@ -113,7 +118,12 @@ export default function ProjectDetailPage() {
                 <ProjectLeads project={project} leads={leads} />
             </TabsContent>
             <TabsContent value="products">
-                <PlaceholderContent title="Products" />
+                <ProjectProducts 
+                    project={project} 
+                    categories={categories}
+                    services={services}
+                    packages={packages}
+                />
             </TabsContent>
             <TabsContent value="finance">
                 <PlaceholderContent title="Finance" />
