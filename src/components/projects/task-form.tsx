@@ -64,7 +64,7 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
       title: '',
       description: '',
       status: 'Project',
-      dueDate: undefined,
+      dueDate: new Date(),
     },
   });
 
@@ -217,7 +217,7 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
                                 )}
                                 >
                                 {field.value ? (
-                                    format(field.value, "PPP")
+                                    format(new Date(field.value), "PPP")
                                 ) : (
                                     <span>Pick a date</span>
                                 )}
