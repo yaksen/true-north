@@ -43,7 +43,7 @@ interface DataTableProps<TData, TValue> {
 }
 
 export function DataTable<TData, TValue>({
-  columns: userColumns,
+  columns,
   data,
   toolbar,
 }: DataTableProps<TData, TValue>) {
@@ -53,35 +53,9 @@ export function DataTable<TData, TValue>({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [globalFilter, setGlobalFilter] = useState('');
 
-  const columnsWithSelect: ColumnDef<TData, TValue>[] = [
-    {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && 'indeterminate')
-            }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-          />
-        ),
-        enableSorting: false,
-        enableHiding: false,
-      },
-    ...userColumns
-  ]
-
   const table = useReactTable({
     data,
-    columns: columnsWithSelect,
+    columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
@@ -107,11 +81,11 @@ export function DataTable<TData, TValue>({
         return;
     }
 
-    const headers = userColumns.map(col => (col as any).accessorKey).filter(Boolean).join(',');
+    const headers = columns.map(col => (col as any).accessorKey).filter(Boolean).join(',');
     const csvContent = [
         headers,
         ...selectedRows.map(row => 
-            userColumns.map(col => {
+            columns.map(col => {
                 const key = (col as any).accessorKey;
                 if (!key) return '';
                 const value = row.original[key as keyof TData];
@@ -225,7 +199,7 @@ export function DataTable<TData, TValue>({
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={columnsWithSelect.length}
+                    colSpan={columns.length}
                     className="h-24 text-center"
                   >
                     No results.

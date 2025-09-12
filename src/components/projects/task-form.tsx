@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Task, TaskStatus, Project } from '@/lib/types';
+import type { Task, Project } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { logActivity } from '@/lib/activity-log';
 
-const taskStatuses: TaskStatus[] = ['To-Do', 'In-Progress', 'Done'];
+const taskStatuses = ['To-Do', 'In-Progress', 'Done'] as const;
 
 const formSchema = z.object({
   projectId: z.string().nonempty({ message: 'Project is required.' }),

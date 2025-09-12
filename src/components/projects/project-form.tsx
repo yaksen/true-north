@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Project, ProjectStatus } from '@/lib/types';
+import type { Project } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -26,7 +26,7 @@ import { Switch } from '../ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { logActivity } from '@/lib/activity-log';
 
-const projectStatuses: ProjectStatus[] = ['Active', 'Passive', 'Fun', 'Sub'];
+const projectStatuses = ['Active', 'Passive', 'Fun', 'Sub'] as const;
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Project name must be at least 2 characters.' }),
