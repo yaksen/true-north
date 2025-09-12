@@ -24,11 +24,11 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, onSnapshot, query, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
-import type { Lead, Action, TaskDetails } from '@/lib/types';
+import { useEffect, useState } from 'react';
+import type { Lead, Action, TaskDetails, Project } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '../ui/calendar';
@@ -38,6 +38,7 @@ import { format } from 'date-fns';
 const taskSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   relatedLeadId: z.string().optional(),
+  projectId: z.string().optional(),
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']),
   deadline: z.date(),
   status: z.enum(['Pending', 'In-progress', 'Done', 'Blocked']),
@@ -56,6 +57,7 @@ export function TaskForm({ leads, closeDialog }: TaskFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
@@ -68,6 +70,15 @@ export function TaskForm({ leads, closeDialog }: TaskFormProps) {
       notes: '',
     },
   });
+
+  useEffect(() => {
+    if (!user) return;
+    const projectsQuery = query(collection(db, `users/${user.uid}/projects`));
+    const unsubscribe = onSnapshot(projectsQuery, (snapshot) => {
+        setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   async function onSubmit(values: TaskFormValues) {
     if (!user) return toast({ variant: 'destructive', title: 'Not logged in' });
@@ -85,7 +96,8 @@ export function TaskForm({ leads, closeDialog }: TaskFormProps) {
         assignedTo: values.assignedTo,
         deadline: values.deadline,
         notes: values.notes,
-        details: taskDetails
+        details: taskDetails,
+        projectId: values.projectId,
     };
 
     try {
@@ -119,25 +131,46 @@ export function TaskForm({ leads, closeDialog }: TaskFormProps) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="relatedLeadId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Related Lead (Optional)</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger><SelectValue placeholder="Select a lead" /></SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {leads.map(lead => <SelectItem key={lead.id} value={lead.id}>{lead.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="relatedLeadId"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Related Lead (Optional)</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Select a lead" /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {leads.map(lead => <SelectItem key={lead.id} value={lead.id}>{lead.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="projectId"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Project (Optional)</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Select a project" /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {projects.map(proj => <SelectItem key={proj.id} value={proj.id}>{proj.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}

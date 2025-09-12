@@ -1,4 +1,5 @@
 
+
 export type LeadState = 'new' | 'contacted' | 'interested' | 'lost' | 'converted';
 export type UserRole = 'admin' | 'manager';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'void';
@@ -11,6 +12,7 @@ export interface BaseEntity {
   id: string;
   userId: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface UserProfile {
@@ -33,6 +35,16 @@ export interface CrmSettings {
         leadId: number;
         packageId: number;
     }
+}
+
+export interface Project extends BaseEntity {
+    name: string;
+    description?: string;
+    ownerUid: string;
+    private: boolean;
+    members: string[];
+    currency: 'LKR' | 'USD';
+    status: 'Planning' | 'In-Progress' | 'Completed';
 }
 
 export interface Lead extends BaseEntity {
@@ -86,13 +98,13 @@ export interface Action<T extends ActivityCategory = ActivityCategory> extends B
   deadline?: Date;
   notes?: string;
   priority?: 'Low' | 'Medium' | 'High' | 'Critical';
+  projectId?: string;
   details: T extends 'Sales' ? SalesDetails :
            T extends 'Expenses' ? ExpenseDetails :
            T extends 'Tasks' ? TaskDetails :
            T extends 'Customer Service' ? CustomerServiceDetails :
            T extends 'HR & Team' ? HRDetails :
            any;
-  updatedAt: Date;
 }
 
 export interface SalesDetails {
@@ -155,8 +167,9 @@ export interface Invoice extends BaseEntity {
   taxRate: number;
   subtotalLKR: number;
   subtotalUSD: number;
-  totalLKR: number;
+totalLKR: number;
   totalUSD: number;
   notes?: string;
   paymentInstructions?: string;
+  projectId?: string;
 }

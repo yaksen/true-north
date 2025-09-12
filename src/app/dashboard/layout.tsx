@@ -7,6 +7,7 @@ import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import {
   Box,
+  Briefcase,
   CheckSquare,
   ChevronDown,
   Contact,
@@ -32,6 +33,7 @@ import { UserNav } from '@/components/user-nav';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/projects', label: 'Projects', icon: Briefcase },
   { href: '/dashboard/leads', label: 'Leads', icon: Contact },
   { href: '/dashboard/services', label: 'Services', icon: ShoppingBag },
   { href: '/dashboard/categories', label: 'Categories', icon: Shapes },
