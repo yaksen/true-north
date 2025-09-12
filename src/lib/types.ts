@@ -3,6 +3,7 @@ export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Planning' | 'In-Progress' | 'Completed' | 'On-Hold';
 export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
 export type FinanceType = 'income' | 'expense';
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 
 export interface UserProfile {
     id: string;
@@ -32,6 +33,7 @@ export interface Project {
 export interface Task {
     id: string;
     projectId: string;
+    leadId?: string;
     title: string;
     description?: string;
     status: TaskStatus;
@@ -44,6 +46,7 @@ export interface Task {
 export interface Finance {
     id: string;
     projectId: string;
+    leadId?: string;
     type: FinanceType;
     amount: number;
     description: string;
@@ -56,8 +59,16 @@ export interface Finance {
 export interface Lead {
     id: string;
     projectId: string;
-    // ... other fields
+    name: string;
+    email?: string;
+    phone?: string;
+    socials?: Record<string, string>;
+    status: LeadStatus;
+    notes?: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
+
 
 export interface Product {
     id:string;

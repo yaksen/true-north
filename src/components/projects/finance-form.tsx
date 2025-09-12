@@ -36,10 +36,11 @@ type FinanceFormValues = z.infer<typeof formSchema>;
 interface FinanceFormProps {
   finance?: Finance;
   projectId: string;
+  leadId?: string;
   closeForm: () => void;
 }
 
-export function FinanceForm({ finance, projectId, closeForm }: FinanceFormProps) {
+export function FinanceForm({ finance, projectId, leadId, closeForm }: FinanceFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,12 +72,15 @@ export function FinanceForm({ finance, projectId, closeForm }: FinanceFormProps)
         await updateDoc(financeRef, { ...values, updatedAt: serverTimestamp() });
         toast({ title: 'Success', description: 'Record updated successfully.' });
       } else {
-        const financeData = {
+        const financeData: any = {
           ...values,
           projectId: projectId,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
+        if (leadId) {
+            financeData.leadId = leadId;
+        }
         await addDoc(collection(db, 'finances'), financeData);
         toast({ title: 'Success', description: 'Record created successfully.' });
       }

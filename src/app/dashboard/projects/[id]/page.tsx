@@ -6,12 +6,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance } from '@/lib/types';
+import type { Project, Task, Finance, Lead } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProjectDashboard } from '@/components/projects/project-dashboard';
+import { ProjectLeads } from '@/components/projects/project-leads';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [finances, setFinances] = useState<Finance[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,11 +55,18 @@ export default function ProjectDetailPage() {
         const financesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Finance));
         setFinances(financesData);
     });
+    
+    const leadsQuery = query(collection(db, 'leads'), where('projectId', '==', id));
+    const unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
+        const leadsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
+        setLeads(leadsData);
+    });
 
     return () => {
         unsubscribeProject();
         unsubscribeTasks();
         unsubscribeFinances();
+        unsubscribeLeads();
     };
   }, [user, id, router]);
 
@@ -101,7 +110,7 @@ export default function ProjectDetailPage() {
                 <ProjectDashboard project={project} tasks={tasks} finances={finances} />
             </TabsContent>
             <TabsContent value="leads">
-                <PlaceholderContent title="Leads" />
+                <ProjectLeads project={project} leads={leads} />
             </TabsContent>
             <TabsContent value="products">
                 <PlaceholderContent title="Products" />

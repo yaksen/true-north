@@ -36,10 +36,11 @@ type TaskFormValues = z.infer<typeof formSchema>;
 interface TaskFormProps {
   task?: Task;
   projectId: string;
+  leadId?: string;
   closeForm: () => void;
 }
 
-export function TaskForm({ task, projectId, closeForm }: TaskFormProps) {
+export function TaskForm({ task, projectId, leadId, closeForm }: TaskFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,13 +73,16 @@ export function TaskForm({ task, projectId, closeForm }: TaskFormProps) {
         await updateDoc(taskRef, { ...values, updatedAt: serverTimestamp() });
         toast({ title: 'Success', description: 'Task updated successfully.' });
       } else {
-        const taskData = {
+        const taskData: any = {
           ...values,
           projectId: projectId,
           assigneeUid: user.uid,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
+        if (leadId) {
+            taskData.leadId = leadId;
+        }
         await addDoc(collection(db, 'tasks'), taskData);
         toast({ title: 'Success', description: 'Task created successfully.' });
       }
