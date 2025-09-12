@@ -16,6 +16,7 @@ import { ProjectTeam } from '@/components/projects/project-team';
 import { ProjectNotes } from '@/components/projects/project-notes';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProjectDashboard } from '@/components/projects/project-dashboard';
+import { ProjectReports } from '@/components/projects/project-reports';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -73,7 +74,7 @@ export default function ProjectDetailPage() {
     });
 
     // Fetch all leads to link names to tasks
-    const leadsQuery = query(collection(db, `users/${user.uid}/leads`));
+    const leadsQuery = query(collection(db, `users/${user.uid}/leads`), where('projectId', '==', id));
     const unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
       setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
     });
@@ -133,7 +134,7 @@ export default function ProjectDetailPage() {
         <ProjectHeader project={project} />
 
         <Tabs defaultValue="dashboard" className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                 <TabsTrigger value="leads">Leads/Channels</TabsTrigger>
                 <TabsTrigger value="packages">Products/Packages</TabsTrigger>
@@ -141,6 +142,7 @@ export default function ProjectDetailPage() {
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
                 <TabsTrigger value="team">Team</TabsTrigger>
                 <TabsTrigger value="notes">Notes & Files</TabsTrigger>
+                <TabsTrigger value="reports">Reports</TabsTrigger>
             </TabsList>
             <TabsContent value="dashboard">
                 <ProjectDashboard project={project} tasks={tasks} transactions={transactions} />
@@ -162,6 +164,9 @@ export default function ProjectDetailPage() {
             </TabsContent>
              <TabsContent value="notes">
                 <ProjectNotes projectId={project.id} notes={notes} allUsers={allUsers} />
+            </TabsContent>
+            <TabsContent value="reports">
+                <ProjectReports project={project} />
             </TabsContent>
         </Tabs>
     </div>
