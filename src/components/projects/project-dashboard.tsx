@@ -1,17 +1,20 @@
 
 'use client';
 
-import { Project, Task, Finance } from "@/lib/types";
+import { Project, Task, Finance, Lead } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
 import { Progress } from "../ui/progress";
 import { DataTable } from "../ui/data-table";
-import { taskColumns } from "./task-columns";
-import { useState } from "react";
+import { getTaskColumns } from "./task-columns";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { TaskForm } from "./task-form";
 import { FinanceForm } from "./finance-form";
+import { Row } from "@tanstack/react-table";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface ProjectDashboardProps {
     project: Project;
@@ -22,19 +25,44 @@ interface ProjectDashboardProps {
 export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardProps) {
     const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
     const [isFinanceFormOpen, setIsFinanceFormOpen] = useState(false);
+    const [leads, setLeads] = useState<Lead[]>([]);
+
+    useEffect(() => {
+        const q = query(collection(db, 'leads'), where('projectId', '==', project.id));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
+        });
+        return () => unsubscribe();
+    }, [project.id]);
+
+    const taskColumns = useMemo(() => getTaskColumns({ leads }), [leads]);
 
     const totalIncome = finances.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
     const totalExpenses = finances.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
     const profitLoss = totalIncome - totalExpenses;
 
-    const completedTasks = tasks.filter(t => t.status === 'Project').length;
+    const completedTasks = tasks.filter(t => t.completed).length;
     const taskCompletionRate = tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0;
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: project.currency }).format(amount);
     }
 
-    const recentTasks = tasks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+    const hierarchicalTasks = useMemo(() => {
+        const taskMap = new Map(tasks.map(t => [t.id, { ...t, subRows: [] as Task[] }]));
+        const rootTasks: Task[] = [];
+        
+        for (const task of tasks) {
+            if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
+                taskMap.get(task.parentTaskId)!.subRows.push(taskMap.get(task.id)!);
+            } else {
+                rootTasks.push(taskMap.get(task.id)!);
+            }
+        }
+        return rootTasks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+
+    }, [tasks]);
+
 
     return (
         <div className="grid gap-6 mt-4">
@@ -66,8 +94,7 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
                         <CardDescription>Count of active leads</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">0</p>
-                        <p className="text-xs text-muted-foreground">Lead tracking coming soon</p>
+                        <p className="text-2xl font-bold">{leads.length}</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -84,7 +111,7 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
                                 <DialogHeader>
                                     <DialogTitle>Add New Task</DialogTitle>
                                 </DialogHeader>
-                                <TaskForm projectId={project.id} closeForm={() => setIsTaskFormOpen(false)} />
+                                <TaskForm projectId={project.id} leads={leads} closeForm={() => setIsTaskFormOpen(false)} />
                             </DialogContent>
                         </Dialog>
                         <Dialog open={isFinanceFormOpen} onOpenChange={setIsFinanceFormOpen}>
@@ -102,7 +129,11 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
                 </Card>
             </div>
             
-            <DataTable columns={taskColumns} data={recentTasks} />
+            <DataTable 
+                columns={taskColumns} 
+                data={hierarchicalTasks} 
+                getSubRows={(row: Row<Task>) => (row.original as any).subRows}
+            />
         </div>
     )
 }

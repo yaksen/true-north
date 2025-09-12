@@ -20,7 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { logActivity } from '@/lib/activity-log';
 
 const taskStatuses = ['Call', 'Meeting', 'Project'] as const;
@@ -63,8 +63,8 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
       leadId: leadId || '',
       title: '',
       description: '',
-      status: 'Call',
-      dueDate: addDays(new Date(), 1),
+      status: 'Project',
+      dueDate: undefined,
     },
   });
 
