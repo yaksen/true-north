@@ -73,6 +73,10 @@ const recordDetails: Record<
 
 export function RecordsTimeline({ items }: RecordsTimelineProps) {
   const filteredItems = items.filter(item => {
+    const timestamp = item.timestamp ? new Date(item.timestamp) : null;
+    const isValidDate = timestamp && !isNaN(timestamp.getTime());
+    if (!isValidDate) return false;
+
     if (item.feedType === 'record') {
       return item.type !== 'report_uploaded' && item.type !== 'report_deleted';
     }
@@ -89,9 +93,8 @@ export function RecordsTimeline({ items }: RecordsTimelineProps) {
           const isNote = item.feedType === 'note';
           const Icon = isNote ? MessageSquare : recordDetails[item.type as keyof typeof recordDetails]?.icon || FileText;
           const userIdentifier = isNote ? item.authorUid : item.actorUid;
-          const timestamp = item.timestamp ? new Date(item.timestamp) : null;
-          const isValidDate = timestamp && !isNaN(timestamp.getTime());
-
+          const timestamp = new Date(item.timestamp);
+          
           return (
             <div key={item.id} className="relative mb-6 flex gap-4">
               <div className="absolute left-0 top-1.5 z-10 -translate-x-1/2">
@@ -101,18 +104,18 @@ export function RecordsTimeline({ items }: RecordsTimelineProps) {
                   </AvatarFallback>
                 </Avatar>
               </div>
-              <div className="flex-1">
+              <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">
                     {userIdentifier.split('@')[0]}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {isValidDate ? formatDistanceToNow(timestamp, { addSuffix: true }) : 'N/A'}
+                    {formatDistanceToNow(timestamp, { addSuffix: true })}
                   </p>
                 </div>
                 {isNote ? (
-                  <div className="mt-2 rounded-md border bg-muted/50 p-3 text-sm">
-                    <p>{item.content}</p>
+                  <div className="rounded-md border bg-muted/50 p-3 text-sm">
+                    <p className="whitespace-pre-wrap">{item.content}</p>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
