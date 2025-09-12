@@ -74,6 +74,13 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
     }
   };
 
+  const getFormattedDuration = (duration: string) => {
+    const [value, unit] = duration.split(' ');
+    if (!value || !unit) return duration;
+    const formattedUnit = Number(value) === 1 ? unit.replace(/s$/, '') : unit;
+    return `${value} ${formattedUnit}`;
+  };
+
   const ServiceToolbar = () => (
     <div className="flex items-center gap-2">
         <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value)}>
@@ -183,7 +190,7 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
                                     </div>
                                     <CardDescription>{pkg.description}</CardDescription>
                                     <div className='flex gap-2 pt-2'>
-                                        <Badge variant="secondary">{pkg.duration}</Badge>
+                                        <Badge variant="secondary">{getFormattedDuration(pkg.duration)}</Badge>
                                         {pkg.custom && <Badge variant="outline">Custom</Badge>}
                                         {pkg.discountPercentage !== 0 && (
                                             <Badge variant={pkg.discountPercentage > 0 ? "default" : "destructive"}>
@@ -223,3 +230,5 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
     </Tabs>
   );
 }
+
+    

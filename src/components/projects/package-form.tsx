@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { CheckIcon } from 'lucide-react';
 import { useCurrency } from '@/context/CurrencyContext';
 import { Slider } from '../ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -53,6 +54,10 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isServicesPopoverOpen, setIsServicesPopoverOpen] = useState(false);
 
+  const [durationValue, setDurationValue] = useState(() => pkg?.duration?.split(' ')[0] || '1');
+  const [durationUnit, setDurationUnit] = useState(() => pkg?.duration?.split(' ')[1] || 'Days');
+
+
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: pkg ? {
@@ -64,7 +69,7 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
       services: [],
       price: 0,
       currency: project.currency || (globalCurrency as any) || 'USD',
-      duration: '',
+      duration: '1 Days',
       custom: false,
       discountPercentage: 0,
     },
@@ -76,6 +81,12 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
 
   // A mock conversion rate for suggestion. Replace with a real API call in a real app.
   const MOCK_RATES = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
+
+  const handleDurationChange = (value: string, unit: string) => {
+    setDurationValue(value);
+    setDurationUnit(unit);
+    form.setValue('duration', `${value} ${unit}`);
+  };
 
   useEffect(() => {
     if (selectedServiceIds.length > 0) {
@@ -259,9 +270,29 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
                 render={({ field }) => (
                     <FormItem>
                         <FormLabel>Duration</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g. 1 month" {...field} />
-                        </FormControl>
+                        <div className="flex items-center gap-2">
+                            <Input 
+                                type="number" 
+                                value={durationValue}
+                                onChange={(e) => handleDurationChange(e.target.value, durationUnit)}
+                                className="w-24"
+                            />
+                            <Select 
+                                value={durationUnit}
+                                onValueChange={(unit) => handleDurationChange(durationValue, unit)}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Minutes">Minutes</SelectItem>
+                                    <SelectItem value="Hours">Hours</SelectItem>
+                                    <SelectItem value="Days">Days</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <FormMessage />
                     </FormItem>
                 )}
@@ -299,3 +330,5 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
     </Form>
   );
 }
+
+    
