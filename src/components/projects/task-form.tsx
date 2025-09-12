@@ -27,6 +27,7 @@ const taskStatuses = ['Call', 'Meeting', 'Project'] as const;
 
 const formSchema = z.object({
   projectId: z.string().nonempty({ message: 'Project is required.' }),
+  parentTaskId: z.string().optional(),
   leadId: z.string().optional(),
   title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
   description: z.string().optional(),
@@ -39,13 +40,14 @@ type TaskFormValues = z.infer<typeof formSchema>;
 interface TaskFormProps {
   task?: Task;
   projectId?: string;
+  parentTaskId?: string;
   leadId?: string;
   projects?: Project[];
   leads?: Lead[];
   closeForm: () => void;
 }
 
-export function TaskForm({ task, projectId, leadId, projects, leads, closeForm }: TaskFormProps) {
+export function TaskForm({ task, projectId, parentTaskId, leadId, projects, leads, closeForm }: TaskFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,6 +59,7 @@ export function TaskForm({ task, projectId, leadId, projects, leads, closeForm }
         dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
     } : {
       projectId: projectId || '',
+      parentTaskId: parentTaskId || '',
       leadId: leadId || '',
       title: '',
       description: '',
@@ -83,6 +86,7 @@ export function TaskForm({ task, projectId, leadId, projects, leads, closeForm }
       } else {
         const taskData: any = {
           ...values,
+          completed: false, // New tasks are not completed by default
           assigneeUid: user.uid,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),

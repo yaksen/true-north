@@ -2,13 +2,13 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Task } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { Task, Lead } from "@/lib/types";
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2, PlusCircle, ChevronRight } from "lucide-react";
 import { Button } from "../ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { deleteDoc, doc } from "firebase/firestore";
+import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
@@ -18,10 +18,15 @@ import { Checkbox } from "../ui/checkbox";
 import { useAuth } from "@/hooks/use-auth";
 import { logActivity } from "@/lib/activity-log";
 
-const ActionsCell: React.FC<{ task: Task }> = ({ task }) => {
+interface ColumnDependencies {
+    leads: Lead[];
+}
+
+const ActionsCell: React.FC<{ task: Task, leads: Lead[] }> = ({ task, leads }) => {
     const { toast } = useToast();
     const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isSubtaskOpen, setIsSubtaskOpen] = useState(false);
 
     const handleDelete = async () => {
         if (!user) return;
@@ -29,7 +34,7 @@ const ActionsCell: React.FC<{ task: Task }> = ({ task }) => {
             await deleteDoc(doc(db, 'tasks', task.id));
             await logActivity(task.projectId, 'task_deleted', { title: task.title }, user.uid);
             toast({ title: 'Success', description: 'Task deleted.' });
-        } catch (error) {
+        } catch (error) => {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not delete task.' });
         }
     };
@@ -47,6 +52,9 @@ const ActionsCell: React.FC<{ task: Task }> = ({ task }) => {
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
                         <Edit className="mr-2 h-4 w-4"/> Edit Task
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsSubtaskOpen(true)}>
+                        <PlusCircle className="mr-2 h-4 w-4"/> Add Sub-task
                     </DropdownMenuItem>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -74,7 +82,15 @@ const ActionsCell: React.FC<{ task: Task }> = ({ task }) => {
                     <DialogHeader>
                         <DialogTitle>Edit Task</DialogTitle>
                     </DialogHeader>
-                    <TaskForm task={task} projectId={task.projectId} closeForm={() => setIsEditOpen(false)} />
+                    <TaskForm task={task} projectId={task.projectId} leads={leads} closeForm={() => setIsEditOpen(false)} />
+                </DialogContent>
+            </Dialog>
+            <Dialog open={isSubtaskOpen} onOpenChange={setIsSubtaskOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add Sub-task to &quot;{task.title}&quot;</DialogTitle>
+                    </DialogHeader>
+                    <TaskForm projectId={task.projectId} parentTaskId={task.id} leads={leads} closeForm={() => setIsSubtaskOpen(false)} />
                 </DialogContent>
             </Dialog>
         </>
@@ -82,29 +98,31 @@ const ActionsCell: React.FC<{ task: Task }> = ({ task }) => {
 };
 
 
-export const taskColumns: ColumnDef<Task>[] = [
+export const getTaskColumns = (dependencies: ColumnDependencies): ColumnDef<Task>[] => [
     {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && 'indeterminate')
-            }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-          />
-        ),
-        enableSorting: false,
-        enableHiding: false,
-      },
+        accessorKey: "completed",
+        header: "Done",
+        cell: ({ row }) => {
+            const task = row.original;
+            const { toast } = useToast();
+            const handleCheckedChange = async (checked: boolean) => {
+                try {
+                    const taskRef = doc(db, 'tasks', task.id);
+                    await updateDoc(taskRef, { completed: checked });
+                    // No toast for this to avoid being noisy
+                } catch (error) {
+                    toast({ variant: 'destructive', title: 'Error', description: 'Could not update task.' });
+                }
+            };
+            return (
+                <Checkbox
+                    checked={task.completed}
+                    onCheckedChange={handleCheckedChange}
+                    aria-label="Mark task as done"
+                />
+            )
+        }
+    },
     {
       accessorKey: "title",
       header: ({ column }) => {
@@ -118,7 +136,22 @@ export const taskColumns: ColumnDef<Task>[] = [
           </Button>
         );
       },
-       cell: ({ row }) => <div className="pl-4 font-medium">{row.getValue("title")}</div>,
+       cell: ({ row }) => {
+        const task = row.original;
+        const canExpand = row.getCanExpand();
+        return (
+            <div className="flex items-center pl-2 font-medium" style={{ paddingLeft: `${row.depth * 2}rem` }}>
+                {canExpand && (
+                    <Button variant="ghost" size="icon" className="h-6 w-6" {...row.getToggleExpandedProps()}>
+                        <ChevronRight className={`h-4 w-4 transition-transform ${row.getIsExpanded() ? 'rotate-90' : ''}`} />
+                    </Button>
+                )}
+                <span className={task.completed ? "line-through text-muted-foreground" : ""}>
+                    {task.title}
+                </span>
+            </div>
+        )
+       },
     },
     {
       accessorKey: "status",
@@ -131,6 +164,15 @@ export const taskColumns: ColumnDef<Task>[] = [
       }
     },
     {
+        accessorKey: "leadId",
+        header: "Lead",
+        cell: ({ row }) => {
+            const leadId = row.getValue("leadId") as string;
+            const lead = dependencies.leads.find(l => l.id === leadId);
+            return lead ? <Badge variant="outline">{lead.name}</Badge> : null;
+        }
+    },
+    {
         accessorKey: "dueDate",
         header: "Due Date",
         cell: ({ row }) => {
@@ -140,6 +182,6 @@ export const taskColumns: ColumnDef<Task>[] = [
     },
     {
         id: "actions",
-        cell: ({ row }) => <ActionsCell task={row.original} />,
+        cell: ({ row }) => <ActionsCell task={row.original} leads={dependencies.leads} />,
     },
   ];

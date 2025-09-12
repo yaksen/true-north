@@ -13,6 +13,9 @@ import {
   type SortingState,
   type VisibilityState,
   type RowSelectionState,
+  getExpandedRowModel,
+  Row,
+  ExpandedState,
 } from '@tanstack/react-table';
 import { useState } from 'react';
 
@@ -39,18 +42,21 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   toolbar?: React.ReactNode;
+  getSubRows?: (row: Row<TData>) => TData[] | undefined;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   toolbar,
+  getSubRows,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [globalFilter, setGlobalFilter] = useState('');
+  const [expanded, setExpanded] = useState<ExpandedState>({});
 
   const table = useReactTable({
     data,
@@ -64,12 +70,16 @@ export function DataTable<TData, TValue>({
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
+    onExpandedChange: setExpanded,
+    getSubRows: getSubRows as any, // Type assertion might be needed depending on strictness
+    getExpandedRowModel: getExpandedRowModel(),
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
       globalFilter,
+      expanded,
     },
   });
 
@@ -186,7 +196,7 @@ export function DataTable<TData, TValue>({
                     data-state={row.getIsSelected() && 'selected'}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="p-4 align-top">
+                      <TableCell key={cell.id} className="p-2 align-top">
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()

@@ -2,15 +2,19 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { Project, Task, TaskStatus } from '@/lib/types';
+import type { Project, Task, Lead } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { DataTable } from '@/components/ui/data-table';
-import { taskColumns } from '@/components/projects/task-columns';
+import { getTaskColumns } from '@/components/projects/task-columns';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/projects/task-form';
 import { Card, CardContent } from '../ui/card';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useEffect } from 'react';
+import { Row } from '@tanstack/react-table';
 
 interface GlobalTasksClientProps {
   projects: Project[];
@@ -19,21 +23,53 @@ interface GlobalTasksClientProps {
 
 export function GlobalTasksClient({ projects, tasks }: GlobalTasksClientProps) {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loadingLeads, setLoadingLeads] = useState(true);
 
-  const tasksByProject = useMemo(() => {
-    const grouped: { [key: string]: Task[] } = {};
+  const taskColumns = useMemo(() => getTaskColumns({ leads }), [leads]);
+
+  useEffect(() => {
+    setLoadingLeads(true);
+    const leadsQuery = query(collection(db, 'leads'));
+    const unsubscribe = onSnapshot(leadsQuery, (snapshot) => {
+        setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
+        setLoadingLeads(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const hierarchicalTasksByProject = useMemo(() => {
+    const groupedByProject: { [key: string]: Task[] } = {};
     for (const project of projects) {
-      grouped[project.id] = [];
+        groupedByProject[project.id] = [];
     }
+
+    const taskMap = new Map(tasks.map(t => [t.id, { ...t, subRows: [] as Task[] }]));
+
     for (const task of tasks) {
-      if (grouped[task.projectId]) {
-        grouped[task.projectId].push(task);
-      }
+        if (groupedByProject[task.projectId]) {
+            if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
+                const parent = taskMap.get(task.parentTaskId);
+                if(parent) {
+                    parent.subRows.push(taskMap.get(task.id)!);
+                }
+            } else {
+                groupedByProject[task.projectId].push(taskMap.get(task.id)!);
+            }
+        }
     }
-    return grouped;
+    return groupedByProject;
   }, [projects, tasks]);
 
-  const defaultAccordionValues = useMemo(() => projects.map(p => p.id), [projects]);
+  const defaultAccordionValues = useMemo(() => projects.filter(p => (hierarchicalTasksByProject[p.id] || []).length > 0).map(p => p.id), [projects, hierarchicalTasksByProject]);
+
+  if (loadingLeads) {
+      return (
+        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-4">
+            <Loader2 className='h-8 w-8 animate-spin text-primary' />
+        </div>
+      );
+  }
 
   return (
     <>
@@ -50,6 +86,7 @@ export function GlobalTasksClient({ projects, tasks }: GlobalTasksClientProps) {
             </DialogHeader>
             <TaskForm 
               projects={projects} 
+              leads={leads}
               closeForm={() => setIsTaskFormOpen(false)} 
             />
           </DialogContent>
@@ -59,25 +96,34 @@ export function GlobalTasksClient({ projects, tasks }: GlobalTasksClientProps) {
       <Card>
         <CardContent className='pt-6'>
             <Accordion type="multiple" defaultValue={defaultAccordionValues} className="w-full">
-            {projects.map(project => (
-                <AccordionItem value={project.id} key={project.id}>
-                <AccordionTrigger className='hover:no-underline'>
-                    <div className='flex flex-col items-start'>
-                        <h3 className="font-semibold text-lg">{project.name}</h3>
-                        <p className='text-sm text-muted-foreground'>
-                            {tasksByProject[project.id]?.length || 0} task(s)
-                        </p>
-                    </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                    <DataTable columns={taskColumns} data={tasksByProject[project.id] || []} />
-                </AccordionContent>
-                </AccordionItem>
-            ))}
+            {projects.map(project => {
+                const projectTasks = hierarchicalTasksByProject[project.id] || [];
+                if (projectTasks.length === 0) return null;
+
+                return (
+                    <AccordionItem value={project.id} key={project.id}>
+                    <AccordionTrigger className='hover:no-underline px-4'>
+                        <div className='flex flex-col items-start'>
+                            <h3 className="font-semibold text-lg">{project.name}</h3>
+                            <p className='text-sm text-muted-foreground'>
+                                {tasks.filter(t => t.projectId === project.id).length} task(s)
+                            </p>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                        <DataTable 
+                            columns={taskColumns} 
+                            data={projectTasks}
+                            getSubRows={(row: Row<Task>) => (row.original as any).subRows}
+                        />
+                    </AccordionContent>
+                    </AccordionItem>
+                )
+            })}
             </Accordion>
-            {projects.length === 0 && (
+            {tasks.length === 0 && (
                  <div className="text-center text-muted-foreground py-12">
-                    <p>No projects found. Create a project to start adding tasks.</p>
+                    <p>No tasks found. Create a task to get started.</p>
                 </div>
             )}
         </CardContent>

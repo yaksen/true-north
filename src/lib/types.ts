@@ -4,6 +4,7 @@
 
 
 
+
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'Call' | 'Meeting' | 'Project';
@@ -74,10 +75,12 @@ export interface Project {
 export interface Task {
     id: string;
     projectId: string;
+    parentTaskId?: string;
     leadId?: string;
     title: string;
     description?: string;
     status: TaskStatus;
+    completed: boolean;
     dueDate?: Date;
     assigneeUid?: string;
     createdAt: Date;
