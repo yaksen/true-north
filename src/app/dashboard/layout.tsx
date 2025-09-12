@@ -68,7 +68,6 @@ export default function DashboardLayout({
     { href: '/dashboard/billing', icon: ReceiptText, label: 'Billing' },
     { href: '/dashboard/tasks', icon: ListChecks, label: 'Tasks' },
     { href: '/dashboard/finance', icon: CircleDollarSign, label: 'Finance' },
-    { href: '/dashboard/profile', icon: User, label: 'Profile' },
   ];
 
   return (
