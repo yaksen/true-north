@@ -145,7 +145,7 @@ export default function ProjectDetailPage() {
                 <ProjectFinance project={project} finances={finances} />
             </TabsContent>
              <TabsContent value="tasks">
-                <ProjectTasks project={project} tasks={tasks} />
+                <ProjectTasks project={project} tasks={tasks} leads={leads} />
             </TabsContent>
             <TabsContent value="records">
                 <ProjectRecords project={project} records={records} notes={notes} />

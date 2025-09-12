@@ -3,9 +3,10 @@
 
 
 
+
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Active' | 'Passive' | 'Fun' | 'Sub';
-export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
+export type TaskStatus = 'Call' | 'Meeting' | 'Project';
 export type FinanceType = 'income' | 'expense';
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 export type DiscountType = 'percentage' | 'flat';

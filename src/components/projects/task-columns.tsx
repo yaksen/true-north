@@ -126,8 +126,7 @@ export const taskColumns: ColumnDef<Task>[] = [
       cell: ({ row }) => {
         const status = row.getValue("status") as string;
         let variant: "default" | "secondary" | "destructive" = "secondary";
-        if (status === 'Done') variant = 'default';
-        if (status === 'In-Progress') variant = 'secondary';
+        if (status === 'Project') variant = 'default';
         return <Badge variant={variant}>{status}</Badge>
       }
     },

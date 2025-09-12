@@ -27,7 +27,7 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
     const totalExpenses = finances.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
     const profitLoss = totalIncome - totalExpenses;
 
-    const completedTasks = tasks.filter(t => t.status === 'Done').length;
+    const completedTasks = tasks.filter(t => t.status === 'Project').length;
     const taskCompletionRate = tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0;
 
     const formatCurrency = (amount: number) => {

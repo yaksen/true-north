@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Task, Project } from '@/lib/types';
+import type { Task, Project, Lead } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -20,13 +20,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { logActivity } from '@/lib/activity-log';
 
-const taskStatuses = ['To-Do', 'In-Progress', 'Done'] as const;
+const taskStatuses = ['Call', 'Meeting', 'Project'] as const;
 
 const formSchema = z.object({
   projectId: z.string().nonempty({ message: 'Project is required.' }),
+  leadId: z.string().optional(),
   title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
   description: z.string().optional(),
   status: z.enum(taskStatuses),
@@ -39,11 +40,12 @@ interface TaskFormProps {
   task?: Task;
   projectId?: string;
   leadId?: string;
-  projects?: Project[]; // Make this optional for the global form
+  projects?: Project[];
+  leads?: Lead[];
   closeForm: () => void;
 }
 
-export function TaskForm({ task, projectId, leadId, projects, closeForm }: TaskFormProps) {
+export function TaskForm({ task, projectId, leadId, projects, leads, closeForm }: TaskFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,10 +57,11 @@ export function TaskForm({ task, projectId, leadId, projects, closeForm }: TaskF
         dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
     } : {
       projectId: projectId || '',
+      leadId: leadId || '',
       title: '',
       description: '',
-      status: 'To-Do',
-      dueDate: undefined,
+      status: 'Call',
+      dueDate: addDays(new Date(), 1),
     },
   });
 
@@ -84,9 +87,6 @@ export function TaskForm({ task, projectId, leadId, projects, closeForm }: TaskF
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
-        if (leadId) {
-            taskData.leadId = leadId;
-        }
         await addDoc(collection(db, 'tasks'), taskData);
         await logActivity(finalProjectId, 'task_created', { title: values.title }, user.uid);
         toast({ title: 'Success', description: 'Task created successfully.' });
@@ -119,6 +119,31 @@ export function TaskForm({ task, projectId, leadId, projects, closeForm }: TaskF
                         <SelectContent>
                             {projects.map(p => (
                                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+            )}
+           />
+        )}
+         {leads && (
+           <FormField
+            control={form.control}
+            name="leadId"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Lead (Optional)</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Assign to a lead..." />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {leads.map(l => (
+                                <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>

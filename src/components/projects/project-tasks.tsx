@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from "react";
-import { Project, Task, TaskStatus } from "@/lib/types";
+import { Project, Task, TaskStatus, Lead } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
@@ -15,11 +15,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 interface ProjectTasksProps {
     project: Project;
     tasks: Task[];
+    leads: Lead[];
 }
 
-const taskStatuses: TaskStatus[] = ['To-Do', 'In-Progress', 'Done'];
+const taskStatuses: TaskStatus[] = ['Call', 'Meeting', 'Project'];
 
-export function ProjectTasks({ project, tasks }: ProjectTasksProps) {
+export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
     const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
 
@@ -66,7 +67,7 @@ export function ProjectTasks({ project, tasks }: ProjectTasksProps) {
                                 <DialogHeader>
                                     <DialogTitle>Add New Task</DialogTitle>
                                 </DialogHeader>
-                                <TaskForm projectId={project.id} closeForm={() => setIsTaskFormOpen(false)} />
+                                <TaskForm projectId={project.id} leads={leads} closeForm={() => setIsTaskFormOpen(false)} />
                             </DialogContent>
                         </Dialog>
                     </div>
