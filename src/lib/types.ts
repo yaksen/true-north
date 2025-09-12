@@ -2,6 +2,7 @@
 
 
 
+
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
@@ -154,7 +155,7 @@ export interface Package {
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     duration: string;
     custom: boolean;
-    discounts?: Discount[];
+    discountPercentage: number;
     createdAt: Date;
     updatedAt: Date;
 }

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 type Currency = 'LKR' | 'USD' | 'EUR' | 'GBP';
 
-interface CurrencyInputProps {
+interface CurrencyInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   value: number;
   onValueChange: (value: number) => void;
   currency: Currency;
@@ -19,6 +19,7 @@ export function CurrencyInput({
   onValueChange,
   currency,
   onCurrencyChange,
+  ...props
 }: CurrencyInputProps) {
   return (
     <div className="relative">
@@ -27,9 +28,10 @@ export function CurrencyInput({
         value={value}
         onChange={(e) => onValueChange(parseFloat(e.target.value) || 0)}
         className="pl-4 pr-24"
+        {...props}
       />
       <div className="absolute inset-y-0 right-0 flex items-center">
-        <Select value={currency} onValueChange={(val) => onCurrencyChange(val as Currency)}>
+        <Select value={currency} onValueChange={(val) => onCurrencyChange(val as Currency)} disabled={props.readOnly}>
           <SelectTrigger className="w-[80px] h-full rounded-l-none border-l bg-muted/50">
             <SelectValue />
           </SelectTrigger>

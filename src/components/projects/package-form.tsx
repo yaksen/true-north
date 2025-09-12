@@ -24,6 +24,7 @@ import { CurrencyInput } from '../ui/currency-input';
 import { cn } from '@/lib/utils';
 import { CheckIcon } from 'lucide-react';
 import { useCurrency } from '@/context/CurrencyContext';
+import { Slider } from '../ui/slider';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -33,6 +34,7 @@ const formSchema = z.object({
   currency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
   duration: z.string().min(1, { message: 'Duration is required.' }),
   custom: z.boolean().default(false),
+  discountPercentage: z.coerce.number().min(-100).max(100).default(0),
 });
 
 type PackageFormValues = z.infer<typeof formSchema>;
@@ -64,8 +66,38 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
       currency: project.currency || (globalCurrency as any) || 'USD',
       duration: '',
       custom: false,
+      discountPercentage: 0,
     },
   });
+
+  const selectedServiceIds = form.watch('services');
+  const packageCurrency = form.watch('currency');
+  const discountPercentage = form.watch('discountPercentage');
+
+  // A mock conversion rate for suggestion. Replace with a real API call in a real app.
+  const MOCK_RATES = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
+
+  useEffect(() => {
+    if (selectedServiceIds.length > 0) {
+      const selectedServiceDetails = selectedServiceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
+      
+      const basePriceInUSD = selectedServiceDetails.reduce((sum, s) => {
+        const rate = MOCK_RATES[s.currency] || 1;
+        const priceInUSD = s.price / rate;
+        return sum + priceInUSD;
+      }, 0);
+
+      const targetRate = MOCK_RATES[packageCurrency] || 1;
+      const basePriceInTargetCurrency = basePriceInUSD * targetRate;
+      
+      const finalPrice = basePriceInTargetCurrency * (1 - (discountPercentage / 100));
+
+      form.setValue('price', parseFloat(finalPrice.toFixed(2)));
+    } else {
+        form.setValue('price', 0);
+    }
+  }, [selectedServiceIds, services, packageCurrency, discountPercentage, form]);
+
 
   async function onSubmit(values: PackageFormValues) {
     if (!user) return;
@@ -94,18 +126,6 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
       setIsSubmitting(false);
     }
   }
-
-  const selectedServiceDetails = form.watch('services').map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
-  
-  // A mock conversion rate for suggestion. Replace with a real API call in a real app.
-  const MOCK_RATES = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
-  
-  const suggestedPrice = selectedServiceDetails.reduce((sum, s) => {
-    const rate = MOCK_RATES[s.currency] || 1;
-    const priceInUSD = s.price / rate;
-    return sum + priceInUSD;
-  }, 0) / (MOCK_RATES[form.watch('currency')] || 1);
-
 
   return (
     <Form {...form}>
@@ -194,20 +214,40 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
             )}
         />
         
+        <FormField
+          control={form.control}
+          name="discountPercentage"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Discount / Markup ( {field.value}% )</FormLabel>
+              <FormControl>
+                <Slider
+                  min={-100}
+                  max={100}
+                  step={1}
+                  value={[field.value]}
+                  onValueChange={(vals) => field.onChange(vals[0])}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 items-start'>
             <FormField
                 control={form.control}
                 name="price"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Package Price</FormLabel>
+                        <FormLabel>Final Package Price</FormLabel>
                          <CurrencyInput
                             value={field.value}
                             onValueChange={field.onChange}
                             currency={form.watch('currency')}
                             onCurrencyChange={(value) => form.setValue('currency', value)}
+                            readOnly
                         />
-                        <p className='text-xs text-muted-foreground'>Suggested: ~{suggestedPrice.toLocaleString(undefined, { style: 'currency', currency: form.watch('currency'), notation: 'compact' })}</p>
                         <FormMessage />
                     </FormItem>
                 )}

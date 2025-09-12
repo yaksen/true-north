@@ -185,6 +185,11 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
                                     <div className='flex gap-2 pt-2'>
                                         <Badge variant="secondary">{pkg.duration}</Badge>
                                         {pkg.custom && <Badge variant="outline">Custom</Badge>}
+                                        {pkg.discountPercentage !== 0 && (
+                                            <Badge variant={pkg.discountPercentage > 0 ? "default" : "destructive"}>
+                                                {pkg.discountPercentage > 0 ? `${pkg.discountPercentage}% off` : `${-pkg.discountPercentage}% markup`}
+                                            </Badge>
+                                        )}
                                     </div>
                                 </CardHeader>
                                 <CardContent>
