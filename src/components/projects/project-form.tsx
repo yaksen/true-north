@@ -24,6 +24,7 @@ import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Switch } from '../ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { logActivity } from '@/lib/activity-log';
 
 const projectStatuses: ProjectStatus[] = ['Planning', 'In-Progress', 'Completed', 'On-Hold'];
 
@@ -76,6 +77,7 @@ export function ProjectForm({ project, closeForm }: ProjectFormProps) {
         // Update existing project
         const projectRef = doc(db, 'projects', project.id);
         await updateDoc(projectRef, { ...values, updatedAt: serverTimestamp() });
+        await logActivity(project.id, 'project_updated', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Project updated successfully.' });
       } else {
         // Create new project
@@ -86,7 +88,8 @@ export function ProjectForm({ project, closeForm }: ProjectFormProps) {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
-        await addDoc(collection(db, 'projects'), projectData);
+        const newProjectRef = await addDoc(collection(db, 'projects'), projectData);
+        await logActivity(newProjectRef.id, 'project_created', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Project created successfully.' });
       }
       closeForm();

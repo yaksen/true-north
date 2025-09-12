@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { logActivity } from '@/lib/activity-log';
 
 const financeTypes: FinanceType[] = ['income', 'expense'];
 
@@ -72,6 +73,7 @@ export function FinanceForm({ finance, project, leadId, closeForm }: FinanceForm
       if (finance) {
         const financeRef = doc(db, 'finances', finance.id);
         await updateDoc(financeRef, { ...values, updatedAt: serverTimestamp() });
+        await logActivity(project.id, 'finance_updated', { description: values.description }, user.uid);
         toast({ title: 'Success', description: 'Record updated successfully.' });
       } else {
         const financeData: any = {
@@ -85,6 +87,7 @@ export function FinanceForm({ finance, project, leadId, closeForm }: FinanceForm
             financeData.leadId = leadId;
         }
         await addDoc(collection(db, 'finances'), financeData);
+        await logActivity(project.id, 'finance_created', { description: values.description }, user.uid);
         toast({ title: 'Success', description: 'Record created successfully.' });
       }
       closeForm();

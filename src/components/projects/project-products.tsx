@@ -28,6 +28,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '../ui/scroll-area';
+import { useAuth } from '@/hooks/use-auth';
+import { logActivity } from '@/lib/activity-log';
 
 interface ProjectProductsProps {
   project: Project;
@@ -38,6 +40,7 @@ interface ProjectProductsProps {
 
 export function ProjectProducts({ project, categories, services, packages }: ProjectProductsProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
   const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
@@ -52,6 +55,7 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
   };
   
   const handleDeleteCategory = async (categoryId: string) => {
+    if (!user) return;
     // Advanced: Check for dependencies before deleting
     const servicesInCategory = services.filter(s => s.categoryId === categoryId);
     if (servicesInCategory.length > 0) {
@@ -64,7 +68,11 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
     }
 
     try {
+      const categoryToDelete = categories.find(c => c.id === categoryId);
       await deleteDoc(doc(db, 'categories', categoryId));
+      if (categoryToDelete) {
+        await logActivity(project.id, 'category_deleted', { name: categoryToDelete.name }, user.uid);
+      }
       toast({ title: 'Success', description: 'Category deleted.' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not delete category.' });

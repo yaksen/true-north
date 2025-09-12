@@ -21,6 +21,7 @@ import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { logActivity } from '@/lib/activity-log';
 
 const taskStatuses: TaskStatus[] = ['To-Do', 'In-Progress', 'Done'];
 
@@ -69,6 +70,7 @@ export function TaskForm({ task, projectId, leadId, closeForm }: TaskFormProps) 
       if (task) {
         const taskRef = doc(db, 'tasks', task.id);
         await updateDoc(taskRef, { ...values, updatedAt: serverTimestamp() });
+        await logActivity(projectId, 'task_updated', { title: values.title }, user.uid);
         toast({ title: 'Success', description: 'Task updated successfully.' });
       } else {
         const taskData: any = {
@@ -82,6 +84,7 @@ export function TaskForm({ task, projectId, leadId, closeForm }: TaskFormProps) 
             taskData.leadId = leadId;
         }
         await addDoc(collection(db, 'tasks'), taskData);
+        await logActivity(projectId, 'task_created', { title: values.title }, user.uid);
         toast({ title: 'Success', description: 'Task created successfully.' });
       }
       closeForm();

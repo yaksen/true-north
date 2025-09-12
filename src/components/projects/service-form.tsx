@@ -15,6 +15,8 @@ import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useAuth } from '@/hooks/use-auth';
+import { logActivity } from '@/lib/activity-log';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -36,6 +38,7 @@ interface ServiceFormProps {
 
 export function ServiceForm({ service, projectId, categories, closeForm }: ServiceFormProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ServiceFormValues>({
@@ -51,11 +54,13 @@ export function ServiceForm({ service, projectId, categories, closeForm }: Servi
   });
 
   async function onSubmit(values: ServiceFormValues) {
+    if (!user) return;
     setIsSubmitting(true);
     try {
       if (service) {
         const serviceRef = doc(db, 'services', service.id);
         await updateDoc(serviceRef, { ...values, updatedAt: serverTimestamp() });
+        await logActivity(projectId, 'service_updated', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Service updated successfully.' });
       } else {
         await addDoc(collection(db, 'services'), {
@@ -64,6 +69,7 @@ export function ServiceForm({ service, projectId, categories, closeForm }: Servi
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
+        await logActivity(projectId, 'service_created', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Service created successfully.' });
       }
       closeForm();

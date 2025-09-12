@@ -14,14 +14,19 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { FinanceForm } from "./finance-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
+import { useAuth } from "@/hooks/use-auth";
+import { logActivity } from "@/lib/activity-log";
 
 const ActionsCell: React.FC<{ finance: Finance }> = ({ finance }) => {
     const { toast } = useToast();
+    const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
 
     const handleDelete = async () => {
+        if (!user) return;
         try {
             await deleteDoc(doc(db, 'finances', finance.id));
+            await logActivity(finance.projectId, 'finance_deleted', { description: finance.description }, user.uid);
             toast({ title: 'Success', description: 'Finance record deleted.' });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not delete record.' });
@@ -68,7 +73,7 @@ const ActionsCell: React.FC<{ finance: Finance }> = ({ finance }) => {
                     <DialogHeader>
                         <DialogTitle>Edit Financial Record</DialogTitle>
                     </DialogHeader>
-                    <FinanceForm finance={finance} projectId={finance.projectId} closeForm={() => setIsEditOpen(false)} />
+                    <FinanceForm finance={finance} project={{id: finance.projectId, currency: finance.currency}} closeForm={() => setIsEditOpen(false)} />
                 </DialogContent>
             </Dialog>
         </>

@@ -26,6 +26,8 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
   } from '@/components/ui/alert-dialog';
+import { useAuth } from '@/hooks/use-auth';
+import { logActivity } from '@/lib/activity-log';
 
 interface PackageCardProps {
     pkg: Package;
@@ -133,13 +135,16 @@ const DiscountCalculator: React.FC<DiscountCalculatorProps> = ({ pkg }) => {
 
 export function PackageCard({ pkg, allServices }: PackageCardProps) {
     const { toast } = useToast();
+    const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
     
     const includedServices = pkg.services.map(id => allServices.find(s => s.id === id)).filter(Boolean) as Service[];
 
     const handleDelete = async () => {
+        if (!user) return;
         try {
             await deleteDoc(doc(db, 'packages', pkg.id));
+            await logActivity(pkg.projectId, 'package_deleted', { name: pkg.name }, user.uid);
             toast({ title: 'Success', description: 'Package deleted.' });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not delete package.' });

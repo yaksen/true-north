@@ -17,6 +17,8 @@ import { useState } from 'react';
 import { Checkbox } from '../ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { ScrollArea } from '../ui/scroll-area';
+import { useAuth } from '@/hooks/use-auth';
+import { logActivity } from '@/lib/activity-log';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -39,6 +41,7 @@ interface PackageFormProps {
 
 export function PackageForm({ pkg, projectId, services, closeForm }: PackageFormProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<PackageFormValues>({
@@ -58,11 +61,13 @@ export function PackageForm({ pkg, projectId, services, closeForm }: PackageForm
   });
 
   async function onSubmit(values: PackageFormValues) {
+    if (!user) return;
     setIsSubmitting(true);
     try {
       if (pkg) {
         const pkgRef = doc(db, 'packages', pkg.id);
         await updateDoc(pkgRef, { ...values, updatedAt: serverTimestamp() });
+        await logActivity(projectId, 'package_updated', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Package updated successfully.' });
       } else {
         await addDoc(collection(db, 'packages'), {
@@ -71,6 +76,7 @@ export function PackageForm({ pkg, projectId, services, closeForm }: PackageForm
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
+        await logActivity(projectId, 'package_created', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Package created successfully.' });
       }
       closeForm();

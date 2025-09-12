@@ -9,14 +9,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { useToast } from "@/hooks/use-toast";
 import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/hooks/use-auth";
+import { logActivity } from "@/lib/activity-log";
 
 const ActionsCell: React.FC<{ service: Service }> = ({ service }) => {
     const { toast } = useToast();
+    const { user } = useAuth();
 
     const handleDelete = async () => {
+        if (!user) return;
         if (!confirm("Are you sure you want to delete this service?")) return;
         try {
             await deleteDoc(doc(db, 'services', service.id));
+            await logActivity(service.projectId, 'service_deleted', { name: service.name }, user.uid);
             toast({ title: 'Success', description: 'Service deleted.' });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not delete service.' });
@@ -77,4 +82,3 @@ export const servicesColumns: ColumnDef<Service>[] = [
       cell: ({ row }) => <ActionsCell service={row.original} />,
     },
   ];
-

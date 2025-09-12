@@ -14,6 +14,8 @@ import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/fi
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { logActivity } from '@/lib/activity-log';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -30,6 +32,7 @@ interface CategoryFormProps {
 
 export function CategoryForm({ category, projectId, closeForm }: CategoryFormProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CategoryFormValues>({
@@ -41,11 +44,13 @@ export function CategoryForm({ category, projectId, closeForm }: CategoryFormPro
   });
 
   async function onSubmit(values: CategoryFormValues) {
+    if (!user) return;
     setIsSubmitting(true);
     try {
       if (category) {
         const categoryRef = doc(db, 'categories', category.id);
         await updateDoc(categoryRef, { ...values, updatedAt: serverTimestamp() });
+        await logActivity(projectId, 'category_updated', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Category updated successfully.' });
       } else {
         await addDoc(collection(db, 'categories'), {
@@ -54,6 +59,7 @@ export function CategoryForm({ category, projectId, closeForm }: CategoryFormPro
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
+        await logActivity(projectId, 'category_created', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Category created successfully.' });
       }
       closeForm();

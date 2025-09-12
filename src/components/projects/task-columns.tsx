@@ -15,14 +15,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { TaskForm } from "./task-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 import { Checkbox } from "../ui/checkbox";
+import { useAuth } from "@/hooks/use-auth";
+import { logActivity } from "@/lib/activity-log";
 
 const ActionsCell: React.FC<{ task: Task }> = ({ task }) => {
     const { toast } = useToast();
+    const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
 
     const handleDelete = async () => {
+        if (!user) return;
         try {
             await deleteDoc(doc(db, 'tasks', task.id));
+            await logActivity(task.projectId, 'task_deleted', { title: task.title }, user.uid);
             toast({ title: 'Success', description: 'Task deleted.' });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not delete task.' });

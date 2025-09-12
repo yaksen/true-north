@@ -6,16 +6,16 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead, Category, Service, Package } from '@/lib/types';
+import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProjectDashboard } from '@/components/projects/project-dashboard';
 import { ProjectLeads } from '@/components/projects/project-leads';
 import { ProjectProducts } from '@/components/projects/project-products';
 import { ProjectFinance } from '@/components/projects/project-finance';
 import { ProjectTasks } from '@/components/projects/project-tasks';
+import { ProjectRecords } from '@/components/projects/project-records';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -30,6 +30,8 @@ export default function ProjectDetailPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
+  const [records, setRecords] = useState<ActivityRecord[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,7 +66,8 @@ export default function ProjectDetailPage() {
     const unsubscribeCategories = createCollectionSubscription<Category>('categories', setCategories);
     const unsubscribeServices = createCollectionSubscription<Service>('services', setServices);
     const unsubscribePackages = createCollectionSubscription<Package>('packages', setPackages);
-
+    const unsubscribeRecords = createCollectionSubscription<ActivityRecord>('records', setRecords);
+    const unsubscribeNotes = createCollectionSubscription<Note>('notes', setNotes);
 
     return () => {
         unsubscribeProject();
@@ -74,6 +77,8 @@ export default function ProjectDetailPage() {
         unsubscribeCategories();
         unsubscribeServices();
         unsubscribePackages();
+        unsubscribeRecords();
+        unsubscribeNotes();
     };
   }, [user, id, router]);
 
@@ -84,20 +89,6 @@ export default function ProjectDetailPage() {
       </div>
     );
   }
-
-  const PlaceholderContent = ({ title }: { title: string }) => (
-    <Card className='mt-4'>
-        <CardHeader>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>This section is under construction.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <p className='text-muted-foreground'>
-                The UI and functionality for the {title.toLowerCase()} section will be implemented soon.
-            </p>
-        </CardContent>
-    </Card>
-  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -134,10 +125,20 @@ export default function ProjectDetailPage() {
                 <ProjectTasks project={project} tasks={tasks} />
             </TabsContent>
             <TabsContent value="records">
-                <PlaceholderContent title="Records" />
+                <ProjectRecords project={project} records={records} notes={notes} />
             </TabsContent>
             <TabsContent value="reports">
-                <PlaceholderContent title="Reports" />
+                <Card className='mt-4'>
+                    <CardHeader>
+                        <CardTitle>Reports</CardTitle>
+                        <CardDescription>This section is under construction.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className='text-muted-foreground'>
+                            The UI and functionality for the reports section will be implemented soon.
+                        </p>
+                    </CardContent>
+                </Card>
             </TabsContent>
         </Tabs>
     </div>

@@ -1,0 +1,105 @@
+
+'use client';
+
+import { ActivityRecord, Note } from '@/lib/types';
+import { ScrollArea } from '../ui/scroll-area';
+import { Avatar, AvatarFallback } from '../ui/avatar';
+import {
+  Briefcase,
+  CircleDollarSign,
+  Contact,
+  FileText,
+  ListChecks,
+  MessageSquare,
+  Package,
+  Tag,
+} from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+
+type FeedItem = (ActivityRecord & { feedType: 'record' }) | (Note & { feedType: 'note' });
+
+interface RecordsTimelineProps {
+  items: FeedItem[];
+}
+
+const getInitials = (name: string) => {
+  const parts = name.split(' ');
+  if (parts.length > 1 && parts[0] && parts[1]) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return name[0]?.toUpperCase() ?? 'U';
+};
+
+const recordDetails: Record<
+  ActivityRecord['type'],
+  { icon: React.ElementType; message: (payload: any) => string }
+> = {
+  project_created: { icon: Briefcase, message: (p) => `Project "${p.name}" was created.` },
+  project_updated: { icon: Briefcase, message: (p) => `Project "${p.name}" was updated.` },
+  task_created: { icon: ListChecks, message: (p) => `Task "${p.title}" was created.` },
+  task_updated: { icon: ListChecks, message: (p) => `Task "${p.title}" was updated.` },
+  task_deleted: { icon: ListChecks, message: (p) => `Task "${p.title}" was deleted.` },
+  finance_created: { icon: CircleDollarSign, message: (p) => `A financial record for "${p.description}" was created.` },
+  finance_updated: { icon: CircleDollarSign, message: (p) => `A financial record for "${p.description}" was updated.` },
+  finance_deleted: { icon: CircleDollarSign, message: (p) => `A financial record for "${p.description}" was deleted.` },
+  lead_created: { icon: Contact, message: (p) => `Lead "${p.name}" was created.` },
+  lead_updated: { icon: Contact, message: (p) => `Lead "${p.name}" was updated.` },
+  lead_deleted: { icon: Contact, message: (p) => `Lead "${p.name}" was deleted.` },
+  category_created: { icon: Tag, message: (p) => `Category "${p.name}" was created.` },
+  category_updated: { icon: Tag, message: (p) => `Category "${p.name}" was updated.` },
+  category_deleted: { icon: Tag, message: (p) => `Category "${p.name}" was deleted.` },
+  service_created: { icon: FileText, message: (p) => `Service "${p.name}" was created.` },
+  service_updated: { icon: FileText, message: (p) => `Service "${p.name}" was updated.` },
+  service_deleted: { icon: FileText, message: (p) => `Service "${p.name}" was deleted.` },
+  package_created: { icon: Package, message: (p) => `Package "${p.name}" was created.` },
+  package_updated: { icon: Package, message: (p) => `Package "${p.name}" was updated.` },
+  package_deleted: { icon: Package, message: (p) => `Package "${p.name}" was deleted.` },
+  note_added: { icon: MessageSquare, message: (p) => `Added a new note.` },
+};
+
+export function RecordsTimeline({ items }: RecordsTimelineProps) {
+  return (
+    <ScrollArea className="h-[calc(100vh-22rem)]">
+      <div className="relative pl-6">
+        {/* Vertical line */}
+        <div className="absolute left-6 top-0 h-full w-px bg-border" />
+
+        {items.map((item, index) => {
+          const isNote = item.feedType === 'note';
+          const Icon = isNote ? MessageSquare : recordDetails[item.type]?.icon || FileText;
+
+          return (
+            <div key={item.id} className="relative mb-6 flex gap-4">
+              <div className="absolute left-0 top-1.5 z-10 -translate-x-1/2">
+                <Avatar className="h-7 w-7 border-2 border-background bg-secondary text-secondary-foreground">
+                  <AvatarFallback>
+                    <Icon className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">
+                    {item.actorUid.split('@')[0]}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
+                  </p>
+                </div>
+                {isNote ? (
+                  <div className="mt-2 rounded-md border bg-muted/50 p-3 text-sm">
+                    <p>{item.content}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {recordDetails[item.type]?.message(item.payload) || 'An unknown action occurred.'}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </ScrollArea>
+  );
+}

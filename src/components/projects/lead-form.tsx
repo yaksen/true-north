@@ -16,6 +16,7 @@ import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { logActivity } from '@/lib/activity-log';
 
 const leadStatuses: LeadStatus[] = ['new', 'contacted', 'qualified', 'lost', 'converted'];
 
@@ -68,6 +69,7 @@ export function LeadForm({ lead, projectId, closeForm }: LeadFormProps) {
       if (lead) {
         const leadRef = doc(db, 'leads', lead.id);
         await updateDoc(leadRef, { ...values, updatedAt: serverTimestamp() });
+        await logActivity(projectId, 'lead_updated', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Lead updated successfully.' });
       } else {
         await addDoc(collection(db, 'leads'), {
@@ -76,6 +78,7 @@ export function LeadForm({ lead, projectId, closeForm }: LeadFormProps) {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
+        await logActivity(projectId, 'lead_created', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Lead created successfully.' });
       }
       closeForm();

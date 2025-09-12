@@ -7,6 +7,29 @@ export type FinanceType = 'income' | 'expense';
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void';
+export type ActivityRecordType = 
+    | 'project_created'
+    | 'project_updated'
+    | 'task_created'
+    | 'task_updated'
+    | 'task_deleted'
+    | 'finance_created'
+    | 'finance_updated'
+    | 'finance_deleted'
+    | 'lead_created'
+    | 'lead_updated'
+    | 'lead_deleted'
+    | 'category_created'
+    | 'category_updated'
+    | 'category_deleted'
+    | 'service_created'
+    | 'service_updated'
+    | 'service_deleted'
+    | 'package_created'
+    | 'package_updated'
+    | 'package_deleted'
+    | 'note_added';
+
 
 export interface UserProfile {
     id: string;
@@ -144,23 +167,24 @@ export interface Invoice {
 }
 
 
-export interface Product {
-    id:string;
-    projectId: string;
-    // ... other fields
-}
-
-export interface Record {
+export interface ActivityRecord {
     id: string;
     projectId: string;
-    // ... other fields
+    type: ActivityRecordType;
+    payload: Record<string, any>;
+    actorUid: string;
+    timestamp: Date;
 }
 
-export interface Report {
+export interface Note {
     id: string;
     projectId: string;
-    // ... other fields
+    authorUid: string;
+    content: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
+
 
 export interface CrmSettings {
     isSignupEnabled: boolean;
