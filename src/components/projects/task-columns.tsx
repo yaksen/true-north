@@ -26,7 +26,6 @@ const ActionsCell: React.FC<{ task: Task, leads: Lead[] }> = ({ task, leads }) =
     const { toast } = useToast();
     const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [isSubtaskOpen, setIsSubtaskOpen] = useState(false);
 
     const handleDelete = async () => {
         if (!user) return;
@@ -52,9 +51,6 @@ const ActionsCell: React.FC<{ task: Task, leads: Lead[] }> = ({ task, leads }) =
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
                         <Edit className="mr-2 h-4 w-4"/> Edit Task
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setIsSubtaskOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4"/> Add Sub-task
                     </DropdownMenuItem>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -83,14 +79,6 @@ const ActionsCell: React.FC<{ task: Task, leads: Lead[] }> = ({ task, leads }) =
                         <DialogTitle>Edit Task</DialogTitle>
                     </DialogHeader>
                     <TaskForm task={task} projectId={task.projectId} leads={leads} closeForm={() => setIsEditOpen(false)} />
-                </DialogContent>
-            </Dialog>
-            <Dialog open={isSubtaskOpen} onOpenChange={setIsSubtaskOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Add Sub-task to &quot;{task.title}&quot;</DialogTitle>
-                    </DialogHeader>
-                    <TaskForm projectId={task.projectId} parentTaskId={task.id} leads={leads} closeForm={() => setIsSubtaskOpen(false)} />
                 </DialogContent>
             </Dialog>
         </>
@@ -185,3 +173,4 @@ export const getTaskColumns = (dependencies: ColumnDependencies): ColumnDef<Task
         cell: ({ row }) => <ActionsCell task={row.original} leads={dependencies.leads} />,
     },
   ];
+
