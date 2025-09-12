@@ -39,7 +39,7 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
     onDelete: () => {} 
   }), []);
   
-  const serviceColumns = useMemo(() => getServicesColumns(categories), [categories]);
+  const serviceColumns = useMemo(() => getServicesColumns({ categories, project }), [categories, project]);
 
   const filteredServices = useMemo(() => {
     if (categoryFilter === 'all') return services;

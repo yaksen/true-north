@@ -2,7 +2,7 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Service, Category } from "@/lib/types";
+import { Service, Category, Project } from "@/lib/types";
 import { ArrowUpDown, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -16,10 +16,16 @@ import { ServiceForm } from "./service-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 
-const ActionsCell: React.FC<{ service: Service, categories: Category[] }> = ({ service, categories }) => {
+interface ColumnDependencies {
+    categories: Category[];
+    project: Project;
+}
+
+const ActionsCell: React.FC<{ service: Service, dependencies: ColumnDependencies }> = ({ service, dependencies }) => {
     const { toast } = useToast();
     const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const { categories, project } = dependencies;
 
     const handleDelete = async () => {
         if (!user) return;
@@ -58,14 +64,14 @@ const ActionsCell: React.FC<{ service: Service, categories: Category[] }> = ({ s
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent>
                     <DialogHeader><DialogTitle>Edit Service</DialogTitle></DialogHeader>
-                    <ServiceForm service={service} projectId={service.projectId} categories={categories} closeForm={() => setIsEditOpen(false)} />
+                    <ServiceForm service={service} project={project} categories={categories} closeForm={() => setIsEditOpen(false)} />
                 </DialogContent>
             </Dialog>
         </>
     );
 };
 
-export const getServicesColumns = (categories: Category[]): ColumnDef<Service>[] => [
+export const getServicesColumns = (dependencies: ColumnDependencies): ColumnDef<Service>[] => [
     {
       accessorKey: "name",
       header: ({ column }) => (
@@ -80,7 +86,7 @@ export const getServicesColumns = (categories: Category[]): ColumnDef<Service>[]
         header: "Category",
         cell: ({ row }) => {
             const categoryId = row.getValue("categoryId") as string;
-            const category = categories.find(c => c.id === categoryId);
+            const category = dependencies.categories.find(c => c.id === categoryId);
             return category ? category.name : 'Uncategorized';
         }
     },
@@ -99,6 +105,6 @@ export const getServicesColumns = (categories: Category[]): ColumnDef<Service>[]
     },
     {
       id: "actions",
-      cell: ({ row }) => <ActionsCell service={row.original} categories={categories} />,
+      cell: ({ row }) => <ActionsCell service={row.original} dependencies={dependencies} />,
     },
   ];
