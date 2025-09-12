@@ -122,7 +122,7 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
                         columns={taskColumns} 
                         data={hierarchicalTasks} 
                         toolbar={<Toolbar />} 
-                        getSubRows={(row: Row<Task>) => (row.original as any).subRows}
+                        getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
                     />
                 </CardContent>
             </Card>
