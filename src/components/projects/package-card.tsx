@@ -152,7 +152,7 @@ export function PackageCard({ pkg, allServices }: PackageCardProps) {
     };
 
     return (
-        <Card className='break-inside-avoid'>
+        <Card>
             <CardHeader>
                 <div className='flex justify-between items-start'>
                     <CardTitle>{pkg.name}</CardTitle>

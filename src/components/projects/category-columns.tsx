@@ -2,33 +2,50 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Service, Category } from "@/lib/types";
+import { Category } from "@/lib/types";
 import { ArrowUpDown, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { deleteDoc, doc } from "firebase/firestore";
+import { deleteDoc, doc, getDocs, collection, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/hooks/use-auth";
 import { logActivity } from "@/lib/activity-log";
 import { useState } from "react";
-import { ServiceForm } from "./service-form";
+import { CategoryForm } from "./category-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 
-const ActionsCell: React.FC<{ service: Service, categories: Category[] }> = ({ service, categories }) => {
+interface ActionsCellProps {
+  category: Category;
+}
+
+const ActionsCell: React.FC<ActionsCellProps> = ({ category }) => {
     const { toast } = useToast();
     const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
 
     const handleDelete = async () => {
         if (!user) return;
+        
+        // Check for dependencies
+        const servicesQuery = query(collection(db, 'services'), where('categoryId', '==', category.id));
+        const servicesSnapshot = await getDocs(servicesQuery);
+        if (!servicesSnapshot.empty) {
+            toast({
+                variant: 'destructive',
+                title: 'Cannot delete category',
+                description: `This category is used by ${servicesSnapshot.size} service(s). Please re-assign them first.`,
+            });
+            return;
+        }
+
         try {
-            await deleteDoc(doc(db, 'services', service.id));
-            await logActivity(service.projectId, 'service_deleted', { name: service.name }, user.uid);
-            toast({ title: 'Success', description: 'Service deleted.' });
+            await deleteDoc(doc(db, 'categories', category.id));
+            await logActivity(category.projectId, 'category_deleted', { name: category.name }, user.uid);
+            toast({ title: 'Success', description: 'Category deleted.' });
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not delete service.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not delete category.' });
         }
     };
     
@@ -43,13 +60,13 @@ const ActionsCell: React.FC<{ service: Service, categories: Category[] }> = ({ s
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => setIsEditOpen(true)}><Edit className="mr-2 h-4 w-4"/> Edit Service</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsEditOpen(true)}><Edit className="mr-2 h-4 w-4"/> Edit Category</DropdownMenuItem>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Delete Service</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Delete Category</DropdownMenuItem>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the service. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the category. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
                             <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction></AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
@@ -57,15 +74,20 @@ const ActionsCell: React.FC<{ service: Service, categories: Category[] }> = ({ s
             </DropdownMenu>
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent>
-                    <DialogHeader><DialogTitle>Edit Service</DialogTitle></DialogHeader>
-                    <ServiceForm service={service} projectId={service.projectId} categories={categories} closeForm={() => setIsEditOpen(false)} />
+                    <DialogHeader><DialogTitle>Edit Category</DialogTitle></DialogHeader>
+                    <CategoryForm category={category} projectId={category.projectId} closeForm={() => setIsEditOpen(false)} />
                 </DialogContent>
             </Dialog>
         </>
     );
 };
 
-export const getServicesColumns = (categories: Category[]): ColumnDef<Service>[] => [
+interface ColumnDependencies {
+    onEdit: (category: Category) => void;
+    onDelete: (categoryId: string) => void;
+}
+
+export const getCategoriesColumns = (deps: ColumnDependencies): ColumnDef<Category>[] => [
     {
       accessorKey: "name",
       header: ({ column }) => (
@@ -76,29 +98,12 @@ export const getServicesColumns = (categories: Category[]): ColumnDef<Service>[]
       cell: ({ row }) => <div className="font-medium pl-4">{row.getValue("name")}</div>,
     },
     {
-        accessorKey: "categoryId",
-        header: "Category",
-        cell: ({ row }) => {
-            const categoryId = row.getValue("categoryId") as string;
-            const category = categories.find(c => c.id === categoryId);
-            return category ? category.name : 'Uncategorized';
-        }
-    },
-    {
-      accessorKey: "priceLKR",
-      header: () => <div className="text-right">Price (LKR)</div>,
-      cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("priceLKR"));
-        const formatted = new Intl.NumberFormat("en-LK", { style: "currency", currency: "LKR" }).format(amount);
-        return <div className="text-right">{formatted}</div>;
-      },
-    },
-    {
-      accessorKey: "finishTime",
-      header: "Finish Time",
+        accessorKey: "notes",
+        header: "Notes",
+        cell: ({ row }) => <div className="truncate max-w-xs">{row.getValue("notes")}</div>,
     },
     {
       id: "actions",
-      cell: ({ row }) => <ActionsCell service={row.original} categories={categories} />,
+      cell: ({ row }) => <ActionsCell category={row.original} />,
     },
   ];
