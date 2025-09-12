@@ -343,5 +343,3 @@ export const ChartStyle = (<style>{`
   --color-Tasks: hsl(var(--chart-5));
 }
 `}</style>);
-
-    

@@ -3,14 +3,14 @@
 
 import { useEffect, useState } from 'react';
 import { SummaryCard } from "@/components/dashboard/summary-card";
-import { collection, getCountFromServer, query, where } from "firebase/firestore";
+import { collection, getCountFromServer, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Contact, ShoppingBag, Shapes, Box, Loader2, CheckSquare, TrendingUp, Users } from "lucide-react";
 import { useAuth } from '@/hooks/use-auth';
 import type { Action, Invoice, Lead } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartStyle } from '@/components/ui/chart';
 
 interface DashboardStats {
     leadCount: number;
@@ -95,17 +95,36 @@ export default function DashboardPage() {
     }, [user, authLoading]);
     
     const chartData = [
-        { metric: "Leads", value: stats?.leadCount || 0 },
-        { metric: "Services", value: stats?.serviceCount || 0 },
-        { metric: "Packages", value: stats?.packageCount || 0 },
-        { metric: "Projects", value: stats?.projectCount || 0 },
-        { metric: "Tasks", value: stats?.actionCount || 0 },
+        { metric: "Leads", value: stats?.leadCount || 0, fill: "var(--color-Leads)"},
+        { metric: "Services", value: stats?.serviceCount || 0, fill: "var(--color-Services)" },
+        { metric: "Packages", value: stats?.packageCount || 0, fill: "var(--color-Packages)" },
+        { metric: "Projects", value: stats?.projectCount || 0, fill: "var(--color-Projects)" },
+        { metric: "Tasks", value: stats?.actionCount || 0, fill: "var(--color-Tasks)" },
     ]
 
     const chartConfig = {
       value: {
         label: "Total",
-        color: "hsl(var(--primary))",
+      },
+      Leads: {
+        label: "Leads",
+        color: "hsl(var(--chart-1))",
+      },
+      Services: {
+        label: "Services",
+        color: "hsl(var(--chart-2))",
+      },
+      Packages: {
+        label: "Packages",
+        color: "hsl(var(--chart-3))",
+      },
+      Projects: {
+        label: "Projects",
+        color: "hsl(var(--chart-4))",
+      },
+      Tasks: {
+        label: "Tasks",
+        color: "hsl(var(--chart-5))",
       },
     } satisfies import("@/components/ui/chart").ChartConfig
 
@@ -142,7 +161,8 @@ export default function DashboardPage() {
                     <CardDescription>A summary of your core business entities.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                    <ChartStyle />
+                    <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
                         <BarChart accessibilityLayer data={chartData}>
                             <CartesianGrid vertical={false} />
                             <XAxis
@@ -155,7 +175,7 @@ export default function DashboardPage() {
                             cursor={false}
                             content={<ChartTooltipContent indicator="dot" />}
                             />
-                            <Bar dataKey="value" fill="var(--color-fill)" radius={4} />
+                            <Bar dataKey="value" radius={4} />
                         </BarChart>
                     </ChartContainer>
                 </CardContent>
@@ -164,5 +184,3 @@ export default function DashboardPage() {
         </>
     );
 }
-
-    
