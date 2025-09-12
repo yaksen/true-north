@@ -9,14 +9,15 @@ export interface GlobalSummary {
     totalRevenue: number;
     avgTaskCompletion: number;
     activeProjects: number;
+    currency: string;
 }
 
 interface SummaryCardsProps {
     summary: GlobalSummary;
 }
 
-const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact' }).format(amount);
 };
 
 export function SummaryCards({ summary }: SummaryCardsProps) {
@@ -28,7 +29,7 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(summary.totalRevenue)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(summary.totalRevenue, summary.currency)}</div>
           <p className="text-xs text-muted-foreground">Aggregated across all projects</p>
         </CardContent>
       </Card>
@@ -38,7 +39,7 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${summary.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(summary.totalPL)}</div>
+          <div className={`text-2xl font-bold ${summary.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(summary.totalPL, summary.currency)}</div>
           <p className="text-xs text-muted-foreground">Aggregated across all projects</p>
         </CardContent>
       </Card>

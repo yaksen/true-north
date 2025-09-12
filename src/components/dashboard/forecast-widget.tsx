@@ -9,21 +9,21 @@ import { cn } from '@/lib/utils';
 
 interface ForecastWidgetProps {
   summaries: ProjectSummary[];
+  currency: string;
 }
 
-const formatCurrency = (amount: number, currency: string = 'USD') => {
+const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency, signDisplay: 'auto' }).format(amount);
 };
 
-export function ForecastWidget({ summaries }: ForecastWidgetProps) {
+export function ForecastWidget({ summaries, currency }: ForecastWidgetProps) {
   const forecast = useMemo(() => {
     if (summaries.length === 0) return { monthly: 0, quarterly: 0 };
     
-    // Sum up the last 3 months of PL across all projects
+    // Simple forecast: average P/L of last 3 months, assuming same currency for now.
     const totalLast3MonthsPL = summaries.reduce((projectTotal, summary) => {
-        const rate = summary.project.currency === 'LKR' ? 1/300 : 1;
         const projectPL = summary.monthlyPL.slice(-3).reduce((sum, month) => sum + month.pl, 0);
-        return projectTotal + (projectPL * rate);
+        return projectTotal + projectPL;
     }, 0);
 
     const averageMonthlyPL = totalLast3MonthsPL / 3;
@@ -49,11 +49,11 @@ export function ForecastWidget({ summaries }: ForecastWidgetProps) {
       <CardContent className="space-y-4">
         <div>
             <p className="text-sm text-muted-foreground">Next Month</p>
-            <p className={cn("text-xl font-bold", forecast.monthly >= 0 ? 'text-green-400' : 'text-red-400')}>{formatCurrency(forecast.monthly)}</p>
+            <p className={cn("text-xl font-bold", forecast.monthly >= 0 ? 'text-green-400' : 'text-red-400')}>{formatCurrency(forecast.monthly, currency)}</p>
         </div>
         <div>
             <p className="text-sm text-muted-foreground">Next Quarter</p>
-            <p className={cn("text-xl font-bold", forecast.quarterly >= 0 ? 'text-green-400' : 'text-red-400')}>{formatCurrency(forecast.quarterly)}</p>
+            <p className={cn("text-xl font-bold", forecast.quarterly >= 0 ? 'text-green-400' : 'text-red-400')}>{formatCurrency(forecast.quarterly, currency)}</p>
         </div>
       </CardContent>
     </Card>

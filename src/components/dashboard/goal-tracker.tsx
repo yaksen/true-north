@@ -12,15 +12,16 @@ import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { Input } from '../ui/input';
-import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
+import { useCurrency } from '@/context/CurrencyContext';
 
 interface GoalTrackerProps {
   currentRevenue: number;
   goal?: number;
+  currency: string;
 }
 
 const chartConfig = {
@@ -30,16 +31,13 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-};
 
 const formSchema = z.object({
   revenueGoal: z.coerce.number().min(1, 'Goal must be a positive number.'),
 });
 type GoalFormValues = z.infer<typeof formSchema>;
 
-export function GoalTracker({ currentRevenue, goal = 10000 }: GoalTrackerProps) {
+export function GoalTracker({ currentRevenue, goal = 10000, currency }: GoalTrackerProps) {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,6 +46,10 @@ export function GoalTracker({ currentRevenue, goal = 10000 }: GoalTrackerProps) 
     resolver: zodResolver(formSchema),
     defaultValues: { revenueGoal: goal },
   });
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact' }).format(amount);
+  };
 
   const progress = Math.min((currentRevenue / goal) * 100, 100);
   const chartData = [{ name: 'revenue', value: progress, fill: 'hsl(var(--primary))' }];
@@ -127,7 +129,7 @@ export function GoalTracker({ currentRevenue, goal = 10000 }: GoalTrackerProps) 
                         name="revenueGoal"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Revenue Goal (USD)</FormLabel>
+                            <FormLabel>Revenue Goal ({currency})</FormLabel>
                             <FormControl>
                                 <Input type="number" placeholder="e.g. 10000" {...field} />
                             </FormControl>

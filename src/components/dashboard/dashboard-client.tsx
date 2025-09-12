@@ -8,6 +8,7 @@ import { ProjectCard, type ProjectSummary } from './project-card';
 import { TopProjects } from './top-projects';
 import { ForecastWidget } from './forecast-widget';
 import { GoalTracker } from './goal-tracker';
+import { useCurrency } from '@/context/CurrencyContext';
 
 interface DashboardClientProps {
   projects: Project[];
@@ -17,6 +18,7 @@ interface DashboardClientProps {
 }
 
 export function DashboardClient({ projects, tasks, finances, settings }: DashboardClientProps) {
+  const { globalCurrency, loading: currencyLoading } = useCurrency();
 
   const projectSummaries = useMemo<ProjectSummary[]>(() => {
     return projects.map(project => {
@@ -54,31 +56,33 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
   }, [projects, tasks, finances]);
 
   const globalSummary = useMemo<GlobalSummary>(() => {
+    // This is a simplified summary. In a real app, you'd fetch conversion rates.
+    // For now, we assume all projects are in the global currency for this aggregation.
     const totalPL = projectSummaries.reduce((sum, s) => {
-        // Simple currency conversion assumption for global summary
-        const rate = s.project.currency === 'LKR' ? 1/300 : 1;
-        return sum + (s.profitLoss * rate);
+        return sum + s.profitLoss;
     }, 0);
-    const totalCompletionRate = projectSummaries.length > 0
+
+    const totalRevenue = projectSummaries.reduce((sum, s) => {
+        return sum + s.totalIncome;
+    }, 0)
+
+    const avgTaskCompletion = projectSummaries.length > 0
         ? projectSummaries.reduce((sum, s) => sum + s.taskCompletionRate, 0) / projectSummaries.length
         : 0;
-    const totalRevenue = projectSummaries.reduce((sum, s) => {
-        const rate = s.project.currency === 'LKR' ? 1/300 : 1;
-        return sum + (s.totalIncome * rate);
-    }, 0)
 
     return {
       totalPL,
       totalRevenue,
-      avgTaskCompletion: totalCompletionRate,
+      avgTaskCompletion,
       activeProjects: projects.length,
+      currency: globalCurrency || 'USD'
     };
-  }, [projectSummaries, projects.length]);
+  }, [projectSummaries, projects.length, globalCurrency]);
 
   return (
     <div className="flex-1 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <GoalTracker currentRevenue={globalSummary.totalRevenue} goal={settings?.revenueGoal} />
+        <GoalTracker currentRevenue={globalSummary.totalRevenue} goal={settings?.revenueGoal} currency={globalSummary.currency} />
         <SummaryCards summary={globalSummary} />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -91,7 +95,7 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
         </div>
         <div className="lg:col-span-1 space-y-6">
             <TopProjects summaries={projectSummaries} />
-            <ForecastWidget summaries={projectSummaries} />
+            <ForecastWidget summaries={projectSummaries} currency={globalSummary.currency} />
         </div>
       </div>
     </div>
