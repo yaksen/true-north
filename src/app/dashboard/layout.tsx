@@ -12,7 +12,6 @@ import {
   CircleDollarSign,
   User,
   ReceiptText,
-  Settings,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -95,18 +94,6 @@ export default function DashboardLayout({
               ))}
             </nav>
           </div>
-          <div className='p-4 border-t'>
-              <Link
-                  href="/dashboard/settings"
-                  className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground transition-all hover:text-primary hover:bg-muted',
-                    pathname === '/dashboard/settings' ? 'bg-muted text-primary' : ''
-                  )}
-                >
-                  <Settings className="h-4 w-4" />
-                  Settings
-                </Link>
-          </div>
         </div>
       </div>
       <div className="flex flex-col">
@@ -141,18 +128,6 @@ export default function DashboardLayout({
                   </Link>
                 ))}
               </nav>
-                <div className='mt-auto p-4 border-t'>
-                    <Link
-                        href="/dashboard/settings"
-                        className={cn(
-                            'flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground',
-                            pathname === '/dashboard/settings' ? 'bg-muted text-foreground' : ''
-                        )}
-                        >
-                        <Settings className="h-5 w-5" />
-                        Settings
-                    </Link>
-                </div>
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
