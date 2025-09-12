@@ -60,6 +60,7 @@ export interface Project {
   members: string[]; // List of user UIDs
   currency: 'LKR' | 'USD';
   status: ProjectStatus;
+  emoji?: string;
   parentProjectId?: string;
   createdAt: Date;
   updatedAt: Date;

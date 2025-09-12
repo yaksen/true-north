@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -31,6 +32,7 @@ const projectStatuses = ['Active', 'Passive', 'Fun', 'Sub'] as const;
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Project name must be at least 2 characters.' }),
   description: z.string().optional(),
+  emoji: z.string().optional(),
   currency: z.string().nonempty({ message: 'Currency is required.' }),
   private: z.boolean().default(false),
   status: z.enum(projectStatuses),
@@ -58,6 +60,7 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
     } : {
       name: '',
       description: '',
+      emoji: '💡',
       currency: 'LKR',
       private: false,
       status: 'Active',
@@ -111,19 +114,34 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Project Name</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. Q4 Marketing Campaign" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="flex items-start gap-4">
+            <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+                <FormItem className="flex-1">
+                <FormLabel>Project Name</FormLabel>
+                <FormControl>
+                    <Input placeholder="e.g. Q4 Marketing Campaign" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+             <FormField
+                control={form.control}
+                name="emoji"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Icon</FormLabel>
+                    <FormControl>
+                        <Input placeholder="💡" {...field} className="w-20 text-center text-xl"/>
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
         <FormField
           control={form.control}
           name="description"
@@ -205,6 +223,9 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                     <div className="space-y-0.5">
                         <FormLabel>Private Project</FormLabel>
+                        <FormDescription>
+                            Only you and explicitly invited members can see this project.
+                        </FormDescription>
                         <FormMessage />
                     </div>
                     <FormControl>
