@@ -82,6 +82,7 @@ export function RecordsTimeline({ items }: RecordsTimelineProps) {
           const isNote = item.feedType === 'note';
           const Icon = isNote ? MessageSquare : recordDetails[item.type as keyof typeof recordDetails]?.icon || FileText;
           const userIdentifier = isNote ? item.authorUid : item.actorUid;
+          const timestamp = item.timestamp ? new Date(item.timestamp) : null;
 
           return (
             <div key={item.id} className="relative mb-6 flex gap-4">
@@ -98,7 +99,7 @@ export function RecordsTimeline({ items }: RecordsTimelineProps) {
                     {userIdentifier.split('@')[0]}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
+                    {timestamp ? formatDistanceToNow(timestamp, { addSuffix: true }) : 'N/A'}
                   </p>
                 </div>
                 {isNote ? (
