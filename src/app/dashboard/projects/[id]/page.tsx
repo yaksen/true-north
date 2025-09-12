@@ -27,6 +27,7 @@ export default function ProjectDetailPage() {
   const id = params.id as string;
 
   const [project, setProject] = useState<Project | null>(null);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [finances, setFinances] = useState<Finance[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -57,6 +58,11 @@ export default function ProjectDetailPage() {
       setLoading(false);
     });
 
+    const allProjectsQuery = query(collection(db, 'projects'), where('members', 'array-contains', user.uid));
+    const unsubscribeAllProjects = onSnapshot(allProjectsQuery, (snapshot) => {
+        setAllProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)))
+    });
+
     const createCollectionSubscription = <T,>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
         const q = query(collection(db, collectionName), where('projectId', '==', id));
         return onSnapshot(q, (snapshot) => {
@@ -78,6 +84,7 @@ export default function ProjectDetailPage() {
 
     return () => {
         unsubscribeProject();
+        unsubscribeAllProjects();
         unsubscribeTasks();
         unsubscribeFinances();
         unsubscribeLeads();
@@ -101,7 +108,7 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
-        <ProjectHeader project={project} />
+        <ProjectHeader project={project} allProjects={allProjects} />
 
         <Tabs defaultValue="dashboard" className="w-full">
             <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-9">

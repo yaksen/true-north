@@ -1,21 +1,16 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Project } from '@/lib/types';
+import { Project, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { logActivity } from '@/lib/activity-log';
 import { MembersList } from './members-list';
-import { Loader2, Mail, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, UserPlus } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,14 +22,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteDoc, doc, writeBatch } from 'firebase/firestore';
+import { deleteDoc, doc, updateDoc, arrayUnion, getDocs, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-
-const inviteSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email address.' }),
-});
-
-type InviteFormValues = z.infer<typeof inviteSchema>;
+import { Combobox } from '../ui/combo-box';
 
 interface ProjectSettingsProps {
   project: Project;
@@ -45,31 +35,57 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [selectedUser, setSelectedUser] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<InviteFormValues>({
-    resolver: zodResolver(inviteSchema),
-  });
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const users = usersSnapshot.docs.map(doc => doc.data() as UserProfile);
+        setAllUsers(users);
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch users.' });
+      }
+    };
+    fetchUsers();
+  }, [toast]);
 
   const isOwner = user?.uid === project.ownerUid;
 
-  async function onInviteSubmit(values: InviteFormValues) {
+  const nonMemberUsers = allUsers
+    .filter(u => !project.members.includes(u.id))
+    .map(u => ({ value: u.id, label: u.email }));
+
+  async function handleAddMember() {
     if (!isOwner) {
-      toast({ variant: 'destructive', title: 'Unauthorized', description: 'Only project owners can invite members.' });
+      toast({ variant: 'destructive', title: 'Unauthorized', description: 'Only project owners can add members.' });
       return;
     }
-    // This is where you would call a Cloud Function to send an email.
-    // For now, we'll log it and show a toast.
-    await logActivity(project.id, 'member_invited', { email: values.email }, user.uid);
-    toast({
-      title: 'Invitation Sent (Simulated)',
-      description: `${values.email} has been invited to the project.`,
-    });
-    reset();
+    if (!selectedUser) {
+        toast({ variant: 'destructive', title: 'No User Selected', description: 'Please select a user to add.' });
+        return;
+    }
+
+    setIsAdding(true);
+    try {
+        const projectRef = doc(db, 'projects', project.id);
+        await updateDoc(projectRef, { members: arrayUnion(selectedUser) });
+        
+        const addedUser = allUsers.find(u => u.id === selectedUser);
+        if (addedUser) {
+            await logActivity(project.id, 'member_added' as any, { email: addedUser.email }, user.uid);
+        }
+
+        toast({ title: 'Success', description: 'Member added to the project.' });
+        setSelectedUser('');
+    } catch (error) {
+        console.error("Error adding member: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not add member.' });
+    } finally {
+        setIsAdding(false);
+    }
   }
 
   async function handleDeleteProject() {
@@ -79,8 +95,6 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     }
     setIsDeleting(true);
     try {
-      // Note: This is a simple delete. For production, you'd want a Cloud Function
-      // to recursively delete all sub-collections (tasks, finances, etc.).
       await deleteDoc(doc(db, 'projects', project.id));
       await logActivity(project.id, 'project_deleted', { name: project.name }, user!.uid);
       
@@ -98,28 +112,27 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
       <Card>
         <CardHeader>
           <CardTitle>Manage Members</CardTitle>
-          <CardDescription>Invite new members and manage existing ones.</CardDescription>
+          <CardDescription>Add new members from registered users and manage existing ones.</CardDescription>
         </CardHeader>
         <CardContent>
           <MembersList project={project} />
         </CardContent>
         {isOwner && (
           <CardFooter className="border-t pt-6">
-            <form onSubmit={handleSubmit(onInviteSubmit)} className="flex w-full items-start gap-4">
-              <div className="flex-1">
-                <Label htmlFor="email-invite" className="sr-only">Email</Label>
-                <Input
-                  id="email-invite"
-                  placeholder="new.member@example.com"
-                  {...register('email')}
+            <div className="flex w-full items-center gap-2">
+                <Combobox
+                    items={nonMemberUsers}
+                    value={selectedUser}
+                    onChange={setSelectedUser}
+                    placeholder="Select user to add..."
+                    searchPlaceholder="Search users..."
+                    noResultsText="No users found."
                 />
-                {errors.email && <p className="text-sm text-destructive mt-1">{errors.email.message}</p>}
-              </div>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="mr-2 animate-spin" /> : <Mail className="mr-2" />}
-                Send Invite
+              <Button onClick={handleAddMember} disabled={isAdding}>
+                {isAdding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
+                Add Member
               </Button>
-            </form>
+            </div>
           </CardFooter>
         )}
       </Card>

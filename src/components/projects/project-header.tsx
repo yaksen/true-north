@@ -19,9 +19,10 @@ import { ProjectForm } from './project-form';
 
 interface ProjectHeaderProps {
   project: Project;
+  allProjects?: Project[];
 }
 
-export function ProjectHeader({ project }: ProjectHeaderProps) {
+export function ProjectHeader({ project, allProjects }: ProjectHeaderProps) {
   const router = useRouter();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -45,7 +46,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
                         <DialogTitle>Edit Project</DialogTitle>
                         <DialogDescription>Update the details of your project.</DialogDescription>
                     </DialogHeader>
-                    <ProjectForm project={project} closeForm={() => setIsEditDialogOpen(false)} />
+                    <ProjectForm project={project} allProjects={allProjects} closeForm={() => setIsEditDialogOpen(false)} />
                 </DialogContent>
             </Dialog>
         </div>

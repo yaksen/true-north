@@ -1,6 +1,7 @@
 
 
 
+
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
@@ -34,6 +35,7 @@ export type ActivityRecordType =
     | 'report_deleted'
     | 'member_invited'
     | 'member_removed'
+    | 'member_added'
     | 'project_deleted'
     | 'invoice_created'
     | 'invoice_updated'
