@@ -41,6 +41,8 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
   const [editingPackage, setEditingPackage] = useState<Package | undefined>(undefined);
   const [serviceCategoryFilter, setServiceCategoryFilter] = useState<string | 'all'>('all');
   const [packageTypeFilter, setPackageTypeFilter] = useState<'all' | 'custom' | 'fixed'>('all');
+  const [packageCategoryFilter, setPackageCategoryFilter] = useState<string | 'all'>('all');
+  const [packageServiceFilter, setPackageServiceFilter] = useState<string | 'all'>('all');
 
 
   const categoryColumns = useMemo(() => getCategoriesColumns({ 
@@ -56,11 +58,28 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
   }, [services, serviceCategoryFilter]);
 
   const filteredPackages = useMemo(() => {
-    if (packageTypeFilter === 'all') return packages;
-    if (packageTypeFilter === 'custom') return packages.filter(p => p.custom);
-    if (packageTypeFilter === 'fixed') return packages.filter(p => !p.custom);
-    return packages;
-  }, [packages, packageTypeFilter]);
+    let tempPackages = packages;
+
+    // Filter by type (custom/fixed)
+    if (packageTypeFilter === 'custom') {
+      tempPackages = tempPackages.filter(p => p.custom);
+    } else if (packageTypeFilter === 'fixed') {
+      tempPackages = tempPackages.filter(p => !p.custom);
+    }
+
+    // Filter by category
+    if (packageCategoryFilter !== 'all') {
+      const servicesInCategory = services.filter(s => s.categoryId === packageCategoryFilter).map(s => s.id);
+      tempPackages = tempPackages.filter(p => p.services.some(serviceId => servicesInCategory.includes(serviceId)));
+    }
+
+    // Filter by specific service
+    if (packageServiceFilter !== 'all') {
+      tempPackages = tempPackages.filter(p => p.services.includes(packageServiceFilter));
+    }
+    
+    return tempPackages;
+  }, [packages, services, packageTypeFilter, packageCategoryFilter, packageServiceFilter]);
 
   const handleEditPackage = (pkg: Package) => {
     setEditingPackage(pkg);
@@ -176,18 +195,42 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
                     <CardTitle>Packages</CardTitle>
                     <CardDescription>Bundle services into fixed-price packages.</CardDescription>
                 </div>
-                <div className='flex items-center gap-1 p-1 bg-muted rounded-lg'>
-                    {(['all', 'custom', 'fixed'] as const).map(filter => (
-                        <Button 
-                            key={filter} 
-                            size='sm' 
-                            variant={packageTypeFilter === filter ? 'secondary' : 'ghost'}
-                            onClick={() => setPackageTypeFilter(filter)}
-                            className='capitalize'
-                        >
-                            {filter}
-                        </Button>
-                    ))}
+                <div className='flex items-center gap-2'>
+                  <Select value={packageCategoryFilter} onValueChange={(value) => setPackageCategoryFilter(value)}>
+                      <SelectTrigger className="w-40 h-9 text-sm">
+                          <SelectValue placeholder="Filter by category..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {categories.map(cat => (
+                              <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
+                  <Select value={packageServiceFilter} onValueChange={(value) => setPackageServiceFilter(value)}>
+                      <SelectTrigger className="w-40 h-9 text-sm">
+                          <SelectValue placeholder="Filter by service..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="all">All Services</SelectItem>
+                          {services.map(s => (
+                              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
+                  <div className='flex items-center gap-1 p-1 bg-muted rounded-lg'>
+                      {(['all', 'custom', 'fixed'] as const).map(filter => (
+                          <Button 
+                              key={filter} 
+                              size='sm' 
+                              variant={packageTypeFilter === filter ? 'secondary' : 'ghost'}
+                              onClick={() => setPackageTypeFilter(filter)}
+                              className='capitalize'
+                          >
+                              {filter}
+                          </Button>
+                      ))}
+                  </div>
                 </div>
             </div>
           </CardHeader>
