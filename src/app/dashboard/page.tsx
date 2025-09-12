@@ -33,12 +33,19 @@ export default function DashboardPage() {
     });
     
     const unsubscribeFinances = onSnapshot(financesQuery, (snapshot) => {
-        setFinances(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Finance)));
+        setFinances(snapshot.docs.map(doc => {
+            const data = doc.data();
+            return { 
+                id: doc.id, 
+                ...data,
+                date: data.date.toDate(), // Convert Firestore Timestamp to Date
+            } as Finance;
+        }));
     });
     
     Promise.all([
         new Promise(resolve => onSnapshot(projectsQuery, () => resolve(true))),
-        new Promise(resolve => onSnapshot(tasksQuery, () => resolve(true))),
+        new Promise(resolve => onsnapshot(tasksQuery, () => resolve(true))),
         new Promise(resolve => onSnapshot(financesQuery, () => resolve(true))),
     ]).then(() => setLoading(false));
 
