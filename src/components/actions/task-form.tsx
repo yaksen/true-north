@@ -53,9 +53,10 @@ interface TaskFormProps {
   leads: Lead[];
   allTasks: Action[];
   closeDialog: (open: boolean) => void;
+  projectId?: string; // Optional projectId to pre-select it
 }
 
-export function TaskForm({ leads, allTasks, closeDialog }: TaskFormProps) {
+export function TaskForm({ leads, allTasks, closeDialog, projectId }: TaskFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,6 +71,7 @@ export function TaskForm({ leads, allTasks, closeDialog }: TaskFormProps) {
       status: 'Pending',
       assignedTo: user?.uid ?? '',
       notes: '',
+      projectId: projectId || '',
     },
   });
 

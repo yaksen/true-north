@@ -112,10 +112,10 @@ export default function ProjectDetailPage() {
                 <ProjectFinance transactions={transactions} project={project} />
             </TabsContent>
              <TabsContent value="team">
-                {/* Team Component Here */}
+                <div className='p-4 text-center text-muted-foreground'>Team management coming soon.</div>
             </TabsContent>
              <TabsContent value="notes">
-                {/* Notes/Attachments Component Here */}
+                <div className='p-4 text-center text-muted-foreground'>Notes and attachments coming soon.</div>
             </TabsContent>
         </Tabs>
     </div>

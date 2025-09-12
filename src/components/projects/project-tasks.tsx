@@ -32,7 +32,7 @@ export function ProjectTasks({ tasks, allLeads, projectId }: ProjectTasksProps) 
 
   return (
     <>
-      <div className="flex items-center justify-end mb-4">
+      <div className="flex items-center justify-end my-4">
          <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
             <DialogTrigger asChild>
                 <Button size="sm">
@@ -49,7 +49,7 @@ export function ProjectTasks({ tasks, allLeads, projectId }: ProjectTasksProps) 
                     leads={allLeads}
                     allTasks={tasks}
                     closeDialog={() => setIsTaskDialogOpen(false)}
-                    // Pre-fill project ID if we enhance the form
+                    projectId={projectId}
                 />
             </DialogContent>
         </Dialog>
