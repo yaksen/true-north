@@ -12,10 +12,11 @@ interface SummaryCardProps {
   value: number;
   icon: LucideIcon;
   prefix?: string;
+  suffix?: string;
   className?: string;
 }
 
-export function SummaryCard({ title, value, icon: Icon, prefix, className }: SummaryCardProps) {
+export function SummaryCard({ title, value, icon: Icon, prefix, suffix, className }: SummaryCardProps) {
   return (
     <Card className={className}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -26,8 +27,11 @@ export function SummaryCard({ title, value, icon: Icon, prefix, className }: Sum
         <div className="text-2xl font-bold">
             {prefix && `${prefix} `}
             {value.toLocaleString()}
+            {suffix && ` ${suffix}`}
         </div>
       </CardContent>
     </Card>
   )
 }
+
+    

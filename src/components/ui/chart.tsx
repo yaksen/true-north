@@ -51,7 +51,7 @@ const ChartContainer = React.forwardRef<
         data-chart={chartId}
         ref={ref}
         className={cn(
-          "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
+          "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
           className
         )}
         {...props}
@@ -327,4 +327,21 @@ export {
   ChartLegend,
   ChartLegendContent,
 }
-export const ChartStyle = <div />
+export const ChartStyle = (<style>{`
+[data-chart] {
+  --color-Leads: hsl(var(--chart-1));
+  --color-Services: hsl(var(--chart-2));
+  --color-Packages: hsl(var(--chart-3));
+  --color-Projects: hsl(var(--chart-4));
+  --color-Tasks: hsl(var(--chart-5));
+}
+.dark [data-chart] {
+  --color-Leads: hsl(var(--chart-1));
+  --color-Services: hsl(var(--chart-2));
+  --color-Packages: hsl(var(--chart-3));
+  --color-Projects: hsl(var(--chart-4));
+  --color-Tasks: hsl(var(--chart-5));
+}
+`}</style>);
+
+    
