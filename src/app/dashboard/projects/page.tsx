@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import type { Project } from '@/lib/types';
@@ -19,6 +19,7 @@ import {
 import { ProjectForm } from '@/components/projects/project-form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 export default function ProjectsPage() {
   const { user } = useAuth();
@@ -33,14 +34,9 @@ export default function ProjectsPage() {
     // Query for projects where the current user is a member
     const q = query(
         collection(db, `users/${user.uid}/projects`),
-        // where('members', 'array-contains', user.uid) // This requires a composite index
     );
     
-    // A simpler query for now: just get all projects for the user who owns them
-    const ownerQuery = query(collection(db, `users/${user.uid}/projects`));
-
-
-    const unsubscribe = onSnapshot(ownerQuery, (querySnapshot) => {
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const projectsData: Project[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -104,7 +100,9 @@ export default function ProjectsPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button variant="outline" size="sm" className='w-full'>Open Project</Button>
+                    <Button asChild variant="outline" size="sm" className='w-full'>
+                        <Link href={`/dashboard/projects/${project.id}`}>Open Project</Link>
+                    </Button>
                 </CardFooter>
             </Card>
         ))}

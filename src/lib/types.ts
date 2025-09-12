@@ -44,7 +44,7 @@ export interface Project extends BaseEntity {
     private: boolean;
     members: string[];
     currency: 'LKR' | 'USD';
-    status: 'Planning' | 'In-Progress' | 'Completed';
+    status: 'Planning' | 'In-Progress' | 'Completed' | 'On-Hold';
 }
 
 export interface Lead extends BaseEntity {
