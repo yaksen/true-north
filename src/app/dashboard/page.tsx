@@ -45,7 +45,7 @@ export default function DashboardPage() {
     
     Promise.all([
         new Promise(resolve => onSnapshot(projectsQuery, () => resolve(true))),
-        new Promise(resolve => onsnapshot(tasksQuery, () => resolve(true))),
+        new Promise(resolve => onSnapshot(tasksQuery, () => resolve(true))),
         new Promise(resolve => onSnapshot(financesQuery, () => resolve(true))),
     ]).then(() => setLoading(false));
 
