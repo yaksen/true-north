@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
@@ -58,7 +59,7 @@ export interface Project {
   ownerUid: string;
   private: boolean;
   members: string[]; // List of user UIDs
-  currency: 'LKR' | 'USD';
+  currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
   status: ProjectStatus;
   emoji?: string;
   parentProjectId?: string;
@@ -122,8 +123,8 @@ export interface Service {
     name: string;
     categoryId: string;
     finishTime: string;
-    priceLKR: number;
-    priceUSD: number;
+    price: number;
+    currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     notes?: string;
     createdAt: Date;
     updatedAt: Date;
@@ -142,8 +143,8 @@ export interface Package {
     name: string;
     description: string;
     services: string[]; // Array of service IDs
-    priceLKR: number;
-    priceUSD: number;
+    price: number;
+    currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     duration: string;
     custom: boolean;
     discounts?: Discount[];
@@ -156,8 +157,8 @@ export interface LineItem {
     id: string;
     description: string;
     quantity: number;
-    priceLKR: number;
-    priceUSD: number;
+    price: number;
+    currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
 }
 
 export interface Invoice {
@@ -209,4 +210,5 @@ export interface Report {
 export interface CrmSettings {
     isSignupEnabled: boolean;
     revenueGoal?: number;
+    currency?: 'USD' | 'LKR' | 'EUR' | 'GBP';
 }

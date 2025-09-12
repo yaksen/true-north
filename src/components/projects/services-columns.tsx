@@ -15,6 +15,7 @@ import { useState } from "react";
 import { ServiceForm } from "./service-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
+import { formatCurrency } from "@/lib/utils";
 
 interface ColumnDependencies {
     categories: Category[];
@@ -91,11 +92,11 @@ export const getServicesColumns = (dependencies: ColumnDependencies): ColumnDef<
         }
     },
     {
-      accessorKey: "priceLKR",
-      header: () => <div className="text-right">Price (LKR)</div>,
+      accessorKey: "price",
+      header: () => <div className="text-right">Price</div>,
       cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("priceLKR"));
-        const formatted = new Intl.NumberFormat("en-LK", { style: "currency", currency: "LKR" }).format(amount);
+        const service = row.original;
+        const formatted = formatCurrency(service.price, service.currency);
         return <div className="text-right">{formatted}</div>;
       },
     },

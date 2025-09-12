@@ -5,20 +5,25 @@ import { useState, useMemo } from 'react';
 import type { Project, Category, Service, Package } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Package as PackageIcon, PlusCircle, SlidersHorizontal } from 'lucide-react';
+import { ArrowRight, Edit, Package as PackageIcon, PlusCircle, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { CategoryForm } from './category-form';
 import { ServiceForm } from './service-form';
 import { DataTable } from '../ui/data-table';
 import { getServicesColumns } from './services-columns';
 import { PackageForm } from './package-form';
-import { PackageCard } from './package-card';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
 import { useAuth } from '@/hooks/use-auth';
 import { getCategoriesColumns } from './category-columns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Badge } from '../ui/badge';
+import { formatCurrency } from '@/lib/utils';
+import { deleteDoc, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { logActivity } from '@/lib/activity-log';
 
 interface ProjectProductsProps {
   project: Project;
@@ -29,9 +34,11 @@ interface ProjectProductsProps {
 
 export function ProjectProducts({ project, categories, services, packages }: ProjectProductsProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
   const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
   const [isPackageFormOpen, setIsPackageFormOpen] = useState(false);
+  const [editingPackage, setEditingPackage] = useState<Package | undefined>(undefined);
   const [categoryFilter, setCategoryFilter] = useState<string | 'all'>('all');
 
   const categoryColumns = useMemo(() => getCategoriesColumns({ 
@@ -45,6 +52,27 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
     if (categoryFilter === 'all') return services;
     return services.filter(s => s.categoryId === categoryFilter);
   }, [services, categoryFilter]);
+
+  const handleEditPackage = (pkg: Package) => {
+    setEditingPackage(pkg);
+    setIsPackageFormOpen(true);
+  };
+  
+  const handleCreateNewPackage = () => {
+    setEditingPackage(undefined);
+    setIsPackageFormOpen(true);
+  }
+
+  const handleDeletePackage = async (pkg: Package) => {
+    if (!user) return;
+    try {
+        await deleteDoc(doc(db, 'packages', pkg.id));
+        await logActivity(pkg.projectId, 'package_deleted', { name: pkg.name }, user.uid);
+        toast({ title: 'Success', description: 'Package deleted.' });
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not delete package.' });
+    }
+  };
 
   const ServiceToolbar = () => (
     <div className="flex items-center gap-2">
@@ -85,8 +113,16 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
                 <DialogContent><DialogHeader><DialogTitle>Create New Service</DialogTitle></DialogHeader><ServiceForm project={project} categories={categories} closeForm={() => setIsServiceFormOpen(false)} /></DialogContent>
             </Dialog>
             <Dialog open={isPackageFormOpen} onOpenChange={setIsPackageFormOpen}>
-                <DialogTrigger asChild><Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Package</Button></DialogTrigger>
-                <DialogContent className='max-w-3xl'><DialogHeader><DialogTitle>Create New Package</DialogTitle></DialogHeader><PackageForm project={project} services={services} closeForm={() => setIsPackageFormOpen(false)} /></DialogContent>
+                <DialogTrigger asChild><Button size="sm" onClick={handleCreateNewPackage}><PlusCircle className="mr-2 h-4 w-4" /> New Package</Button></DialogTrigger>
+                <DialogContent className='max-w-3xl'>
+                    <DialogHeader><DialogTitle>{editingPackage ? "Edit" : "Create"} Package</DialogTitle></DialogHeader>
+                    <PackageForm 
+                        project={project} 
+                        services={services} 
+                        pkg={editingPackage}
+                        closeForm={() => setIsPackageFormOpen(false)} 
+                    />
+                </DialogContent>
             </Dialog>
         </div>
       </div>
@@ -125,9 +161,49 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
             <ScrollArea className='h-[calc(100vh-22rem)]'>
                 {packages.length > 0 ? (
                     <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                        {packages.map(pkg => (
-                           <PackageCard key={pkg.id} pkg={pkg} project={project} allServices={services} />
-                        ))}
+                        {packages.map(pkg => {
+                            const includedServices = pkg.services.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
+                            return (
+                            <Card key={pkg.id}>
+                                <CardHeader>
+                                    <div className='flex justify-between items-start'>
+                                        <CardTitle>{pkg.name}</CardTitle>
+                                        <div className="flex items-center gap-1">
+                                            <Button size="icon" variant="ghost" onClick={() => handleEditPackage(pkg)}><Edit className="h-4 w-4" /></Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the package. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                                                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeletePackage(pkg)}>Delete</AlertDialogAction></AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                    </div>
+                                    <CardDescription>{pkg.description}</CardDescription>
+                                    <div className='flex gap-2 pt-2'>
+                                        <Badge variant="secondary">{pkg.duration}</Badge>
+                                        {pkg.custom && <Badge variant="outline">Custom</Badge>}
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <h4 className='font-semibold text-sm mb-2'>Included Services:</h4>
+                                    <ul className='space-y-1 text-sm text-muted-foreground'>
+                                        {includedServices.map(s => <li key={s.id} className='flex items-center gap-2'><ArrowRight className='h-3 w-3'/>{s.name}</li>)}
+                                    </ul>
+                                </CardContent>
+                                <CardFooter>
+                                    <div>
+                                        <p className='text-sm text-muted-foreground'>Price</p>
+                                        <p className='text-xl font-bold'>
+                                            {formatCurrency(pkg.price, pkg.currency)}
+                                        </p>
+                                    </div>
+                                </CardFooter>
+                            </Card>
+                            )
+                        })}
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground py-12">

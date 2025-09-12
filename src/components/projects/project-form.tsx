@@ -33,7 +33,7 @@ const formSchema = z.object({
   name: z.string().min(2, { message: 'Project name must be at least 2 characters.' }),
   description: z.string().optional(),
   emoji: z.string().optional(),
-  currency: z.string().nonempty({ message: 'Currency is required.' }),
+  currency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
   private: z.boolean().default(false),
   status: z.enum(projectStatuses),
   parentProjectId: z.string().optional(),
@@ -61,7 +61,7 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
       name: '',
       description: '',
       emoji: '💡',
-      currency: 'LKR',
+      currency: 'USD',
       private: false,
       status: 'Active',
       parentProjectId: '',
@@ -167,6 +167,8 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
                     <SelectContent>
                         <SelectItem value="LKR">LKR (Sri Lankan Rupee)</SelectItem>
                         <SelectItem value="USD">USD (US Dollar)</SelectItem>
+                        <SelectItem value="EUR">EUR (Euro)</SelectItem>
+                        <SelectItem value="GBP">GBP (British Pound)</SelectItem>
                     </SelectContent>
                 </Select>
                 <FormMessage />

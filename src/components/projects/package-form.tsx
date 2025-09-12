@@ -13,19 +13,23 @@ import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ChevronsUpDown, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Checkbox } from '../ui/checkbox';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '../ui/command';
 import { ScrollArea } from '../ui/scroll-area';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/lib/activity-log';
+import { CurrencyInput } from '../ui/currency-input';
+import { cn } from '@/lib/utils';
+import { CheckIcon } from 'lucide-react';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   description: z.string().optional(),
   services: z.array(z.string()).min(1, 'At least one service must be selected.'),
-  priceLKR: z.coerce.number().min(0),
-  priceUSD: z.coerce.number().min(0),
+  price: z.coerce.number().min(0),
+  currency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
   duration: z.string().min(1, { message: 'Duration is required.' }),
   custom: z.boolean().default(false),
 });
@@ -43,6 +47,7 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
   const { toast } = useToast();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isServicesPopoverOpen, setIsServicesPopoverOpen] = useState(false);
 
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(formSchema),
@@ -53,8 +58,8 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
       name: '',
       description: '',
       services: [],
-      priceLKR: 0,
-      priceUSD: 0,
+      price: 0,
+      currency: project.currency,
       duration: '',
       custom: false,
     },
@@ -89,9 +94,13 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
   }
 
   const selectedServiceDetails = form.watch('services').map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
-  const suggestedPriceLKR = selectedServiceDetails.reduce((sum, s) => sum + s.priceLKR, 0);
-  const suggestedPriceUSD = selectedServiceDetails.reduce((sum, s) => sum + s.priceUSD, 0);
-
+  
+  const suggestedPrice = selectedServiceDetails.reduce((sum, s) => {
+    // A simple conversion, replace with a real one
+    const rate = s.currency === 'LKR' ? 1/300 : 1;
+    return sum + (s.price * rate);
+  }, 0);
+  
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -128,10 +137,12 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
             render={({ field }) => (
                 <FormItem className="flex flex-col">
                     <FormLabel>Included Services</FormLabel>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                    <Popover open={isServicesPopoverOpen} onOpenChange={setIsServicesPopoverOpen}>
+                      <PopoverTrigger asChild>
                         <Button
                           variant="outline"
+                          role="combobox"
+                          aria-expanded={isServicesPopoverOpen}
                           className="w-full justify-between"
                         >
                           {field.value?.length > 0
@@ -139,70 +150,63 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
                               : "Select services..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] p-0">
-                        <ScrollArea className='h-48'>
-                          {services.map((service) => (
-                            <DropdownMenuItem
-                              key={service.id}
-                              onSelect={(e) => e.preventDefault()}
-                            >
-                              <Checkbox
-                                id={`service-${service.id}`}
-                                checked={field.value.includes(service.id)}
-                                onCheckedChange={(checked) => {
-                                  const currentServices = field.value || [];
-                                  const serviceId = service.id;
-                                  const newServices = checked
-                                    ? [...currentServices, serviceId]
-                                    : currentServices.filter(id => id !== serviceId);
-                                  field.onChange(newServices);
-                                }}
-                                className="mr-2"
-                              />
-                              <label htmlFor={`service-${service.id}`} className="flex-1">{service.name}</label>
-                            </DropdownMenuItem>
-                          ))}
-                        </ScrollArea>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        <Command>
+                            <CommandInput placeholder="Search services..." />
+                            <CommandEmpty>No services found.</CommandEmpty>
+                            <CommandGroup>
+                                <ScrollArea className='h-48'>
+                                {services.map((service) => (
+                                    <CommandItem
+                                        key={service.id}
+                                        onSelect={() => {
+                                            const currentServices = field.value || [];
+                                            const serviceId = service.id;
+                                            const newServices = currentServices.includes(serviceId)
+                                                ? currentServices.filter(id => id !== serviceId)
+                                                : [...currentServices, serviceId];
+                                            field.onChange(newServices);
+                                        }}
+                                    >
+                                        <CheckIcon
+                                            className={cn(
+                                                "mr-2 h-4 w-4",
+                                                field.value.includes(service.id) ? "opacity-100" : "opacity-0"
+                                            )}
+                                        />
+                                        {service.name}
+                                    </CommandItem>
+                                ))}
+                                </ScrollArea>
+                            </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                 </FormItem>
             )}
         />
-
-        <div className='grid grid-cols-2 lg:grid-cols-3 gap-4 items-end'>
-            {project.currency === 'LKR' ? (
-                <FormField
-                    control={form.control}
-                    name="priceLKR"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Price (LKR)</FormLabel>
-                            <FormControl>
-                                <Input type="number" placeholder="150000" {...field} />
-                            </FormControl>
-                            <p className='text-xs text-muted-foreground'>Suggested: {suggestedPriceLKR.toLocaleString()}</p>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            ) : (
-                <FormField
-                    control={form.control}
-                    name="priceUSD"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Price (USD)</FormLabel>
-                            <FormControl>
-                                <Input type="number" placeholder="800" {...field} />
-                            </FormControl>
-                            <p className='text-xs text-muted-foreground'>Suggested: {suggestedPriceUSD.toLocaleString()}</p>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            )}
+        
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 items-start'>
+            <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Package Price</FormLabel>
+                         <CurrencyInput
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            currency={form.watch('currency')}
+                            onCurrencyChange={(value) => form.setValue('currency', value)}
+                        />
+                        <p className='text-xs text-muted-foreground'>Suggested: {suggestedPrice.toLocaleString(undefined, { style: 'currency', currency: project.currency, notation: 'compact' })}</p>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <div className='grid grid-cols-2 gap-4'>
             <FormField
                 control={form.control}
                 name="duration"
@@ -220,7 +224,7 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
                 control={form.control}
                 name="custom"
                 render={({ field }) => (
-                    <FormItem className="flex flex-row items-end space-x-2 pb-2">
+                    <FormItem className="flex flex-row items-center space-x-2 pt-8">
                         <FormControl>
                             <Checkbox
                             checked={field.value}
@@ -235,6 +239,7 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
                     </FormItem>
                 )}
             />
+            </div>
         </div>
 
         <div className="flex justify-end gap-2">

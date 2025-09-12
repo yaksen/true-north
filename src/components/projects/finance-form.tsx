@@ -20,7 +20,7 @@ import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { logActivity } from '@/lib/activity-log';
-import { calculateDiscountedTotal } from '@/lib/billing';
+import { CurrencyInput } from '../ui/currency-input';
 
 const financeTypes = ['income', 'expense'] as const;
 
@@ -28,17 +28,17 @@ const formSchema = z.object({
   projectId: z.string().nonempty({ message: 'Project is required.' }),
   type: z.enum(financeTypes, { required_error: 'Type is required.' }),
   amount: z.coerce.number().positive({ message: 'Amount must be positive.' }),
+  currency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
   description: z.string().min(2, { message: 'Description must be at least 2 characters.' }),
   date: z.date({ required_error: 'A date is required.' }),
   category: z.string().optional(),
-  currency: z.string(),
 });
 
 type FinanceFormValues = z.infer<typeof formSchema>;
 
 interface FinanceFormProps {
   finance?: Finance;
-  project?: { id: string, currency: string };
+  project?: { id: string, currency: 'LKR' | 'USD' | 'EUR' | 'GBP' };
   projects?: Project[];
   packages?: Package[];
   leadId?: string;
@@ -64,7 +64,7 @@ export function FinanceForm({ finance, project, projects, packages, leadId, clos
       description: '',
       date: new Date(),
       category: '',
-      currency: project?.currency || '',
+      currency: project?.currency || 'USD',
     },
   });
   
@@ -81,8 +81,8 @@ export function FinanceForm({ finance, project, projects, packages, leadId, clos
     if (selectedPackageId && packages) {
       const selectedPackage = packages.find(p => p.id === selectedPackageId);
       if (selectedPackage) {
-        const { discountedPriceLKR } = calculateDiscountedTotal(selectedPackage);
-        form.setValue('amount', discountedPriceLKR);
+        form.setValue('amount', selectedPackage.price);
+        form.setValue('currency', selectedPackage.currency);
         form.setValue('description', `Payment for ${selectedPackage.name}`);
         form.setValue('category', 'package');
       }
@@ -207,10 +207,13 @@ export function FinanceForm({ finance, project, projects, packages, leadId, clos
                 name="amount"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Amount ({form.getValues('currency') || project?.currency})</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="0.00" {...field} />
-                        </FormControl>
+                        <FormLabel>Amount</FormLabel>
+                        <CurrencyInput
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            currency={form.watch('currency')}
+                            onCurrencyChange={(value) => form.setValue('currency', value)}
+                        />
                         <FormMessage />
                     </FormItem>
                 )}

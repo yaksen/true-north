@@ -17,13 +17,14 @@ import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/lib/activity-log';
+import { CurrencyInput } from '../ui/currency-input';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   categoryId: z.string({ required_error: 'Category is required.' }),
   finishTime: z.string().min(1, { message: 'Finish time is required.' }),
-  priceLKR: z.coerce.number().min(0, { message: 'Price must be non-negative.' }),
-  priceUSD: z.coerce.number().min(0, { message: 'Price must be non-negative.' }),
+  price: z.coerce.number().min(0, { message: 'Price must be non-negative.' }),
+  currency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
   notes: z.string().optional(),
 });
 
@@ -47,8 +48,8 @@ export function ServiceForm({ service, project, categories, closeForm }: Service
       name: '',
       categoryId: '',
       finishTime: '',
-      priceLKR: 0,
-      priceUSD: 0,
+      price: 0,
+      currency: project.currency,
       notes: '',
     },
   });
@@ -130,37 +131,23 @@ export function ServiceForm({ service, project, categories, closeForm }: Service
                 )}
             />
         </div>
-        <div className='grid grid-cols-2 gap-4'>
-            {project.currency === 'LKR' ? (
-                <FormField
-                    control={form.control}
-                    name="priceLKR"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Price (LKR)</FormLabel>
-                            <FormControl>
-                                <Input type="number" placeholder="50000" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            ) : (
-                <FormField
-                    control={form.control}
-                    name="priceUSD"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Price (USD)</FormLabel>
-                            <FormControl>
-                                <Input type="number" placeholder="250" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+        
+        <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Price</FormLabel>
+                    <CurrencyInput
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        currency={form.watch('currency')}
+                        onCurrencyChange={(value) => form.setValue('currency', value)}
+                    />
+                    <FormMessage />
+                </FormItem>
             )}
-        </div>
+        />
 
         <FormField
           control={form.control}
