@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
-import type { Package, Service, Discount } from '@/lib/types';
+import type { Package, Service, Discount, Project } from '@/lib/types';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
@@ -31,6 +31,7 @@ import { logActivity } from '@/lib/activity-log';
 
 interface PackageCardProps {
     pkg: Package;
+    project: Project;
     allServices: Service[];
 }
 
@@ -133,7 +134,7 @@ const DiscountCalculator: React.FC<DiscountCalculatorProps> = ({ pkg }) => {
 };
 
 
-export function PackageCard({ pkg, allServices }: PackageCardProps) {
+export function PackageCard({ pkg, project, allServices }: PackageCardProps) {
     const { toast } = useToast();
     const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -163,7 +164,7 @@ export function PackageCard({ pkg, allServices }: PackageCardProps) {
                             </DialogTrigger>
                             <DialogContent className='max-w-3xl'>
                                 <DialogHeader><DialogTitle>Edit Package</DialogTitle></DialogHeader>
-                                <PackageForm pkg={pkg} projectId={pkg.projectId} services={allServices} closeForm={() => setIsEditOpen(false)} />
+                                <PackageForm pkg={pkg} project={project} services={allServices} closeForm={() => setIsEditOpen(false)} />
                             </DialogContent>
                         </Dialog>
                          <AlertDialog>
