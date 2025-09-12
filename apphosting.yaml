@@ -1,5 +1,16 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
+# Timeout for server-side rendering and API calls.
+#
+# Server actions are an experimental feature of Next.js.
+# They are not currently supported in production environments.
+# To use them, you must increase the timeout to at least 2 minutes.
+# This will increase the cost of running your application.
+# For more information, see:
+# https://firebase.google.com/docs/app-hosting/pricing
+#
+serverActions:
+  timeoutSeconds: 120
 
 runConfig:
   # Increase this value if you'd like to automatically spin up
