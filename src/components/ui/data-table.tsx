@@ -30,7 +30,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardContent } from './card';
 import { Button } from './button';
 import { Input } from './input';
 import { ChevronDown, FileDown } from 'lucide-react';
@@ -54,7 +53,7 @@ export function DataTable<TData, TValue>({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [globalFilter, setGlobalFilter] = useState('');
 
-  const columns: ColumnDef<TData, TValue>[] = [
+  const columnsWithSelect: ColumnDef<TData, TValue>[] = [
     {
         id: 'select',
         header: ({ table }) => (
@@ -82,7 +81,7 @@ export function DataTable<TData, TValue>({
 
   const table = useReactTable({
     data,
-    columns,
+    columns: columnsWithSelect,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
@@ -136,9 +135,8 @@ export function DataTable<TData, TValue>({
   const isExportDisabled = table.getFilteredSelectedRowModel().rows.length === 0;
 
   return (
-    <Card>
-      <CardContent className="p-0">
-        <div className="flex items-center justify-between p-6">
+    <>
+        <div className="flex items-center justify-between pb-6">
             <div className='flex items-center gap-2'>
                 <Input
                     placeholder="Search all columns..."
@@ -146,18 +144,18 @@ export function DataTable<TData, TValue>({
                     onChange={(event) =>
                         setGlobalFilter(String(event.target.value))
                     }
-                    className="max-w-sm"
+                    className="max-w-sm h-9"
                 />
                 {toolbar}
             </div>
             <div className='flex items-center gap-2'>
-                <Button variant="outline" size="sm" onClick={handleExport} disabled={isExportDisabled}>
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={isExportDisabled} className='h-9'>
                     <FileDown className='mr-2 h-4 w-4' />
                     Export
                 </Button>
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="outline" size="sm" className='h-9'>
                     Columns <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
@@ -186,7 +184,7 @@ export function DataTable<TData, TValue>({
             </div>
         </div>
 
-        <ScrollArea className="h-[calc(100vh-22rem)]">
+        <ScrollArea className="h-[calc(100vh-28rem)]">
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -227,7 +225,7 @@ export function DataTable<TData, TValue>({
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={columns.length}
+                    colSpan={columnsWithSelect.length}
                     className="h-24 text-center"
                   >
                     No results.
@@ -238,7 +236,7 @@ export function DataTable<TData, TValue>({
           </Table>
         </div>
         </ScrollArea>
-        <div className="flex items-center justify-end space-x-2 p-4">
+        <div className="flex items-center justify-end space-x-2 pt-4">
             <div className="flex-1 text-sm text-muted-foreground">
                 {table.getFilteredSelectedRowModel().rows.length} of{" "}
                 {table.getFilteredRowModel().rows.length} row(s) selected.
@@ -260,7 +258,6 @@ export function DataTable<TData, TValue>({
             Next
           </Button>
         </div>
-      </CardContent>
-    </Card>
+    </>
   );
 }

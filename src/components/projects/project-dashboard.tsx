@@ -101,15 +101,8 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
                     </CardContent>
                 </Card>
             </div>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Recent Tasks</CardTitle>
-                    <CardDescription>A log of the most recent tasks in this project.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <DataTable columns={taskColumns} data={recentTasks} />
-                </CardContent>
-            </Card>
+            
+            <DataTable columns={taskColumns} data={recentTasks} />
         </div>
     )
 }
