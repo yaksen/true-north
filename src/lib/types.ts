@@ -30,7 +30,10 @@ export type ActivityRecordType =
     | 'package_deleted'
     | 'note_added'
     | 'report_uploaded'
-    | 'report_deleted';
+    | 'report_deleted'
+    | 'member_invited'
+    | 'member_removed'
+    | 'project_deleted';
 
 
 export interface UserProfile {

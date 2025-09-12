@@ -17,6 +17,7 @@ import { ProjectFinance } from '@/components/projects/project-finance';
 import { ProjectTasks } from '@/components/projects/project-tasks';
 import { ProjectRecords } from '@/components/projects/project-records';
 import { ProjectReports } from '@/components/projects/project-reports';
+import { ProjectSettings } from '@/components/projects/project-settings';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -54,7 +55,7 @@ export default function ProjectDetailPage() {
       setLoading(false);
     });
 
-    const createCollectionSubscription = <T>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
+    const createCollectionSubscription = <T,>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
         const q = query(collection(db, collectionName), where('projectId', '==', id));
         return onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
@@ -99,7 +100,7 @@ export default function ProjectDetailPage() {
         <ProjectHeader project={project} />
 
         <Tabs defaultValue="dashboard" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                 <TabsTrigger value="leads">Leads</TabsTrigger>
                 <TabsTrigger value="products">Products</TabsTrigger>
@@ -107,6 +108,7 @@ export default function ProjectDetailPage() {
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
                 <TabsTrigger value="records">Records</TabsTrigger>
                 <TabsTrigger value="reports">Reports</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
             <TabsContent value="dashboard">
                 <ProjectDashboard project={project} tasks={tasks} finances={finances} />
@@ -133,6 +135,9 @@ export default function ProjectDetailPage() {
             </TabsContent>
             <TabsContent value="reports">
                 <ProjectReports project={project} reports={reports} />
+            </TabsContent>
+            <TabsContent value="settings">
+                <ProjectSettings project={project} />
             </TabsContent>
         </Tabs>
     </div>
