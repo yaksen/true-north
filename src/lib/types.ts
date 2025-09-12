@@ -1,7 +1,8 @@
 
 
+
 export type UserRole = 'admin' | 'manager' | 'member';
-export type ProjectStatus = 'Planning' | 'In-Progress' | 'Completed' | 'On-Hold';
+export type ProjectStatus = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
 export type FinanceType = 'income' | 'expense';
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
@@ -60,6 +61,7 @@ export interface Project {
   members: string[]; // List of user UIDs
   currency: 'LKR' | 'USD';
   status: ProjectStatus;
+  parentProjectId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

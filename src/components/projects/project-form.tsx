@@ -26,7 +26,7 @@ import { Switch } from '../ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { logActivity } from '@/lib/activity-log';
 
-const projectStatuses: ProjectStatus[] = ['Planning', 'In-Progress', 'Completed', 'On-Hold'];
+const projectStatuses: ProjectStatus[] = ['Active', 'Passive', 'Fun', 'Sub'];
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Project name must be at least 2 characters.' }),
@@ -34,16 +34,18 @@ const formSchema = z.object({
   currency: z.string().nonempty({ message: 'Currency is required.' }),
   private: z.boolean().default(false),
   status: z.enum(projectStatuses),
+  parentProjectId: z.string().optional(),
 });
 
 type ProjectFormValues = z.infer<typeof formSchema>;
 
 interface ProjectFormProps {
   project?: Project;
+  allProjects?: Project[];
   closeForm: () => void;
 }
 
-export function ProjectForm({ project, closeForm }: ProjectFormProps) {
+export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,19 +53,19 @@ export function ProjectForm({ project, closeForm }: ProjectFormProps) {
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: project ? {
-        name: project.name,
-        description: project.description,
-        currency: project.currency,
-        private: project.private,
-        status: project.status,
+        ...project,
+        parentProjectId: project.parentProjectId || '',
     } : {
       name: '',
       description: '',
       currency: 'LKR',
       private: false,
-      status: 'Planning',
+      status: 'Active',
+      parentProjectId: '',
     },
   });
+
+  const status = form.watch('status');
 
   async function onSubmit(values: ProjectFormValues) {
     if (!user) {
@@ -72,17 +74,22 @@ export function ProjectForm({ project, closeForm }: ProjectFormProps) {
     }
     setIsSubmitting(true);
 
+    const dataToSubmit = {
+        ...values,
+        parentProjectId: values.status === 'Sub' ? values.parentProjectId : '', // Clear parent if not a sub-project
+    };
+
     try {
       if (project) {
         // Update existing project
         const projectRef = doc(db, 'projects', project.id);
-        await updateDoc(projectRef, { ...values, updatedAt: serverTimestamp() });
+        await updateDoc(projectRef, { ...dataToSubmit, updatedAt: serverTimestamp() });
         await logActivity(project.id, 'project_updated', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Project updated successfully.' });
       } else {
         // Create new project
         const projectData = {
-          ...values,
+          ...dataToSubmit,
           ownerUid: user.uid,
           members: [user.uid], // Initially, only the creator is a member
           createdAt: serverTimestamp(),
@@ -167,6 +174,29 @@ export function ProjectForm({ project, closeForm }: ProjectFormProps) {
             )}
             />
         </div>
+        
+        {status === 'Sub' && (
+             <FormField
+                control={form.control}
+                name="parentProjectId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Main Project</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select the main project..." /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            {allProjects
+                                .filter(p => p.id !== project?.id) // Prevent self-selection
+                                .map(p => (
+                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        )}
         
         <FormField
             control={form.control}

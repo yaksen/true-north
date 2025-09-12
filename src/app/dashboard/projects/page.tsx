@@ -76,7 +76,10 @@ export default function ProjectsPage() {
                 Fill out the details for your new project.
               </DialogDescription>
             </DialogHeader>
-            <ProjectForm closeForm={() => setIsCreateDialogOpen(false)} />
+            <ProjectForm 
+              allProjects={projects} 
+              closeForm={() => setIsCreateDialogOpen(false)} 
+            />
           </DialogContent>
         </Dialog>
       </div>
