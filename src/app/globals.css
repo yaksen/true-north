@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 @layer base {
   :root {
     --background: 238 18% 20%;
@@ -28,15 +24,11 @@ body {
     --input: 238 18% 30%;
     --ring: 243 75% 58%;
     --radius: 0.5rem;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
+    --chart-1: 142 71% 45%;
+    --chart-2: 0 84% 60%;
+    --chart-3: 243 75% 58%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-
-    --color-revenue: hsl(142, 71%, 45%);
-    --color-expenses: hsl(0, 84%, 60%);
-    --color-profit: hsl(243, 75%, 58%);
   }
   .dark {
     --background: 238 18% 20%;
@@ -58,15 +50,11 @@ body {
     --border: 238 18% 30%;
     --input: 238 18% 30%;
     --ring: 243 75% 58%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
+    --chart-1: 142 71% 45%;
+    --chart-2: 0 84% 60%;
+    --chart-3: 243 75% 58%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-
-    --color-revenue: hsl(142, 71%, 45%);
-    --color-expenses: hsl(0, 84%, 60%);
-    --color-profit: hsl(243, 75%, 58%);
   }
 }
 
@@ -75,6 +63,6 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-body antialiased;
   }
 }

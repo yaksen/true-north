@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { DataTable } from '@/components/ui/data-table';
 import { getColumns } from '@/components/financials/columns';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
 export default function FinancialsPage() {
   const { user } = useAuth();
@@ -63,10 +64,28 @@ export default function FinancialsPage() {
   }, [user]);
 
   const chartData = [
-    { name: "Revenue", value: stats.totalRevenue, fill: "var(--color-revenue)" },
-    { name: "Expenses", value: stats.totalExpenses, fill: "var(--color-expenses)" },
-    { name: "Profit", value: stats.totalRevenue - stats.totalExpenses, fill: "var(--color-profit)" },
+    { name: "Revenue", value: stats.totalRevenue, fill: "hsl(var(--chart-1))" },
+    { name: "Expenses", value: stats.totalExpenses, fill: "hsl(var(--chart-2))" },
+    { name: "Profit", value: stats.totalRevenue - stats.totalExpenses, fill: "hsl(var(--chart-3))" },
   ]
+  
+   const chartConfig = {
+      value: {
+        label: "LKR",
+      },
+      revenue: {
+        label: "Revenue",
+        color: "hsl(var(--chart-1))",
+      },
+      expenses: {
+        label: "Expenses",
+        color: "hsl(var(--chart-2))",
+      },
+       profit: {
+        label: "Profit",
+        color: "hsl(var(--chart-3))",
+      },
+    } satisfies import("@/components/ui/chart").ChartConfig
 
 
   if (loading) {
@@ -99,13 +118,21 @@ export default function FinancialsPage() {
                 <CardDescription>A high-level overview of revenue vs. expenses.</CardDescription>
             </CardHeader>
             <CardContent className="pl-2">
-                 <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={chartData} layout="vertical">
-                        <XAxis type="number" hide />
-                        <YAxis dataKey="name" type="category" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} width={80} />
-                        <Bar dataKey="value" radius={[4, 4, 4, 4]} />
+                 <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                    <BarChart accessibilityLayer data={chartData} layout="vertical">
+                        <XAxis type="number" dataKey="value" hide />
+                        <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={-4} width={80} />
+                        <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent hideLabel />}
+                        />
+                        <Bar dataKey="value" layout="vertical" radius={4}>
+                            {chartData.map((entry) => (
+                                <div key={entry.name} style={{ backgroundColor: entry.fill }} />
+                            ))}
+                        </Bar>
                     </BarChart>
-                </ResponsiveContainer>
+                </ChartContainer>
             </CardContent>
         </Card>
         <Card>
