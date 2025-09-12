@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Task, TaskStatus } from '@/lib/types';
+import type { Task, TaskStatus, Project } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -26,6 +26,7 @@ import { logActivity } from '@/lib/activity-log';
 const taskStatuses: TaskStatus[] = ['To-Do', 'In-Progress', 'Done'];
 
 const formSchema = z.object({
+  projectId: z.string().nonempty({ message: 'Project is required.' }),
   title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
   description: z.string().optional(),
   status: z.enum(taskStatuses),
@@ -36,12 +37,13 @@ type TaskFormValues = z.infer<typeof formSchema>;
 
 interface TaskFormProps {
   task?: Task;
-  projectId: string;
+  projectId?: string;
   leadId?: string;
+  projects?: Project[]; // Make this optional for the global form
   closeForm: () => void;
 }
 
-export function TaskForm({ task, projectId, leadId, closeForm }: TaskFormProps) {
+export function TaskForm({ task, projectId, leadId, projects, closeForm }: TaskFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +54,7 @@ export function TaskForm({ task, projectId, leadId, closeForm }: TaskFormProps) 
         ...task,
         dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
     } : {
+      projectId: projectId || '',
       title: '',
       description: '',
       status: 'To-Do',
@@ -67,15 +70,16 @@ export function TaskForm({ task, projectId, leadId, closeForm }: TaskFormProps) 
     setIsSubmitting(true);
 
     try {
+      const finalProjectId = values.projectId;
+
       if (task) {
         const taskRef = doc(db, 'tasks', task.id);
         await updateDoc(taskRef, { ...values, updatedAt: serverTimestamp() });
-        await logActivity(projectId, 'task_updated', { title: values.title }, user.uid);
+        await logActivity(finalProjectId, 'task_updated', { title: values.title }, user.uid);
         toast({ title: 'Success', description: 'Task updated successfully.' });
       } else {
         const taskData: any = {
           ...values,
-          projectId: projectId,
           assigneeUid: user.uid,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -84,7 +88,7 @@ export function TaskForm({ task, projectId, leadId, closeForm }: TaskFormProps) 
             taskData.leadId = leadId;
         }
         await addDoc(collection(db, 'tasks'), taskData);
-        await logActivity(projectId, 'task_created', { title: values.title }, user.uid);
+        await logActivity(finalProjectId, 'task_created', { title: values.title }, user.uid);
         toast({ title: 'Success', description: 'Task created successfully.' });
       }
       closeForm();
@@ -99,6 +103,30 @@ export function TaskForm({ task, projectId, leadId, closeForm }: TaskFormProps) 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {projects && (
+           <FormField
+            control={form.control}
+            name="projectId"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Project</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a project..." />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {projects.map(p => (
+                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+            )}
+           />
+        )}
         <FormField
           control={form.control}
           name="title"
