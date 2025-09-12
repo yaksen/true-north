@@ -126,8 +126,8 @@ export default function LoginPage() {
           <Logo />
         </div>
         <div className="mb-4 text-center">
-          <h1 className="text-2xl font-bold">Welcome Back</h1>
-          <p className="text-muted-foreground">Sign in to continue to Yaksen CRM</p>
+          <h1 className="text-2xl font-bold font-headline">Welcome Back</h1>
+          <p className="text-muted-foreground">Sign in to continue to TrueNorth</p>
         </div>
         <form onSubmit={handleSubmit(onEmailSubmit)} className="space-y-4">
           <div className="space-y-1">

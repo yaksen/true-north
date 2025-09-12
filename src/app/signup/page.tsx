@@ -179,8 +179,8 @@ export default function SignupPage() {
           <Logo />
         </div>
         <div className="mb-4 text-center">
-          <h1 className="text-2xl font-bold">Create an Account</h1>
-          <p className="text-muted-foreground">Start managing your business with Yaksen Hub</p>
+          <h1 className="text-2xl font-bold font-headline">Create an Account</h1>
+          <p className="text-muted-foreground">Start managing your business with TrueNorth</p>
         </div>
 
         {!isSignupEnabled ? (

@@ -18,7 +18,7 @@ export function Logo({ className }: { className?: string }) {
         <path d="M6 7V2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         <path d="M22.5 21.5H1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
-      <span className="text-xl font-bold">Yaksen Hub</span>
+      <span className="text-xl font-bold font-headline">TrueNorth</span>
     </div>
   );
 }
