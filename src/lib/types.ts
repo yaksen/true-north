@@ -1,7 +1,4 @@
 
-
-
-
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
@@ -12,6 +9,7 @@ export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void';
 export type ActivityRecordType = 
     | 'project_created'
     | 'project_updated'
+    | 'project_deleted'
     | 'task_created'
     | 'task_updated'
     | 'task_deleted'
@@ -33,13 +31,12 @@ export type ActivityRecordType =
     | 'note_added'
     | 'report_uploaded'
     | 'report_deleted'
-    | 'member_invited'
-    | 'member_removed'
-    | 'member_added'
-    | 'project_deleted'
     | 'invoice_created'
     | 'invoice_updated'
-    | 'invoice_deleted';
+    | 'invoice_deleted'
+    | 'member_added'
+    | 'member_invited'
+    | 'member_removed';
 
 
 export interface UserProfile {
@@ -210,4 +207,5 @@ export interface Report {
 
 export interface CrmSettings {
     isSignupEnabled: boolean;
+    revenueGoal?: number;
 }

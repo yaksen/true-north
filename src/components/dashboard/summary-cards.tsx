@@ -21,7 +21,7 @@ const formatCurrency = (amount: number) => {
 
 export function SummaryCards({ summary }: SummaryCardsProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -38,18 +38,8 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${summary.totalPL >= 0 ? 'text-green-500' : 'text-red-500'}`}>{formatCurrency(summary.totalPL)}</div>
+          <div className={`text-2xl font-bold ${summary.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(summary.totalPL)}</div>
           <p className="text-xs text-muted-foreground">Aggregated across all projects</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Task Completion</CardTitle>
-          <ListChecks className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{summary.avgTaskCompletion.toFixed(0)}%</div>
-          <p className="text-xs text-muted-foreground">Average across all projects</p>
         </CardContent>
       </Card>
       <Card>
@@ -62,6 +52,6 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
           <p className="text-xs text-muted-foreground">Projects you are a member of</p>
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }

@@ -12,6 +12,7 @@ import {
   CircleDollarSign,
   User,
   ReceiptText,
+  Settings,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +39,7 @@ import { UserNav } from '@/components/user-nav';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Menu } from 'lucide-react';
 
 export default function DashboardLayout({
   children,
@@ -51,7 +52,7 @@ export default function DashboardLayout({
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
+      <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -71,20 +72,20 @@ export default function DashboardLayout({
   ];
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-muted/40 md:block">
+    <div className="grid min-h-screen w-full md:grid-cols-[240px_1fr] lg:grid-cols-[280px_1fr]">
+      <div className="hidden border-r bg-card md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <div className="flex h-16 items-center border-b px-6">
             <Logo />
           </div>
           <div className="flex-1">
-            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+            <nav className="grid items-start gap-1 px-4 py-4 text-sm font-medium">
               {navItems.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground transition-all hover:text-primary hover:bg-muted',
                     pathname === item.href ? 'bg-muted text-primary' : ''
                   )}
                 >
@@ -94,10 +95,22 @@ export default function DashboardLayout({
               ))}
             </nav>
           </div>
+          <div className='p-4 border-t'>
+              <Link
+                  href="/dashboard/settings"
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground transition-all hover:text-primary hover:bg-muted',
+                    pathname === '/dashboard/settings' ? 'bg-muted text-primary' : ''
+                  )}
+                >
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </Link>
+          </div>
         </div>
       </div>
       <div className="flex flex-col">
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+        <header className="flex h-16 items-center gap-4 border-b bg-card px-4 lg:px-6">
           <Sheet>
             <SheetTrigger asChild>
               <Button
@@ -105,13 +118,13 @@ export default function DashboardLayout({
                 size="icon"
                 className="shrink-0 md:hidden"
               >
-                <Package2 className="h-5 w-5" />
+                <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
               <nav className="grid gap-2 text-lg font-medium">
-                <div className="mb-4">
+                <div className="mb-4 flex h-16 items-center border-b px-2">
                   <Logo />
                 </div>
                 {navItems.map((item) => (
@@ -119,7 +132,7 @@ export default function DashboardLayout({
                     key={item.label}
                     href={item.href}
                     className={cn(
-                      'mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground',
+                      'flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground',
                       pathname === item.href ? 'bg-muted text-foreground' : ''
                     )}
                   >
@@ -128,6 +141,18 @@ export default function DashboardLayout({
                   </Link>
                 ))}
               </nav>
+                <div className='mt-auto p-4 border-t'>
+                    <Link
+                        href="/dashboard/settings"
+                        className={cn(
+                            'flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground',
+                            pathname === '/dashboard/settings' ? 'bg-muted text-foreground' : ''
+                        )}
+                        >
+                        <Settings className="h-5 w-5" />
+                        Settings
+                    </Link>
+                </div>
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
@@ -136,7 +161,9 @@ export default function DashboardLayout({
           <UserNav />
         </header>
         <main className="flex flex-1 flex-col bg-background">
-          {children}
+          <div className="flex-1 space-y-6 p-4 md:p-6 lg:p-8">
+            {children}
+          </div>
         </main>
       </div>
     </div>

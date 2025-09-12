@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { ProjectSummary } from './project-card';
 import { TrendingUp } from 'lucide-react';
 import { useMemo } from 'react';
+import { cn } from '@/lib/utils';
 
 interface ForecastWidgetProps {
   summaries: ProjectSummary[];
@@ -48,11 +49,11 @@ export function ForecastWidget({ summaries }: ForecastWidgetProps) {
       <CardContent className="space-y-4">
         <div>
             <p className="text-sm text-muted-foreground">Next Month</p>
-            <p className={`text-xl font-bold ${forecast.monthly > 0 ? 'text-green-500' : 'text-red-500'}`}>{formatCurrency(forecast.monthly)}</p>
+            <p className={cn("text-xl font-bold", forecast.monthly >= 0 ? 'text-green-400' : 'text-red-400')}>{formatCurrency(forecast.monthly)}</p>
         </div>
         <div>
             <p className="text-sm text-muted-foreground">Next Quarter</p>
-            <p className={`text-xl font-bold ${forecast.quarterly > 0 ? 'text-green-500' : 'text-red-500'}`}>{formatCurrency(forecast.quarterly)}</p>
+            <p className={cn("text-xl font-bold", forecast.quarterly >= 0 ? 'text-green-400' : 'text-red-400')}>{formatCurrency(forecast.quarterly)}</p>
         </div>
       </CardContent>
     </Card>

@@ -2,8 +2,8 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { Project, Task, Finance } from '@/lib/types';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { CrmSettings, Project, Task, Finance } from '@/lib/types';
+import { collection, onSnapshot, query, where, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [finances, setFinances] = useState<Finance[]>([]);
+  const [settings, setSettings] = useState<CrmSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function DashboardPage() {
     const projectsQuery = query(collection(db, `projects`), where('members', 'array-contains', user.uid));
     const tasksQuery = query(collection(db, 'tasks'));
     const financesQuery = query(collection(db, 'finances'));
+    const settingsRef = doc(db, 'settings', 'crm');
 
     const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
       setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
@@ -43,10 +45,17 @@ export default function DashboardPage() {
         }));
     });
     
+    const unsubscribeSettings = onSnapshot(settingsRef, (doc) => {
+        if (doc.exists()) {
+            setSettings(doc.data() as CrmSettings);
+        }
+    });
+    
     Promise.all([
         new Promise(resolve => onSnapshot(projectsQuery, () => resolve(true))),
         new Promise(resolve => onSnapshot(tasksQuery, () => resolve(true))),
         new Promise(resolve => onSnapshot(financesQuery, () => resolve(true))),
+        new Promise(resolve => onSnapshot(settingsRef, () => resolve(true))),
     ]).then(() => setLoading(false));
 
 
@@ -54,20 +63,21 @@ export default function DashboardPage() {
       unsubscribeProjects();
       unsubscribeTasks();
       unsubscribeFinances();
+      unsubscribeSettings();
     };
   }, [user]);
 
   return (
     <>
       <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl">Global Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Global Dashboard</h1>
       </div>
       {loading ? (
-        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-4">
+        <div className="flex flex-1 items-center justify-center rounded-lg mt-4">
             <Loader2 className='h-8 w-8 animate-spin text-primary' />
         </div>
       ) : (
-        <DashboardClient projects={projects} tasks={tasks} finances={finances} />
+        <DashboardClient projects={projects} tasks={tasks} finances={finances} settings={settings} />
       )}
     </>
   );

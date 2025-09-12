@@ -33,31 +33,33 @@ export function ProjectHeader({ project, allProjects }: ProjectHeaderProps) {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Projects
         </Button>
-        <div className="flex gap-2">
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogTrigger asChild>
-                    <Button size="sm" variant="outline">
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit Project
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Edit Project</DialogTitle>
-                        <DialogDescription>Update the details of your project.</DialogDescription>
-                    </DialogHeader>
-                    <ProjectForm project={project} allProjects={allProjects} closeForm={() => setIsEditDialogOpen(false)} />
-                </DialogContent>
-            </Dialog>
-        </div>
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Project
+                </Button>
+            </DialogTrigger>
+            <DialogContent className='max-w-2xl'>
+                <DialogHeader>
+                    <DialogTitle>Edit Project</DialogTitle>
+                    <DialogDescription>Update the details of your project.</DialogDescription>
+                </DialogHeader>
+                <ProjectForm project={project} allProjects={allProjects} closeForm={() => setIsEditDialogOpen(false)} />
+            </DialogContent>
+        </Dialog>
       </div>
       <div>
-        <h1 className="text-3xl font-bold flex items-center gap-4">
-          {project.name}
-          <Badge variant="secondary" className="capitalize text-base">{project.status}</Badge>
-          {project.private && <Badge variant="outline"><Lock className='h-3 w-3 mr-1'/>Private</Badge>}
-        </h1>
-        <p className="text-muted-foreground mt-1">{project.description}</p>
+        <div className='flex flex-wrap items-center gap-x-4 gap-y-2'>
+            <h1 className="text-3xl font-bold tracking-tight">
+                {project.name}
+            </h1>
+            <div className='flex items-center gap-2'>
+                <Badge variant="secondary" className="capitalize">{project.status}</Badge>
+                {project.private && <Badge variant="outline"><Lock className='h-3 w-3 mr-1'/>Private</Badge>}
+            </div>
+        </div>
+        <p className="text-muted-foreground mt-2">{project.description}</p>
       </div>
     </div>
   );

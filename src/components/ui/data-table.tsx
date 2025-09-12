@@ -34,7 +34,6 @@ import { Button } from './button';
 import { Input } from './input';
 import { ChevronDown, FileDown } from 'lucide-react';
 import { ScrollArea } from './scroll-area';
-import { Checkbox } from './checkbox';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -125,7 +124,7 @@ export function DataTable<TData, TValue>({
             <div className='flex items-center gap-2'>
                 <Button variant="outline" size="sm" onClick={handleExport} disabled={isExportDisabled} className='h-9'>
                     <FileDown className='mr-2 h-4 w-4' />
-                    Export
+                    Export Selected
                 </Button>
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -158,10 +157,10 @@ export function DataTable<TData, TValue>({
             </div>
         </div>
 
-        <ScrollArea className="h-[calc(100vh-28rem)]">
-        <div className="rounded-md border">
+        <ScrollArea className="h-[calc(100vh-32rem)] whitespace-nowrap">
+        <div className="rounded-xl border">
           <Table>
-            <TableHeader>
+            <TableHeader className='bg-muted/50'>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {

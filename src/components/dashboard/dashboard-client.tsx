@@ -1,20 +1,22 @@
 
 'use client';
 
-import type { Project, Task, Finance } from '@/lib/types';
+import type { Project, Task, Finance, CrmSettings } from '@/lib/types';
 import { useMemo } from 'react';
 import { SummaryCards, type GlobalSummary } from './summary-cards';
 import { ProjectCard, type ProjectSummary } from './project-card';
 import { TopProjects } from './top-projects';
 import { ForecastWidget } from './forecast-widget';
+import { GoalTracker } from './goal-tracker';
 
 interface DashboardClientProps {
   projects: Project[];
   tasks: Task[];
   finances: Finance[];
+  settings: CrmSettings | null;
 }
 
-export function DashboardClient({ projects, tasks, finances }: DashboardClientProps) {
+export function DashboardClient({ projects, tasks, finances, settings }: DashboardClientProps) {
 
   const projectSummaries = useMemo<ProjectSummary[]>(() => {
     return projects.map(project => {
@@ -74,10 +76,13 @@ export function DashboardClient({ projects, tasks, finances }: DashboardClientPr
   }, [projectSummaries, projects.length]);
 
   return (
-    <div className="flex-1 space-y-6 p-4 lg:p-6">
-      <SummaryCards summary={globalSummary} />
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3">
+    <div className="flex-1 space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <GoalTracker currentRevenue={globalSummary.totalRevenue} goal={settings?.revenueGoal} />
+        <SummaryCards summary={globalSummary} />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {projectSummaries.map(summary => (
                     <ProjectCard key={summary.project.id} summary={summary} />

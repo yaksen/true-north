@@ -111,17 +111,19 @@ export default function ProjectDetailPage() {
         <ProjectHeader project={project} allProjects={allProjects} />
 
         <Tabs defaultValue="dashboard" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-9">
-                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                <TabsTrigger value="leads">Leads</TabsTrigger>
-                <TabsTrigger value="products">Products</TabsTrigger>
-                <TabsTrigger value="billing">Billing</TabsTrigger>
-                <TabsTrigger value="finance">Finance</TabsTrigger>
-                <TabsTrigger value="tasks">Tasks</TabsTrigger>
-                <TabsTrigger value="records">Records</TabsTrigger>
-                <TabsTrigger value="reports">Reports</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-            </TabsList>
+            <div className='overflow-x-auto'>
+                <TabsList className="grid w-full grid-cols-9 min-w-max">
+                    <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                    <TabsTrigger value="leads">Leads</TabsTrigger>
+                    <TabsTrigger value="products">Products</TabsTrigger>
+                    <TabsTrigger value="billing">Billing</TabsTrigger>
+                    <TabsTrigger value="finance">Finance</TabsTrigger>
+                    <TabsTrigger value="tasks">Tasks</TabsTrigger>
+                    <TabsTrigger value="records">Records</TabsTrigger>
+                    <TabsTrigger value="reports">Reports</TabsTrigger>
+                    <TabsTrigger value="settings">Settings</TabsTrigger>
+                </TabsList>
+            </div>
             <TabsContent value="dashboard">
                 <ProjectDashboard project={project} tasks={tasks} finances={finances} />
             </TabsContent>
