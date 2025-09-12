@@ -141,7 +141,6 @@ export function TaskForm({ task, projectId, leadId, projects, leads, closeForm }
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="">None</SelectItem>
                             {leads.map(l => (
                                 <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
                             ))}
