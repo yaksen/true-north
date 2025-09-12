@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { Project, Finance, FinanceType } from '@/lib/types';
+import type { Project, Finance } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { DataTable } from '@/components/ui/data-table';
 import { financeColumns } from '@/components/projects/finance-columns';
@@ -17,6 +17,8 @@ import { Calendar } from '../ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Input } from '../ui/input';
 
+type FinanceTypeFilter = 'all' | 'income' | 'expense';
+
 interface GlobalFinanceClientProps {
   projects: Project[];
   finances: Finance[];
@@ -25,7 +27,7 @@ interface GlobalFinanceClientProps {
 export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientProps) {
   const [isFinanceFormOpen, setIsFinanceFormOpen] = useState(false);
   const [dateFilter, setDateFilter] = useState<DateRange | undefined>();
-  const [typeFilter, setTypeFilter] = useState<FinanceType | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState<FinanceTypeFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState('');
 
 

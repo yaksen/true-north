@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/lib/activity-log';
 import { CurrencyInput } from '../ui/currency-input';
+import { useCurrency } from '@/context/CurrencyContext';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -40,6 +41,7 @@ interface ServiceFormProps {
 export function ServiceForm({ service, project, categories, closeForm }: ServiceFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { globalCurrency } = useCurrency();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ServiceFormValues>({
@@ -49,7 +51,7 @@ export function ServiceForm({ service, project, categories, closeForm }: Service
       categoryId: '',
       finishTime: '',
       price: 0,
-      currency: project.currency,
+      currency: project.currency || (globalCurrency as any) || 'USD',
       notes: '',
     },
   });

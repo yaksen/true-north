@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { logActivity } from '@/lib/activity-log';
 import { CurrencyInput } from '../ui/currency-input';
+import { useCurrency } from '@/context/CurrencyContext';
 
 const financeTypes = ['income', 'expense'] as const;
 
@@ -48,6 +49,7 @@ interface FinanceFormProps {
 export function FinanceForm({ finance, project, projects, packages, leadId, closeForm }: FinanceFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { globalCurrency } = useCurrency();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
 
@@ -64,7 +66,7 @@ export function FinanceForm({ finance, project, projects, packages, leadId, clos
       description: '',
       date: new Date(),
       category: '',
-      currency: project?.currency || 'USD',
+      currency: project?.currency || (globalCurrency as any) || 'USD',
     },
   });
   
@@ -84,7 +86,7 @@ export function FinanceForm({ finance, project, projects, packages, leadId, clos
         form.setValue('amount', selectedPackage.price);
         form.setValue('currency', selectedPackage.currency);
         form.setValue('description', `Payment for ${selectedPackage.name}`);
-        form.setValue('category', 'package');
+        form.setValue('category', 'Package Sale');
       }
     }
   }, [selectedPackageId, packages, form]);

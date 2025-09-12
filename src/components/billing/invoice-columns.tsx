@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from "@/hooks/use-auth";
 import { logActivity } from "@/lib/activity-log";
 import Link from "next/link";
-import { calculateInvoiceTotals } from "@/lib/billing";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface DataDependencies {
     projects: Project[];
@@ -123,15 +123,40 @@ export const getInvoiceColumns = (dependencies: DataDependencies): ColumnDef<Inv
     {
         id: 'total',
         header: () => <div className="text-right">Amount</div>,
-        cell: ({ row }) => {
+        cell: function Cell({ row }) {
             const invoice = row.original;
             const project = dependencies.projects.find(p => p.id === invoice.projectId);
-            const { totalLKR, totalUSD } = calculateInvoiceTotals(invoice.lineItems, invoice.discounts, invoice.taxRate);
+            const { globalCurrency } = useCurrency();
+            
+            // Mock conversion
+            const MOCK_RATES: { [key: string]: number } = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
+            const convert = (amount: number, from: string, to: string) => {
+                const fromRate = MOCK_RATES[from] || 1;
+                const toRate = MOCK_RATES[to] || 1;
+                return (amount / fromRate) * toRate;
+            };
 
+            const displayCurrency = globalCurrency || project?.currency || 'USD';
+
+            const subtotal = invoice.lineItems.reduce((acc, item) => {
+                return acc + convert(item.price * item.quantity, item.currency, displayCurrency);
+            }, 0);
+
+            let totalDiscount = 0;
+            invoice.discounts.forEach(d => {
+                if (d.type === 'percentage') {
+                    totalDiscount += (subtotal - totalDiscount) * (d.value / 100);
+                } else {
+                    totalDiscount += convert(d.value, project?.currency || 'USD', displayCurrency);
+                }
+            });
+
+            const total = (subtotal - totalDiscount) * (1 + invoice.taxRate / 100);
+            
             const formatted = new Intl.NumberFormat("en-US", {
                 style: "currency",
-                currency: project?.currency || 'USD',
-            }).format(project?.currency === 'LKR' ? totalLKR : totalUSD);
+                currency: displayCurrency,
+            }).format(total);
 
             return <div className="text-right font-medium">{formatted}</div>;
         },

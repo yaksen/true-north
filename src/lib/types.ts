@@ -1,5 +1,6 @@
 
 
+
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
@@ -86,7 +87,7 @@ export interface Finance {
     leadId?: string;
     type: FinanceType;
     amount: number;
-    currency: string;
+    currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     description: string;
     date: Date;
     category?: string;

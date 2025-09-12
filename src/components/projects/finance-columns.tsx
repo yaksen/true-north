@@ -2,7 +2,7 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Finance, FinanceType } from "@/lib/types";
+import { Finance } from "@/lib/types";
 import { ArrowUpDown, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -110,7 +110,7 @@ export const financeColumns: ColumnDef<Finance>[] = [
       accessorKey: "type",
       header: "Type",
       cell: ({ row }) => {
-        const type = row.getValue("type") as FinanceType;
+        const type = row.getValue("type") as 'income' | 'expense';
         return <Badge variant={type === 'income' ? 'default' : 'secondary'} className="capitalize">{type}</Badge>
       }
     },

@@ -23,6 +23,7 @@ import { logActivity } from '@/lib/activity-log';
 import { CurrencyInput } from '../ui/currency-input';
 import { cn } from '@/lib/utils';
 import { CheckIcon } from 'lucide-react';
+import { useCurrency } from '@/context/CurrencyContext';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -46,6 +47,7 @@ interface PackageFormProps {
 export function PackageForm({ pkg, project, services, closeForm }: PackageFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { globalCurrency } = useCurrency();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isServicesPopoverOpen, setIsServicesPopoverOpen] = useState(false);
 
@@ -59,7 +61,7 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
       description: '',
       services: [],
       price: 0,
-      currency: project.currency,
+      currency: project.currency || (globalCurrency as any) || 'USD',
       duration: '',
       custom: false,
     },
@@ -95,12 +97,16 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
 
   const selectedServiceDetails = form.watch('services').map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
   
-  const suggestedPrice = selectedServiceDetails.reduce((sum, s) => {
-    // A simple conversion, replace with a real one
-    const rate = s.currency === 'LKR' ? 1/300 : 1;
-    return sum + (s.price * rate);
-  }, 0);
+  // A mock conversion rate for suggestion. Replace with a real API call in a real app.
+  const MOCK_RATES = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
   
+  const suggestedPrice = selectedServiceDetails.reduce((sum, s) => {
+    const rate = MOCK_RATES[s.currency] || 1;
+    const priceInUSD = s.price / rate;
+    return sum + priceInUSD;
+  }, 0) / (MOCK_RATES[form.watch('currency')] || 1);
+
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -201,7 +207,7 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
                             currency={form.watch('currency')}
                             onCurrencyChange={(value) => form.setValue('currency', value)}
                         />
-                        <p className='text-xs text-muted-foreground'>Suggested: {suggestedPrice.toLocaleString(undefined, { style: 'currency', currency: project.currency, notation: 'compact' })}</p>
+                        <p className='text-xs text-muted-foreground'>Suggested: ~{suggestedPrice.toLocaleString(undefined, { style: 'currency', currency: form.watch('currency'), notation: 'compact' })}</p>
                         <FormMessage />
                     </FormItem>
                 )}
