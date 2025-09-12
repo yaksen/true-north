@@ -115,7 +115,7 @@ export function DataTable<TData, TValue>({
     document.body.removeChild(link);
   }
 
-  const isExportDisabled = table.getFilteredSelectedRowModel().rows.length === 0;
+  const isExportDisabled = !table || table.getFilteredSelectedRowModel().rows.length === 0;
 
   if (!table) {
     return null; // or a loading indicator
