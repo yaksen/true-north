@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -103,7 +102,7 @@ export function GoalTracker({ currentRevenue, goal = 10000, currency }: GoalTrac
                 y="50%"
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className="fill-foreground text-4xl font-bold"
+                className="fill-foreground text-2xl font-bold"
             >
                 {`${Math.round(progress)}%`}
             </text>
