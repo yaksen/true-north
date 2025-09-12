@@ -39,7 +39,9 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
   const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
   const [isPackageFormOpen, setIsPackageFormOpen] = useState(false);
   const [editingPackage, setEditingPackage] = useState<Package | undefined>(undefined);
-  const [categoryFilter, setCategoryFilter] = useState<string | 'all'>('all');
+  const [serviceCategoryFilter, setServiceCategoryFilter] = useState<string | 'all'>('all');
+  const [packageTypeFilter, setPackageTypeFilter] = useState<'all' | 'custom' | 'fixed'>('all');
+
 
   const categoryColumns = useMemo(() => getCategoriesColumns({ 
     onEdit: () => {}, 
@@ -49,9 +51,16 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
   const serviceColumns = useMemo(() => getServicesColumns({ categories, project }), [categories, project]);
 
   const filteredServices = useMemo(() => {
-    if (categoryFilter === 'all') return services;
-    return services.filter(s => s.categoryId === categoryFilter);
-  }, [services, categoryFilter]);
+    if (serviceCategoryFilter === 'all') return services;
+    return services.filter(s => s.categoryId === serviceCategoryFilter);
+  }, [services, serviceCategoryFilter]);
+
+  const filteredPackages = useMemo(() => {
+    if (packageTypeFilter === 'all') return packages;
+    if (packageTypeFilter === 'custom') return packages.filter(p => p.custom);
+    if (packageTypeFilter === 'fixed') return packages.filter(p => !p.custom);
+    return packages;
+  }, [packages, packageTypeFilter]);
 
   const handleEditPackage = (pkg: Package) => {
     setEditingPackage(pkg);
@@ -75,6 +84,7 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
   };
 
   const getFormattedDuration = (duration: string) => {
+    if (!duration) return '';
     const [value, unit] = duration.split(' ');
     if (!value || !unit) return duration;
     const formattedUnit = Number(value) === 1 ? unit.replace(/s$/, '') : unit;
@@ -83,7 +93,7 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
 
   const ServiceToolbar = () => (
     <div className="flex items-center gap-2">
-        <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value)}>
+        <Select value={serviceCategoryFilter} onValueChange={(value) => setServiceCategoryFilter(value)}>
             <SelectTrigger className="w-48 h-9 text-sm">
                 <SelectValue placeholder="Filter by category..." />
             </SelectTrigger>
@@ -94,8 +104,8 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
                 ))}
             </SelectContent>
         </Select>
-        {categoryFilter !== 'all' && (
-            <Button variant="ghost" size="sm" onClick={() => setCategoryFilter('all')}>
+        {serviceCategoryFilter !== 'all' && (
+            <Button variant="ghost" size="sm" onClick={() => setServiceCategoryFilter('all')}>
                 Clear Filter
             </Button>
         )}
@@ -161,14 +171,31 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
       <TabsContent value="packages">
          <Card>
           <CardHeader>
-            <CardTitle>Packages</CardTitle>
-            <CardDescription>Bundle services into fixed-price packages.</CardDescription>
+            <div className='flex justify-between items-center'>
+                <div>
+                    <CardTitle>Packages</CardTitle>
+                    <CardDescription>Bundle services into fixed-price packages.</CardDescription>
+                </div>
+                <div className='flex items-center gap-1 p-1 bg-muted rounded-lg'>
+                    {(['all', 'custom', 'fixed'] as const).map(filter => (
+                        <Button 
+                            key={filter} 
+                            size='sm' 
+                            variant={packageTypeFilter === filter ? 'secondary' : 'ghost'}
+                            onClick={() => setPackageTypeFilter(filter)}
+                            className='capitalize'
+                        >
+                            {filter}
+                        </Button>
+                    ))}
+                </div>
+            </div>
           </CardHeader>
           <CardContent>
             <ScrollArea className='h-[calc(100vh-22rem)]'>
-                {packages.length > 0 ? (
+                {filteredPackages.length > 0 ? (
                     <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                        {packages.map(pkg => {
+                        {filteredPackages.map(pkg => {
                             const includedServices = pkg.services.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
                             return (
                             <Card key={pkg.id}>
@@ -220,7 +247,7 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
                 ) : (
                     <div className="text-center text-muted-foreground py-12">
                         <PackageIcon className="mx-auto h-12 w-12" />
-                        <p className="mt-4">No packages created yet.</p>
+                        <p className="mt-4">No packages found for the selected filter.</p>
                     </div>
                 )}
             </ScrollArea>
@@ -230,5 +257,3 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
     </Tabs>
   );
 }
-
-    
