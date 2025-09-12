@@ -12,9 +12,9 @@ import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectTasks } from '@/components/projects/project-tasks';
 import { ProjectFinance } from '@/components/projects/project-finance';
-import { ProjectOverview } from '@/components/project/project-overview';
 import { ProjectTeam } from '@/components/projects/project-team';
 import { ProjectNotes } from '@/components/projects/project-notes';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -113,32 +113,54 @@ export default function ProjectDetailPage() {
     );
   }
 
+  const PlaceholderContent = ({ title }: { title: string }) => (
+    <Card className='mt-4'>
+        <CardHeader>
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>This section is under construction.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <p className='text-muted-foreground'>
+                The UI and functionality for the {title.toLowerCase()} section will be implemented soon.
+            </p>
+        </CardContent>
+    </Card>
+  );
+
   return (
     <div className="flex flex-col gap-6">
         <ProjectHeader project={project} />
 
-        <Tabs defaultValue="tasks" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="tasks">Tasks</TabsTrigger>
+        <Tabs defaultValue="dashboard" className="w-full">
+            <TabsList className="grid w-full grid-cols-7">
+                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                <TabsTrigger value="leads">Leads/Channels</TabsTrigger>
+                <TabsTrigger value="packages">Products/Packages</TabsTrigger>
                 <TabsTrigger value="finance">Finance</TabsTrigger>
-                <TabsTrigger value="team">Team</TabsTrigger>
-                <TabsTrigger value="notes">Notes &amp; Files</TabsTrigger>
+                <TabsTrigger value="tasks">Tasks</TabsTrigger>
+                <TabsTrigger value="records">Records</TabsTrigger>
+                <TabsTrigger value="reports">Reports</TabsTrigger>
             </TabsList>
-            <TabsContent value="overview">
-               <ProjectOverview project={project} />
+            <TabsContent value="dashboard">
+                <PlaceholderContent title="Dashboard" />
             </TabsContent>
-            <TabsContent value="tasks">
-                <ProjectTasks tasks={tasks} allLeads={leads} projectId={project.id} />
+            <TabsContent value="leads">
+                <PlaceholderContent title="Leads/Channels" />
+            </TabsContent>
+            <TabsContent value="packages">
+                <PlaceholderContent title="Products/Packages" />
             </TabsContent>
             <TabsContent value="finance">
                 <ProjectFinance transactions={transactions} project={project} />
             </TabsContent>
-             <TabsContent value="team">
-                <ProjectTeam project={project} allUsers={allUsers} />
+             <TabsContent value="tasks">
+                <ProjectTasks tasks={tasks} allLeads={leads} projectId={project.id} />
             </TabsContent>
-             <TabsContent value="notes">
-                <ProjectNotes projectId={project.id} notes={notes} allUsers={allUsers} />
+             <TabsContent value="records">
+                <PlaceholderContent title="Records" />
+            </TabsContent>
+             <TabsContent value="reports">
+                <PlaceholderContent title="Reports" />
             </TabsContent>
         </Tabs>
     </div>

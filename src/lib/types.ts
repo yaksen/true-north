@@ -5,6 +5,7 @@ export type UserRole = 'admin' | 'manager';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'void';
 export type PackageCategory = 'fixed' | 'custom';
 export type DiscountType = 'percentage' | 'flat';
+export type ProjectStatus = 'Planning' | 'In-Progress' | 'Completed' | 'On-Hold';
 
 export type ActivityCategory = 'Sales' | 'Expenses' | 'Tasks' | 'Customer Service' | 'HR & Team';
 
@@ -44,7 +45,7 @@ export interface Project extends BaseEntity {
     private: boolean;
     members: string[];
     currency: 'LKR' | 'USD';
-    status: 'Planning' | 'In-Progress' | 'Completed' | 'On-Hold';
+    status: ProjectStatus;
 }
 
 export interface Note {
