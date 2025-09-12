@@ -19,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { logActivity } from '@/lib/activity-log';
 
 const leadStatuses = ['new', 'contacted', 'qualified', 'lost', 'converted'] as const;
+const socialPlatforms = ['LinkedIn', 'Twitter', 'GitHub', 'Facebook', 'Instagram', 'TikTok', 'Website'];
+
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -154,7 +156,18 @@ export function LeadForm({ lead, projectId, closeForm }: LeadFormProps) {
                             control={form.control}
                             name={`socials.${index}.platform`}
                             render={({ field }) => (
-                                <Input {...field} placeholder="Platform (e.g. LinkedIn)" className="w-1/3"/>
+                                <FormItem className="w-1/3">
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Platform" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {socialPlatforms.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
                             )}
                         />
                          <FormField
@@ -173,7 +186,7 @@ export function LeadForm({ lead, projectId, closeForm }: LeadFormProps) {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => append({ platform: '', url: '' })}
+                    onClick={() => append({ platform: 'Website', url: '' })}
                 >
                     <PlusCircle className="mr-2 h-4 w-4" /> Add Social Link
                 </Button>

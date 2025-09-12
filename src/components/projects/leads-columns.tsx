@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Lead, LeadStatus, Package } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon, Edit, Trash2 } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon, Edit, Trash2, Facebook, Instagram, CaseUpper } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -123,7 +123,10 @@ const SocialsCell: React.FC<{ lead: Lead }> = ({ lead }) => {
         if (p.includes('linkedin')) return <Linkedin className="h-4 w-4" />;
         if (p.includes('twitter')) return <Twitter className="h-4 w-4" />;
         if (p.includes('github')) return <Github className="h-4 w-4" />;
-        return <LinkIcon className="h-4 w-4" />;
+        if (p.includes('facebook')) return <Facebook className="h-4 w-4" />;
+        if (p.includes('instagram')) return <Instagram className="h-4 w-4" />;
+        if (p.includes('website')) return <LinkIcon className="h-4 w-4" />;
+        return <CaseUpper className="h-4 w-4" />;
     };
 
     return (
@@ -223,5 +226,3 @@ export const getLeadsColumns = (project: {id: string, currency: string}, package
         },
       },
   ];
-
-    
