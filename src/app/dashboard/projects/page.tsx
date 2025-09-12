@@ -22,9 +22,22 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { useCurrency } from '@/context/CurrencyContext';
+
+// Mock conversion rates - replace with a real API call in a real app
+const MOCK_RATES: { [key: string]: number } = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
+
+const convert = (amount: number, from: string, to: string) => {
+    const fromRate = MOCK_RATES[from] || 1;
+    const toRate = MOCK_RATES[to] || 1;
+    return (amount / fromRate) * toRate;
+};
+
 
 export default function ProjectsPage() {
   const { user } = useAuth();
+  const { globalCurrency } = useCurrency();
+  const displayCurrency = globalCurrency || 'USD';
   const [projects, setProjects] = useState<Project[]>([]);
   const [finances, setFinances] = useState<Finance[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -80,8 +93,14 @@ export default function ProjectsPage() {
         const projectFinances = finances.filter(f => f.projectId === project.id);
         const projectTasks = tasks.filter(t => t.projectId === project.id);
 
-        const income = projectFinances.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
-        const expense = projectFinances.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
+        const income = projectFinances
+            .filter(f => f.type === 'income')
+            .reduce((sum, f) => sum + convert(f.amount, f.currency, displayCurrency), 0);
+        
+        const expense = projectFinances
+            .filter(f => f.type === 'expense')
+            .reduce((sum, f) => sum + convert(f.amount, f.currency, displayCurrency), 0);
+            
         const profitLoss = income - expense;
         
         const completedTasks = projectTasks.filter(t => t.status === 'Done').length;
@@ -95,7 +114,7 @@ export default function ProjectsPage() {
             completedTasks,
         }
     });
-  }, [projects, finances, tasks]);
+  }, [projects, finances, tasks, displayCurrency]);
 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact' }).format(amount);
@@ -159,7 +178,7 @@ export default function ProjectsPage() {
                              <div>
                                 <p className="text-xs text-muted-foreground">Profit / Loss</p>
                                 <p className={`font-semibold ${summary.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                    {formatCurrency(summary.profitLoss, summary.currency)}
+                                    {formatCurrency(summary.profitLoss, displayCurrency)}
                                 </p>
                             </div>
                             <div className='w-40'>
