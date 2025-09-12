@@ -19,6 +19,7 @@ export interface ProjectSummary {
 
 interface ProjectCardProps {
   summary: ProjectSummary;
+  currency: string;
 }
 
 const formatCurrency = (amount: number, currency: string) => {
@@ -32,7 +33,7 @@ const chartConfig = {
     },
 } satisfies ChartConfig;
 
-export function ProjectCard({ summary }: ProjectCardProps) {
+export function ProjectCard({ summary, currency }: ProjectCardProps) {
   const { project, profitLoss, taskCompletionRate, monthlyPL } = summary;
 
   return (
@@ -41,7 +42,7 @@ export function ProjectCard({ summary }: ProjectCardProps) {
         <CardTitle className="truncate">{project.name}</CardTitle>
         <CardDescription>Profit / Loss</CardDescription>
         <p className={`text-2xl font-bold ${profitLoss >= 0 ? 'text-foreground' : 'text-red-500'}`}>
-          {formatCurrency(profitLoss, project.currency)}
+          {formatCurrency(profitLoss, currency)}
         </p>
       </CardHeader>
       <CardContent className="pb-2">
@@ -66,7 +67,7 @@ export function ProjectCard({ summary }: ProjectCardProps) {
                                         P/L
                                         </span>
                                         <span className="font-bold text-muted-foreground">
-                                        {formatCurrency(payload[0].value as number, project.currency)}
+                                        {formatCurrency(payload[0].value as number, currency)}
                                         </span>
                                     </div>
                                     </div>

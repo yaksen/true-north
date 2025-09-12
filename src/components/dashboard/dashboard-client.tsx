@@ -17,16 +17,26 @@ interface DashboardClientProps {
   settings: CrmSettings | null;
 }
 
+// Mock conversion rates - replace with a real API call in a real app
+const MOCK_RATES: { [key: string]: number } = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
+
+const convert = (amount: number, from: string, to: string) => {
+    const fromRate = MOCK_RATES[from] || 1;
+    const toRate = MOCK_RATES[to] || 1;
+    return (amount / fromRate) * toRate;
+};
+
 export function DashboardClient({ projects, tasks, finances, settings }: DashboardClientProps) {
   const { globalCurrency, loading: currencyLoading } = useCurrency();
+  const displayCurrency = globalCurrency || 'USD';
 
   const projectSummaries = useMemo<ProjectSummary[]>(() => {
     return projects.map(project => {
       const projectFinances = finances.filter(f => f.projectId === project.id);
       const projectTasks = tasks.filter(t => t.projectId === project.id);
 
-      const totalIncome = projectFinances.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
-      const totalExpense = projectFinances.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
+      const totalIncome = projectFinances.filter(f => f.type === 'income').reduce((sum, f) => sum + convert(f.amount, f.currency, displayCurrency), 0);
+      const totalExpense = projectFinances.filter(f => f.type === 'expense').reduce((sum, f) => sum + convert(f.amount, f.currency, displayCurrency), 0);
       const profitLoss = totalIncome - totalExpense;
 
       const completedTasks = projectTasks.filter(t => t.status === 'Done').length;
@@ -40,8 +50,8 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
             if (!f.date) return false;
             return new Date(f.date).toISOString().startsWith(monthKey)
         });
-        const income = monthFinances.filter(f => f.type === 'income').reduce((s, f) => s + f.amount, 0);
-        const expense = monthFinances.filter(f => f.type === 'expense').reduce((s, f) => s + f.amount, 0);
+        const income = monthFinances.filter(f => f.type === 'income').reduce((s, f) => s + convert(f.amount, f.currency, displayCurrency), 0);
+        const expense = monthFinances.filter(f => f.type === 'expense').reduce((s, f) => s + convert(f.amount, f.currency, displayCurrency), 0);
         return { name: d.toLocaleString('default', { month: 'short' }), pl: income - expense };
       }).reverse();
 
@@ -53,18 +63,11 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
         monthlyPL,
       };
     });
-  }, [projects, tasks, finances]);
+  }, [projects, tasks, finances, displayCurrency]);
 
   const globalSummary = useMemo<GlobalSummary>(() => {
-    // This is a simplified summary. In a real app, you'd fetch conversion rates.
-    // For now, we assume all projects are in the global currency for this aggregation.
-    const totalPL = projectSummaries.reduce((sum, s) => {
-        return sum + s.profitLoss;
-    }, 0);
-
-    const totalRevenue = projectSummaries.reduce((sum, s) => {
-        return sum + s.totalIncome;
-    }, 0)
+    const totalPL = projectSummaries.reduce((sum, s) => sum + s.profitLoss, 0);
+    const totalRevenue = projectSummaries.reduce((sum, s) => sum + s.totalIncome, 0);
 
     const avgTaskCompletion = projectSummaries.length > 0
         ? projectSummaries.reduce((sum, s) => sum + s.taskCompletionRate, 0) / projectSummaries.length
@@ -75,9 +78,9 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
       totalRevenue,
       avgTaskCompletion,
       activeProjects: projects.length,
-      currency: globalCurrency || 'USD'
+      currency: displayCurrency
     };
-  }, [projectSummaries, projects.length, globalCurrency]);
+  }, [projectSummaries, projects.length, displayCurrency]);
 
   return (
     <div className="flex-1 space-y-6">
@@ -89,12 +92,12 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
         <div className="lg:col-span-2">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {projectSummaries.map(summary => (
-                    <ProjectCard key={summary.project.id} summary={summary} />
+                    <ProjectCard key={summary.project.id} summary={summary} currency={displayCurrency} />
                 ))}
             </div>
         </div>
         <div className="lg:col-span-1 space-y-6">
-            <TopProjects summaries={projectSummaries} />
+            <TopProjects summaries={projectSummaries} currency={displayCurrency} />
             <ForecastWidget summaries={projectSummaries} currency={globalSummary.currency} />
         </div>
       </div>

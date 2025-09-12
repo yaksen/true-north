@@ -10,6 +10,7 @@ import Link from 'next/link';
 
 interface TopProjectsProps {
   summaries: ProjectSummary[];
+  currency: string;
 }
 
 const getInitials = (name: string) => {
@@ -20,7 +21,7 @@ const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
 };
 
-export function TopProjects({ summaries }: TopProjectsProps) {
+export function TopProjects({ summaries, currency }: TopProjectsProps) {
 
   const topProjects = useMemo(() => {
     return [...summaries]
@@ -43,10 +44,10 @@ export function TopProjects({ summaries }: TopProjectsProps) {
                 <div className="grid gap-1 flex-1">
                     <p className="text-sm font-medium leading-none truncate">{summary.project.name}</p>
                     <p className={cn("text-xs", summary.profitLoss >= 0 ? "text-green-400" : "text-red-400")}>
-                        P/L: {formatCurrency(summary.profitLoss, summary.project.currency)}
+                        P/L: {formatCurrency(summary.profitLoss, currency)}
                     </p>
                 </div>
-                <div className="font-medium text-right">{formatCurrency(summary.totalIncome, summary.project.currency)}</div>
+                <div className="font-medium text-right">{formatCurrency(summary.totalIncome, currency)}</div>
           </Link>
         ))}
         {topProjects.length === 0 && (
