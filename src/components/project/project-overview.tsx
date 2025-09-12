@@ -10,11 +10,11 @@ interface ProjectOverviewProps {
 
 export function ProjectOverview({ project }: ProjectOverviewProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-            <CardHeader><CardTitle>Details</CardTitle></CardHeader>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
+        <Card className="col-span-full">
+            <CardHeader><CardTitle>Project Details</CardTitle></CardHeader>
             <CardContent>
-                <p>{project.description}</p>
+                <p className="text-muted-foreground">{project.description}</p>
             </CardContent>
         </Card>
     </div>

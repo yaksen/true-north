@@ -12,6 +12,7 @@ import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectTasks } from '@/components/projects/project-tasks';
 import { ProjectFinance } from '@/components/projects/project-finance';
+import { ProjectOverview } from '@/components/project/project-overview';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -102,7 +103,7 @@ export default function ProjectDetailPage() {
                 <TabsTrigger value="notes">Notes & Files</TabsTrigger>
             </TabsList>
             <TabsContent value="overview">
-               {/* Overview Component Here */}
+               <ProjectOverview project={project} />
             </TabsContent>
             <TabsContent value="tasks">
                 <ProjectTasks tasks={tasks} allLeads={leads} projectId={project.id} />
