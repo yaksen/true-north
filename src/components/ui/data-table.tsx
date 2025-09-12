@@ -83,10 +83,6 @@ export function DataTable<TData, TValue>({
     },
   });
 
-  if (!table) {
-    return null; // or a loading indicator
-  }
-
   const handleExport = () => {
     const selectedRows = table.getFilteredSelectedRowModel().rows;
     if (selectedRows.length === 0) {
@@ -120,6 +116,10 @@ export function DataTable<TData, TValue>({
   }
 
   const isExportDisabled = table.getFilteredSelectedRowModel().rows.length === 0;
+
+  if (!table) {
+    return null; // or a loading indicator
+  }
 
   return (
     <>
