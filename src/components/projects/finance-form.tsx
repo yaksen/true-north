@@ -22,7 +22,7 @@ import { format } from 'date-fns';
 import { logActivity } from '@/lib/activity-log';
 import { calculateDiscountedTotal } from '@/lib/billing';
 
-const financeTypes: FinanceType[] = ['income', 'expense'];
+const financeTypes = ['income', 'expense'] as const;
 
 const formSchema = z.object({
   projectId: z.string().nonempty({ message: 'Project is required.' }),
