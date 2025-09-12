@@ -7,14 +7,13 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import type { Finance, FinanceType } from '@/lib/types';
+import type { Finance, FinanceType, Project } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2, CalendarIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
@@ -25,24 +24,26 @@ import { logActivity } from '@/lib/activity-log';
 const financeTypes: FinanceType[] = ['income', 'expense'];
 
 const formSchema = z.object({
+  projectId: z.string().nonempty({ message: 'Project is required.' }),
   type: z.enum(financeTypes, { required_error: 'Type is required.' }),
   amount: z.coerce.number().positive({ message: 'Amount must be positive.' }),
   description: z.string().min(2, { message: 'Description must be at least 2 characters.' }),
   date: z.date({ required_error: 'A date is required.' }),
   category: z.string().optional(),
-  currency: z.string(), // Added currency
+  currency: z.string(),
 });
 
 type FinanceFormValues = z.infer<typeof formSchema>;
 
 interface FinanceFormProps {
   finance?: Finance;
-  project: { id: string, currency: string };
+  project?: { id: string, currency: string };
+  projects?: Project[];
   leadId?: string;
   closeForm: () => void;
 }
 
-export function FinanceForm({ finance, project, leadId, closeForm }: FinanceFormProps) {
+export function FinanceForm({ finance, project, projects, leadId, closeForm }: FinanceFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,16 +52,28 @@ export function FinanceForm({ finance, project, leadId, closeForm }: FinanceForm
     resolver: zodResolver(formSchema),
     defaultValues: finance ? {
         ...finance,
+        projectId: finance.projectId,
         date: finance.date ? new Date(finance.date) : new Date(),
     } : {
+      projectId: project?.id || '',
       type: 'income',
       amount: 0,
       description: '',
       date: new Date(),
       category: '',
-      currency: project.currency,
+      currency: project?.currency || '',
     },
   });
+  
+  const selectedProjectId = form.watch('projectId');
+  const selectedProject = projects?.find(p => p.id === selectedProjectId);
+
+  useEffect(() => {
+    if (selectedProject) {
+        form.setValue('currency', selectedProject.currency);
+    }
+  }, [selectedProject, form]);
+
 
   async function onSubmit(values: FinanceFormValues) {
     if (!user) {
@@ -73,12 +86,11 @@ export function FinanceForm({ finance, project, leadId, closeForm }: FinanceForm
       if (finance) {
         const financeRef = doc(db, 'finances', finance.id);
         await updateDoc(financeRef, { ...values, updatedAt: serverTimestamp() });
-        await logActivity(project.id, 'finance_updated', { description: values.description }, user.uid);
+        await logActivity(values.projectId, 'finance_updated', { description: values.description }, user.uid);
         toast({ title: 'Success', description: 'Record updated successfully.' });
       } else {
         const financeData: any = {
           ...values,
-          projectId: project.id,
           recordedByUid: user.uid,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -87,7 +99,7 @@ export function FinanceForm({ finance, project, leadId, closeForm }: FinanceForm
             financeData.leadId = leadId;
         }
         await addDoc(collection(db, 'finances'), financeData);
-        await logActivity(project.id, 'finance_created', { description: values.description }, user.uid);
+        await logActivity(values.projectId, 'finance_created', { description: values.description }, user.uid);
         toast({ title: 'Success', description: 'Record created successfully.' });
       }
       closeForm();
@@ -102,6 +114,30 @@ export function FinanceForm({ finance, project, leadId, closeForm }: FinanceForm
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {projects && (
+           <FormField
+            control={form.control}
+            name="projectId"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Project</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a project..." />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {projects.map(p => (
+                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+            )}
+           />
+        )}
         <FormField
           control={form.control}
           name="description"
@@ -139,7 +175,7 @@ export function FinanceForm({ finance, project, leadId, closeForm }: FinanceForm
                 name="amount"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Amount ({project.currency})</FormLabel>
+                        <FormLabel>Amount ({form.getValues('currency') || project?.currency})</FormLabel>
                         <FormControl>
                             <Input type="number" placeholder="0.00" {...field} />
                         </FormControl>
