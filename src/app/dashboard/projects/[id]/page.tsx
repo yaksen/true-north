@@ -15,6 +15,7 @@ import { ProjectFinance } from '@/components/projects/project-finance';
 import { ProjectTeam } from '@/components/projects/project-team';
 import { ProjectNotes } from '@/components/projects/project-notes';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ProjectDashboard } from '@/components/projects/project-dashboard';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -138,11 +139,11 @@ export default function ProjectDetailPage() {
                 <TabsTrigger value="packages">Products/Packages</TabsTrigger>
                 <TabsTrigger value="finance">Finance</TabsTrigger>
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
-                <TabsTrigger value="records">Records</TabsTrigger>
-                <TabsTrigger value="reports">Reports</TabsTrigger>
+                <TabsTrigger value="team">Team</TabsTrigger>
+                <TabsTrigger value="notes">Notes & Files</TabsTrigger>
             </TabsList>
             <TabsContent value="dashboard">
-                <PlaceholderContent title="Dashboard" />
+                <ProjectDashboard project={project} tasks={tasks} transactions={transactions} />
             </TabsContent>
             <TabsContent value="leads">
                 <PlaceholderContent title="Leads/Channels" />
@@ -156,11 +157,11 @@ export default function ProjectDetailPage() {
              <TabsContent value="tasks">
                 <ProjectTasks tasks={tasks} allLeads={leads} projectId={project.id} />
             </TabsContent>
-             <TabsContent value="records">
-                <PlaceholderContent title="Records" />
+             <TabsContent value="team">
+                <ProjectTeam project={project} allUsers={allUsers} />
             </TabsContent>
-             <TabsContent value="reports">
-                <PlaceholderContent title="Reports" />
+             <TabsContent value="notes">
+                <ProjectNotes projectId={project.id} notes={notes} allUsers={allUsers} />
             </TabsContent>
         </Tabs>
     </div>
