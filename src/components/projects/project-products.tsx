@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import type { Project, Category, Service, Package } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { ArrowRight, Edit, Package as PackageIcon, PlusCircle, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
