@@ -45,7 +45,8 @@ export default function ProjectsPage() {
             id: doc.id,
             ...data,
             createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new
+ Date(),
         } as Project);
       });
       
