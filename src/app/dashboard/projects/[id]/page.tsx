@@ -3,14 +3,15 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project } from '@/lib/types';
+import type { Project, Task, Finance } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ProjectDashboard } from '@/components/projects/project-dashboard';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -19,6 +20,8 @@ export default function ProjectDetailPage() {
   const id = params.id as string;
 
   const [project, setProject] = useState<Project | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [finances, setFinances] = useState<Finance[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,21 +31,33 @@ export default function ProjectDetailPage() {
     const unsubscribeProject = onSnapshot(projectRef, (docSnap) => {
       if (docSnap.exists()) {
         const projectData = { id: docSnap.id, ...docSnap.data() } as Project;
-        // Permission check
         if (projectData.private && !projectData.members.includes(user.uid)) {
             router.push('/dashboard/projects');
             return;
         }
         setProject(projectData);
       } else {
-        // Project not found
         router.push('/dashboard/projects');
       }
       setLoading(false);
     });
 
+    const tasksQuery = query(collection(db, 'tasks'), where('projectId', '==', id));
+    const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
+        const tasksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+        setTasks(tasksData);
+    });
+
+    const financesQuery = query(collection(db, 'finances'), where('projectId', '==', id));
+    const unsubscribeFinances = onSnapshot(financesQuery, (snapshot) => {
+        const financesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Finance));
+        setFinances(financesData);
+    });
+
     return () => {
         unsubscribeProject();
+        unsubscribeTasks();
+        unsubscribeFinances();
     };
   }, [user, id, router]);
 
@@ -83,7 +98,7 @@ export default function ProjectDetailPage() {
                 <TabsTrigger value="reports">Reports</TabsTrigger>
             </TabsList>
             <TabsContent value="dashboard">
-                <PlaceholderContent title="Dashboard" />
+                <ProjectDashboard project={project} tasks={tasks} finances={finances} />
             </TabsContent>
             <TabsContent value="leads">
                 <PlaceholderContent title="Leads" />

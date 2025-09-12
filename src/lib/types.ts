@@ -1,7 +1,8 @@
 
-
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Planning' | 'In-Progress' | 'Completed' | 'On-Hold';
+export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
+export type FinanceType = 'income' | 'expense';
 
 export interface UserProfile {
     id: string;
@@ -28,17 +29,28 @@ export interface Project {
   updatedAt: Date;
 }
 
-// Define other types as they are built
 export interface Task {
     id: string;
     projectId: string;
-    // ... other fields
+    title: string;
+    description?: string;
+    status: TaskStatus;
+    dueDate?: Date;
+    assigneeUid?: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
-export interface FinanceRecord {
+export interface Finance {
     id: string;
     projectId: string;
-    // ... other fields
+    type: FinanceType;
+    amount: number;
+    description: string;
+    date: Date;
+    category?: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface Lead {
@@ -48,7 +60,7 @@ export interface Lead {
 }
 
 export interface Product {
-    id: string;
+    id:string;
     projectId: string;
     // ... other fields
 }
@@ -67,7 +79,6 @@ export interface Record {
 
 export interface Report {
     id: string;
-generating a new report
     projectId: string;
     // ... other fields
 }
