@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Loader2 } from 'lucide-react';
+import { CurrencyDebug } from '@/components/debug/CurrencyDebug';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -69,8 +70,9 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="flex items-center">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Global Dashboard</h1>
+        <CurrencyDebug />
       </div>
       {loading ? (
         <div className="flex flex-1 items-center justify-center rounded-lg mt-4">
