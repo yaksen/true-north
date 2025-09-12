@@ -16,6 +16,7 @@ import { ProjectProducts } from '@/components/projects/project-products';
 import { ProjectFinance } from '@/components/projects/project-finance';
 import { ProjectTasks } from '@/components/projects/project-tasks';
 import { ProjectRecords } from '@/components/projects/project-records';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
