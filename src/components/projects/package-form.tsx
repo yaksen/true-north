@@ -26,6 +26,7 @@ import { CheckIcon } from 'lucide-react';
 import { useCurrency } from '@/context/CurrencyContext';
 import { Slider } from '../ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { v4 as uuidv4 } from 'uuid';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -78,6 +79,7 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
   const selectedServiceIds = form.watch('services');
   const packageCurrency = form.watch('currency');
   const discountPercentage = form.watch('discountPercentage');
+  const isCustom = form.watch('custom');
 
   // A mock conversion rate for suggestion. Replace with a real API call in a real app.
   const MOCK_RATES = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
@@ -87,6 +89,14 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
     setDurationUnit(unit);
     form.setValue('duration', `${value} ${unit}`);
   };
+  
+  useEffect(() => {
+    if (isCustom && !pkg) { // Only on create, not on edit
+        form.setValue('name', `Custom Package - ${uuidv4().substring(0, 8)}`);
+    } else if (!isCustom && !pkg) {
+        form.setValue('name', '');
+    }
+  }, [isCustom, pkg, form]);
 
   useEffect(() => {
     if (selectedServiceIds.length > 0) {
@@ -331,4 +341,3 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
   );
 }
 
-    
