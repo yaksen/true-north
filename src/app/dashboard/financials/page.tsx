@@ -2,62 +2,72 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Invoice, Action } from '@/lib/types';
+import type { Invoice, Transaction } from '@/lib/types';
 import { SummaryCard } from '@/components/dashboard/summary-card';
-import { DollarSign, FileWarning, TrendingUp, Loader2 } from 'lucide-react';
+import { DollarSign, FileWarning, TrendingUp, Loader2, MinusCircle, PlusCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
-import { ColumnDef } from '@tanstack/react-table';
-
-// Basic column definition for placeholder
-const transactionColumns: ColumnDef<any>[] = [
-    { accessorKey: 'date', header: 'Date' },
-    { accessorKey: 'description', header: 'Description' },
-    { accessorKey: 'type', header: 'Type' },
-    { accessorKey: 'amount', header: 'Amount (LKR)' },
-];
+import { getColumns } from '@/components/financials/columns';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
 
 export default function FinancialsPage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ totalRevenue: 0, outstandingAmount: 0 });
+  const [stats, setStats] = useState({ totalRevenue: 0, totalExpenses: 0, outstandingAmount: 0 });
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
 
-    async function fetchFinancialData() {
-      setLoading(true);
-      try {
-        // Fetch paid invoices for total revenue
-        const invoicesQuery = query(
-          collection(db, `users/${user.uid}/invoices`),
-          where('status', '==', 'paid')
-        );
-        const invoicesSnapshot = await getDocs(invoicesQuery);
-        const totalRevenue = invoicesSnapshot.docs.reduce((sum, doc) => sum + (doc.data().totalLKR || 0), 0);
-        
-        // Fetch sent/overdue invoices for outstanding amount
-        const outstandingQuery = query(
-            collection(db, `users/${user.uid}/invoices`),
-            where('status', 'in', ['sent', 'overdue'])
-        );
-        const outstandingSnapshot = await getDocs(outstandingQuery);
-        const outstandingAmount = outstandingSnapshot.docs.reduce((sum, doc) => sum + (doc.data().totalLKR || 0), 0);
+    setLoading(true);
 
-        setStats({ totalRevenue, outstandingAmount });
+    const transactionsQuery = query(collection(db, `users/${user.uid}/transactions`));
+    const unsubscribeTransactions = onSnapshot(transactionsQuery, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ 
+            id: doc.id,
+            ...doc.data(),
+            date: doc.data().date?.toDate(),
+        } as Transaction));
+        setTransactions(data);
 
-      } catch (error) {
-        console.error("Error fetching financial data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
+        const totalExpenses = data
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + t.amount, 0);
 
-    fetchFinancialData();
+        setStats(prev => ({ ...prev, totalExpenses }));
+    });
+
+    const invoicesQuery = query(collection(db, `users/${user.uid}/invoices`));
+    const unsubscribeInvoices = onSnapshot(invoicesQuery, (snapshot) => {
+      let totalRevenue = 0;
+      let outstandingAmount = 0;
+      snapshot.forEach(doc => {
+        const invoice = doc.data() as Invoice;
+        if (invoice.status === 'paid') {
+          totalRevenue += invoice.totalLKR;
+        } else if (invoice.status === 'sent' || invoice.status === 'overdue') {
+          outstandingAmount += invoice.totalLKR;
+        }
+      });
+      setStats(prev => ({ ...prev, totalRevenue, outstandingAmount }));
+      setLoading(false);
+    });
+
+    return () => {
+        unsubscribeTransactions();
+        unsubscribeInvoices();
+    };
   }, [user]);
+
+  const chartData = [
+    { name: "Revenue", value: stats.totalRevenue, fill: "var(--color-revenue)" },
+    { name: "Expenses", value: stats.totalExpenses, fill: "var(--color-expenses)" },
+    { name: "Profit", value: stats.totalRevenue - stats.totalExpenses, fill: "var(--color-profit)" },
+  ]
+
 
   if (loading) {
     return (
@@ -67,6 +77,8 @@ export default function FinancialsPage() {
     );
   }
 
+  const columns = getColumns();
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -74,30 +86,35 @@ export default function FinancialsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <SummaryCard title="Total Revenue" value={stats.totalRevenue} icon={DollarSign} prefix="LKR" />
+        <SummaryCard title="Total Revenue" value={stats.totalRevenue} icon={PlusCircle} prefix="LKR" />
+        <SummaryCard title="Total Expenses" value={stats.totalExpenses} icon={MinusCircle} prefix="LKR" />
+        <SummaryCard title="Net Profit" value={stats.totalRevenue - stats.totalExpenses} icon={DollarSign} prefix="LKR" />
         <SummaryCard title="Outstanding Invoices" value={stats.outstandingAmount} icon={FileWarning} prefix="LKR" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
             <CardHeader>
-                <CardTitle>Profit & Loss</CardTitle>
-                <CardDescription>A summary of revenue and expenses over time.</CardDescription>
+                <CardTitle>Profit & Loss Summary</CardTitle>
+                <CardDescription>A high-level overview of revenue vs. expenses.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <div className="flex flex-col items-center justify-center h-60 bg-muted/50 rounded-md">
-                    <TrendingUp className="h-12 w-12 text-muted-foreground" />
-                    <p className="mt-4 text-muted-foreground">P&L chart coming soon!</p>
-                </div>
+            <CardContent className="pl-2">
+                 <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={chartData} layout="vertical">
+                        <XAxis type="number" hide />
+                        <YAxis dataKey="name" type="category" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} width={80} />
+                        <Bar dataKey="value" radius={[4, 4, 4, 4]} />
+                    </BarChart>
+                </ResponsiveContainer>
             </CardContent>
         </Card>
         <Card>
             <CardHeader>
                 <CardTitle>Recent Transactions</CardTitle>
-                <CardDescription>A log of recent financial activities.</CardDescription>
+                <CardDescription>A log of all income and expense activities.</CardDescription>
             </CardHeader>
             <CardContent>
-                 <DataTable columns={transactionColumns} data={[]} />
+                 <DataTable columns={columns} data={transactions} />
             </CardContent>
         </Card>
       </div>

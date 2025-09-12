@@ -135,9 +135,7 @@ export interface HRDetails {
 }
 
 
-export interface Transaction {
-    id: string;
-    userId: string;
+export interface Transaction extends BaseEntity {
     type: 'income' | 'expense';
     category: string;
     amount: number;
@@ -145,7 +143,7 @@ export interface Transaction {
     description: string;
     relatedInvoiceId?: string;
     relatedActionId?: string;
-    createdAt: Date;
+    projectId?: string;
 }
 
 

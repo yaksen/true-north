@@ -28,7 +28,7 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import type { Action, ExpenseDetails, Transaction } from '@/lib/types';
+import type { Transaction } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '../ui/calendar';
@@ -68,42 +68,21 @@ export function ExpenseForm({ closeDialog }: ExpenseFormProps) {
   async function onSubmit(values: ExpenseFormValues) {
     if (!user) return toast({ variant: 'destructive', title: 'Not logged in' });
     setIsSubmitting(true);
-
-    const expenseDetails: ExpenseDetails = {
-      expenseType: values.expenseType,
-      amount: values.amount,
-    };
     
-    const actionData: Omit<Action<'Expenses'>, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'priority' | 'deadline'> = {
-        category: 'Expenses',
-        status: 'Done',
-        assignedTo: user.uid,
+    const transactionData: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId'> = {
+        type: 'expense',
+        category: values.expenseType,
+        amount: values.amount,
         date: values.date,
-        notes: values.notes,
-        details: expenseDetails
+        description: values.notes || `Expense: ${values.expenseType}`,
     };
 
     try {
-        const actionRef = await addDoc(collection(db, `users/${user.uid}/actions`), {
-            ...actionData,
+        await addDoc(collection(db, `users/${user.uid}/transactions`), {
+            ...transactionData,
             userId: user.uid,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-        });
-
-        const transactionData: Omit<Transaction, 'id' | 'createdAt'> = {
-            userId: user.uid,
-            type: 'expense',
-            category: values.expenseType,
-            amount: values.amount,
-            date: values.date,
-            description: `Expense: ${values.notes || values.expenseType}`,
-            relatedActionId: actionRef.id,
-        };
-
-        await addDoc(collection(db, `users/${user.uid}/transactions`), {
-            ...transactionData,
-            createdAt: serverTimestamp(),
         });
 
 
