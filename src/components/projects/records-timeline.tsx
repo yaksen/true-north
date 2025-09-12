@@ -72,13 +72,20 @@ const recordDetails: Record<
 };
 
 export function RecordsTimeline({ items }: RecordsTimelineProps) {
+  const filteredItems = items.filter(item => {
+    if (item.feedType === 'record') {
+      return item.type !== 'report_uploaded' && item.type !== 'report_deleted';
+    }
+    return true;
+  });
+
   return (
     <ScrollArea className="h-[calc(100vh-22rem)]">
       <div className="relative pl-6">
         {/* Vertical line */}
         <div className="absolute left-6 top-0 h-full w-px bg-border" />
 
-        {items.map((item, index) => {
+        {filteredItems.map((item, index) => {
           const isNote = item.feedType === 'note';
           const Icon = isNote ? MessageSquare : recordDetails[item.type as keyof typeof recordDetails]?.icon || FileText;
           const userIdentifier = isNote ? item.authorUid : item.actorUid;
