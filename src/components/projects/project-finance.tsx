@@ -68,7 +68,11 @@ export function ProjectFinance({ transactions }: ProjectFinanceProps) {
                             <XAxis type="number" dataKey="value" hide />
                             <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={-4} width={80} />
                             <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                            <Bar dataKey="value" layout="vertical" radius={4} />
+                            <Bar dataKey="value" layout="vertical" radius={4}>
+                                {chartData.map((entry) => (
+                                    <div key={entry.name} style={{ backgroundColor: entry.fill }} />
+                                ))}
+                            </Bar>
                         </BarChart>
                     </ChartContainer>
                 </CardContent>
