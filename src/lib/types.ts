@@ -4,7 +4,7 @@ export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Planning' | 'In-Progress' | 'Completed' | 'On-Hold';
 export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
 export type FinanceType = 'income' | 'expense';
-export type LeadStatus = 'new' | 'contacted' | 'qualified', 'lost', 'converted';
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void';
 export type ActivityRecordType = 
@@ -33,7 +33,10 @@ export type ActivityRecordType =
     | 'report_deleted'
     | 'member_invited'
     | 'member_removed'
-    | 'project_deleted';
+    | 'project_deleted'
+    | 'invoice_created'
+    | 'invoice_updated'
+    | 'invoice_deleted';
 
 
 export interface UserProfile {

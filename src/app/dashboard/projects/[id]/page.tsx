@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Report } from '@/lib/types';
+import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Report, Invoice } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,6 +18,7 @@ import { ProjectTasks } from '@/components/projects/project-tasks';
 import { ProjectRecords } from '@/components/projects/project-records';
 import { ProjectReports } from '@/components/projects/project-reports';
 import { ProjectSettings } from '@/components/projects/project-settings';
+import { ProjectBilling } from '@/components/projects/project-billing';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -35,6 +36,7 @@ export default function ProjectDetailPage() {
   const [records, setRecords] = useState<ActivityRecord[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -72,6 +74,7 @@ export default function ProjectDetailPage() {
     const unsubscribeRecords = createCollectionSubscription<ActivityRecord>('records', setRecords);
     const unsubscribeNotes = createCollectionSubscription<Note>('notes', setNotes);
     const unsubscribeReports = createCollectionSubscription<Report>('reports', setReports);
+    const unsubscribeInvoices = createCollectionSubscription<Invoice>('invoices', setInvoices);
 
     return () => {
         unsubscribeProject();
@@ -84,6 +87,7 @@ export default function ProjectDetailPage() {
         unsubscribeRecords();
         unsubscribeNotes();
         unsubscribeReports();
+        unsubscribeInvoices();
     };
   }, [user, id, router]);
 
@@ -100,10 +104,11 @@ export default function ProjectDetailPage() {
         <ProjectHeader project={project} />
 
         <Tabs defaultValue="dashboard" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-9">
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                 <TabsTrigger value="leads">Leads</TabsTrigger>
                 <TabsTrigger value="products">Products</TabsTrigger>
+                <TabsTrigger value="billing">Billing</TabsTrigger>
                 <TabsTrigger value="finance">Finance</TabsTrigger>
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
                 <TabsTrigger value="records">Records</TabsTrigger>
@@ -123,6 +128,9 @@ export default function ProjectDetailPage() {
                     services={services}
                     packages={packages}
                 />
+            </TabsContent>
+            <TabsContent value="billing">
+                <ProjectBilling project={project} invoices={invoices} leads={leads} />
             </TabsContent>
             <TabsContent value="finance">
                 <ProjectFinance project={project} finances={finances} />

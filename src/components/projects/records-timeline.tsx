@@ -14,6 +14,7 @@ import {
   Package,
   FileUp,
   Tag,
+  ReceiptText,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -58,6 +59,9 @@ const recordDetails: Record<
   note_added: { icon: MessageSquare, message: (p) => `Added a new note.` },
   report_uploaded: { icon: FileUp, message: (p) => `File "${p.name}" was uploaded.` },
   report_deleted: { icon: FileUp, message: (p) => `File "${p.name}" was deleted.` },
+  invoice_created: { icon: ReceiptText, message: (p) => `Invoice "${p.invoiceNumber}" was created.` },
+  invoice_updated: { icon: ReceiptText, message: (p) => `Invoice "${p.invoiceNumber}" was updated to status: ${p.status}.` },
+  invoice_deleted: { icon: ReceiptText, message: (p) => `Invoice "${p.invoiceNumber}" was deleted.` },
 };
 
 export function RecordsTimeline({ items }: RecordsTimelineProps) {
@@ -69,7 +73,7 @@ export function RecordsTimeline({ items }: RecordsTimelineProps) {
 
         {items.map((item, index) => {
           const isNote = item.feedType === 'note';
-          const Icon = isNote ? MessageSquare : recordDetails[item.type]?.icon || FileText;
+          const Icon = isNote ? MessageSquare : recordDetails[item.type as keyof typeof recordDetails]?.icon || FileText;
 
           return (
             <div key={item.id} className="relative mb-6 flex gap-4">
@@ -95,7 +99,7 @@ export function RecordsTimeline({ items }: RecordsTimelineProps) {
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    {recordDetails[item.type]?.message(item.payload) || 'An unknown action occurred.'}
+                    {recordDetails[item.type as keyof typeof recordDetails]?.message(item.payload) || 'An unknown action occurred.'}
                   </p>
                 )}
               </div>

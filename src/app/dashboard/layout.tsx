@@ -11,6 +11,7 @@ import {
   ListChecks,
   CircleDollarSign,
   User,
+  ReceiptText,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +65,7 @@ export default function DashboardLayout({
   const navItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard' },
     { href: '/dashboard/projects', icon: Briefcase, label: 'Projects' },
+    { href: '/dashboard/billing', icon: ReceiptText, label: 'Billing' },
     { href: '/dashboard/tasks', icon: ListChecks, label: 'Tasks' },
     { href: '/dashboard/finance', icon: CircleDollarSign, label: 'Finance' },
     { href: '/dashboard/profile', icon: User, label: 'Profile' },
@@ -84,7 +86,8 @@ export default function DashboardLayout({
                   href={item.href}
                   className={cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-                    pathname === item.href && 'bg-muted text-primary'
+                    pathname.startsWith(item.href) && item.href !== '/dashboard' ? 'bg-muted text-primary' : '',
+                    pathname === item.href && item.href === '/dashboard' ? 'bg-muted text-primary' : ''
                   )}
                 >
                   <item.icon className="h-4 w-4" />
@@ -119,7 +122,8 @@ export default function DashboardLayout({
                     href={item.href}
                     className={cn(
                       'mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground',
-                      pathname === item.href && 'bg-muted text-foreground'
+                      pathname.startsWith(item.href) && item.href !== '/dashboard' ? 'bg-muted text-foreground' : '',
+                      pathname === item.href && item.href === '/dashboard' ? 'bg-muted text-foreground' : ''
                     )}
                   >
                     <item.icon className="h-5 w-5" />
