@@ -16,6 +16,7 @@ import { ServiceForm } from "./service-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 import { formatCurrency } from "@/lib/utils";
+import { Badge } from "../ui/badge";
 
 interface ColumnDependencies {
     categories: Category[];
@@ -109,7 +110,7 @@ export const getServicesColumns = (dependencies: ColumnDependencies): ColumnDef<
         if (!value || !unit) return finishTime;
         // Make unit singular if value is 1
         const formattedUnit = Number(value) === 1 ? unit.replace(/s$/, '') : unit;
-        return `${value} ${formattedUnit}`;
+        return <Badge variant="secondary">{`${value} ${formattedUnit}`}</Badge>;
       }
     },
     {
@@ -117,3 +118,4 @@ export const getServicesColumns = (dependencies: ColumnDependencies): ColumnDef<
       cell: ({ row }) => <ActionsCell service={row.original} dependencies={dependencies} />,
     },
   ];
+
