@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Service, Category } from '@/lib/types';
+import type { Service, Category, Project } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -31,12 +31,12 @@ type ServiceFormValues = z.infer<typeof formSchema>;
 
 interface ServiceFormProps {
   service?: Service;
-  projectId: string;
+  project: Project;
   categories: Category[];
   closeForm: () => void;
 }
 
-export function ServiceForm({ service, projectId, categories, closeForm }: ServiceFormProps) {
+export function ServiceForm({ service, project, categories, closeForm }: ServiceFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,16 +60,16 @@ export function ServiceForm({ service, projectId, categories, closeForm }: Servi
       if (service) {
         const serviceRef = doc(db, 'services', service.id);
         await updateDoc(serviceRef, { ...values, updatedAt: serverTimestamp() });
-        await logActivity(projectId, 'service_updated', { name: values.name }, user.uid);
+        await logActivity(project.id, 'service_updated', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Service updated successfully.' });
       } else {
         await addDoc(collection(db, 'services'), {
           ...values,
-          projectId: projectId,
+          projectId: project.id,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
-        await logActivity(projectId, 'service_created', { name: values.name }, user.uid);
+        await logActivity(project.id, 'service_created', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Service created successfully.' });
       }
       closeForm();
@@ -131,32 +131,35 @@ export function ServiceForm({ service, projectId, categories, closeForm }: Servi
             />
         </div>
         <div className='grid grid-cols-2 gap-4'>
-             <FormField
-                control={form.control}
-                name="priceLKR"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Price (LKR)</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="50000" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-             <FormField
-                control={form.control}
-                name="priceUSD"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Price (USD)</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="250" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
+            {project.currency === 'LKR' ? (
+                <FormField
+                    control={form.control}
+                    name="priceLKR"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Price (LKR)</FormLabel>
+                            <FormControl>
+                                <Input type="number" placeholder="50000" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            ) : (
+                <FormField
+                    control={form.control}
+                    name="priceUSD"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Price (USD)</FormLabel>
+                            <FormControl>
+                                <Input type="number" placeholder="250" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            )}
         </div>
 
         <FormField

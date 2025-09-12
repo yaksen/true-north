@@ -82,11 +82,11 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
             </Dialog>
             <Dialog open={isServiceFormOpen} onOpenChange={setIsServiceFormOpen}>
                 <DialogTrigger asChild><Button size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> New Service</Button></DialogTrigger>
-                <DialogContent><DialogHeader><DialogTitle>Create New Service</DialogTitle></DialogHeader><ServiceForm projectId={project.id} categories={categories} closeForm={() => setIsServiceFormOpen(false)} /></DialogContent>
+                <DialogContent><DialogHeader><DialogTitle>Create New Service</DialogTitle></DialogHeader><ServiceForm project={project} categories={categories} closeForm={() => setIsServiceFormOpen(false)} /></DialogContent>
             </Dialog>
             <Dialog open={isPackageFormOpen} onOpenChange={setIsPackageFormOpen}>
                 <DialogTrigger asChild><Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Package</Button></DialogTrigger>
-                <DialogContent className='max-w-3xl'><DialogHeader><DialogTitle>Create New Package</DialogTitle></DialogHeader><PackageForm projectId={project.id} services={services} closeForm={() => setIsPackageFormOpen(false)} /></DialogContent>
+                <DialogContent className='max-w-3xl'><DialogHeader><DialogTitle>Create New Package</DialogTitle></DialogHeader><PackageForm project={project} services={services} closeForm={() => setIsPackageFormOpen(false)} /></DialogContent>
             </Dialog>
         </div>
       </div>

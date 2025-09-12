@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Package, Service } from '@/lib/types';
+import type { Package, Project, Service } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -34,12 +34,12 @@ type PackageFormValues = z.infer<typeof formSchema>;
 
 interface PackageFormProps {
   pkg?: Package;
-  projectId: string;
+  project: Project;
   services: Service[];
   closeForm: () => void;
 }
 
-export function PackageForm({ pkg, projectId, services, closeForm }: PackageFormProps) {
+export function PackageForm({ pkg, project, services, closeForm }: PackageFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,16 +67,16 @@ export function PackageForm({ pkg, projectId, services, closeForm }: PackageForm
       if (pkg) {
         const pkgRef = doc(db, 'packages', pkg.id);
         await updateDoc(pkgRef, { ...values, updatedAt: serverTimestamp() });
-        await logActivity(projectId, 'package_updated', { name: values.name }, user.uid);
+        await logActivity(project.id, 'package_updated', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Package updated successfully.' });
       } else {
         await addDoc(collection(db, 'packages'), {
           ...values,
-          projectId: projectId,
+          projectId: project.id,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
-        await logActivity(projectId, 'package_created', { name: values.name }, user.uid);
+        await logActivity(project.id, 'package_created', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Package created successfully.' });
       }
       closeForm();
@@ -171,35 +171,38 @@ export function PackageForm({ pkg, projectId, services, closeForm }: PackageForm
             )}
         />
 
-        <div className='grid grid-cols-2 lg:grid-cols-3 gap-4'>
-             <FormField
-                control={form.control}
-                name="priceLKR"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Price (LKR)</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="150000" {...field} />
-                        </FormControl>
-                         <p className='text-xs text-muted-foreground'>Suggested: {suggestedPriceLKR.toLocaleString()}</p>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-             <FormField
-                control={form.control}
-                name="priceUSD"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Price (USD)</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="800" {...field} />
-                        </FormControl>
-                        <p className='text-xs text-muted-foreground'>Suggested: {suggestedPriceUSD.toLocaleString()}</p>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
+        <div className='grid grid-cols-2 lg:grid-cols-3 gap-4 items-end'>
+            {project.currency === 'LKR' ? (
+                <FormField
+                    control={form.control}
+                    name="priceLKR"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Price (LKR)</FormLabel>
+                            <FormControl>
+                                <Input type="number" placeholder="150000" {...field} />
+                            </FormControl>
+                            <p className='text-xs text-muted-foreground'>Suggested: {suggestedPriceLKR.toLocaleString()}</p>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            ) : (
+                <FormField
+                    control={form.control}
+                    name="priceUSD"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Price (USD)</FormLabel>
+                            <FormControl>
+                                <Input type="number" placeholder="800" {...field} />
+                            </FormControl>
+                            <p className='text-xs text-muted-foreground'>Suggested: {suggestedPriceUSD.toLocaleString()}</p>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            )}
             <FormField
                 control={form.control}
                 name="duration"
@@ -210,6 +213,25 @@ export function PackageForm({ pkg, projectId, services, closeForm }: PackageForm
                             <Input placeholder="e.g. 1 month" {...field} />
                         </FormControl>
                         <FormMessage />
+                    </FormItem>
+                )}
+            />
+             <FormField
+                control={form.control}
+                name="custom"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-end space-x-2 pb-2">
+                        <FormControl>
+                            <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                            <FormLabel>
+                                Custom Package
+                            </FormLabel>
+                        </div>
                     </FormItem>
                 )}
             />
