@@ -3,7 +3,7 @@
 
 import type { Project } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, PlusCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -48,13 +48,13 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
                     <ProjectForm project={project} closeForm={() => setIsEditDialogOpen(false)} />
                 </DialogContent>
             </Dialog>
-          {/* Add other actions like delete here */}
         </div>
       </div>
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-4">
           {project.name}
           <Badge variant="secondary" className="capitalize text-base">{project.status}</Badge>
+          {project.private && <Badge variant="outline"><Lock className='h-3 w-3 mr-1'/>Private</Badge>}
         </h1>
         <p className="text-muted-foreground mt-1">{project.description}</p>
       </div>

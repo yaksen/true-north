@@ -19,7 +19,6 @@ import { Badge } from '@/components/ui/badge';
 
 const profileSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  phoneNumber: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -34,7 +33,6 @@ export default function ProfilePage() {
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: user?.profile?.name ?? '',
-      phoneNumber: user?.profile?.phoneNumber ?? '',
     },
   });
 
@@ -139,17 +137,6 @@ export default function ProfilePage() {
                         )}
                     />
                     {errors.name && <p className="text-sm text-destructive mt-1">{errors.name.message}</p>}
-                </div>
-                 <div>
-                    <Label htmlFor="phoneNumber">Phone Number</Label>
-                    <Controller
-                        name="phoneNumber"
-                        control={control}
-                        render={({ field }) => (
-                            <Input id="phoneNumber" placeholder="+1 234 567 890" {...field} />
-                        )}
-                    />
-                    {errors.phoneNumber && <p className="text-sm text-destructive mt-1">{errors.phoneNumber.message}</p>}
                 </div>
                  <div>
                     <Label htmlFor="email">Email</Label>

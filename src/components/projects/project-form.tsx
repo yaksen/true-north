@@ -74,7 +74,7 @@ export function ProjectForm({ project, closeForm }: ProjectFormProps) {
     try {
       if (project) {
         // Update existing project
-        const projectRef = doc(db, `users/${user.uid}/projects`, project.id);
+        const projectRef = doc(db, 'projects', project.id);
         await updateDoc(projectRef, { ...values, updatedAt: serverTimestamp() });
         toast({ title: 'Success', description: 'Project updated successfully.' });
       } else {
@@ -86,7 +86,7 @@ export function ProjectForm({ project, closeForm }: ProjectFormProps) {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
-        await addDoc(collection(db, `users/${user.uid}/projects`), projectData);
+        await addDoc(collection(db, 'projects'), projectData);
         toast({ title: 'Success', description: 'Project created successfully.' });
       }
       closeForm();
@@ -183,10 +183,6 @@ export function ProjectForm({ project, closeForm }: ProjectFormProps) {
                 </FormItem>
             )}
         />
-
-
-        {/* Member management can be added here later */}
-
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
           <Button type="submit" disabled={isSubmitting}>

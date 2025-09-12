@@ -6,20 +6,9 @@ import { useAuth } from '@/hooks/use-auth';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import {
-  Box,
   Briefcase,
-  CheckSquare,
-  ChevronDown,
-  Contact,
-  DollarSign,
-  FileText,
   LayoutDashboard,
   Menu,
-  Settings,
-  Shapes,
-  ShoppingBag,
-  Users,
-  ListTodo,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -35,14 +24,6 @@ import { UserNav } from '@/components/user-nav';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/projects', label: 'Projects', icon: Briefcase },
-  { href: '/dashboard/tasks', label: 'Tasks', icon: ListTodo },
-  { href: '/dashboard/leads', label: 'Leads', icon: Contact },
-  { href: '/dashboard/services', label: 'Services', icon: ShoppingBag },
-  { href: '/dashboard/categories', label: 'Categories', icon: Shapes },
-  { href: '/dashboard/packages', label: 'Packages', icon: Box },
-  { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
-  { href: '/dashboard/financials', label: 'Financials', icon: DollarSign },
-  { href: '/dashboard/users', label: 'User Management', icon: Users, roles: ['admin', 'manager'] },
 ];
 
 export default function DashboardLayout({
@@ -63,14 +44,6 @@ export default function DashboardLayout({
     return null;
   }
 
-  const userRole = user.profile?.role;
-
-  const accessibleNavItems = navItems.filter(item => {
-    if (!item.roles) return true; // Public item
-    if (!userRole) return false; // Role not yet loaded
-    return item.roles.includes(userRole);
-  });
-
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -80,13 +53,13 @@ export default function DashboardLayout({
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              {accessibleNavItems.map((item) => (
+              {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-                    { 'bg-muted text-primary': pathname === item.href || (item.href === '/dashboard/tasks' && pathname.startsWith('/dashboard/actions')) }
+                    { 'bg-muted text-primary': pathname.startsWith(item.href) }
                   )}
                 >
                   <item.icon className="h-4 w-4" />
@@ -107,11 +80,11 @@ export default function DashboardLayout({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              {accessibleNavItems.map((item) => (
+              {navItems.map((item) => (
                 <DropdownMenuItem key={item.href} asChild>
                   <Link
                     href={item.href}
-                    className={cn({ 'font-bold text-primary': pathname === item.href })}
+                    className={cn({ 'font-bold text-primary': pathname.startsWith(item.href) })}
                   >
                     {item.label}
                   </Link>
@@ -120,7 +93,7 @@ export default function DashboardLayout({
             </DropdownMenuContent>
           </DropdownMenu>
           <div className="w-full flex-1">
-             {/* Can add a global search here in the future */}
+             {/* Global search can go here */}
           </div>
           <UserNav />
         </header>

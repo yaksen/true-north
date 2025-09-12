@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -24,7 +23,6 @@ import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firest
 import type { UserProfile } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
-// Extend the User object to include our custom UserProfile data
 export interface User extends FirebaseUser {
   profile?: UserProfile;
 }
@@ -49,33 +47,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setLoading(true);
       if (firebaseUser) {
-        // User is signed in, now fetch their profile
         const userRef = doc(db, 'users', firebaseUser.uid);
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
           const profile = userSnap.data() as UserProfile;
-          // Update last login timestamp
           await updateDoc(userRef, { lastLogin: serverTimestamp() });
           setUser({ ...firebaseUser, profile: {...profile, lastLogin: new Date()} });
         } else {
-            // This case handles users who signed up before the profile collection existed.
-            // Or if a user signed up with Google for the first time.
-            const profile: UserProfile = {
-                id: firebaseUser.uid,
+            const profile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt' | 'lastLogin'> = {
                 email: firebaseUser.email!,
-                role: 'manager', // Default role for new signups
+                role: 'member', // Default role for new signups
                 name: firebaseUser.displayName ?? firebaseUser.email,
                 photoURL: firebaseUser.photoURL,
-                lastLogin: new Date(),
+                projects: [],
+            };
+            const newUserProfile = {
+                ...profile,
+                id: firebaseUser.uid,
                 createdAt: new Date(),
                 updatedAt: new Date(),
-            };
-            await setDoc(userRef, { ...profile, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), lastLogin: serverTimestamp() });
-            setUser({ ...firebaseUser, profile });
+                lastLogin: new Date(),
+            }
+            await setDoc(userRef, { 
+                ...profile, 
+                id: firebaseUser.uid,
+                createdAt: serverTimestamp(), 
+                updatedAt: serverTimestamp(), 
+                lastLogin: serverTimestamp() 
+            });
+            setUser({ ...firebaseUser, profile: newUserProfile });
         }
       } else {
-        // User is signed out
         setUser(null);
       }
       setLoading(false);
@@ -90,16 +93,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (updates.name) authUpdates.displayName = updates.name;
     if (updates.photoURL) authUpdates.photoURL = updates.photoURL;
 
-    // Update Firebase Auth profile
     if (Object.keys(authUpdates).length > 0) {
-      await updateProfile(user, authUpdates);
+      await updateProfile(auth.currentUser!, authUpdates);
     }
 
-    // Update Firestore profile
     const userRef = doc(db, 'users', user.uid);
     await updateDoc(userRef, { ...updates, updatedAt: serverTimestamp() });
     
-    // Refresh user state
     const updatedUserDoc = await getDoc(userRef);
     const updatedProfile = updatedUserDoc.data() as UserProfile;
     setUser(prevUser => prevUser ? ({ ...prevUser, profile: updatedProfile }) : null);
@@ -109,12 +109,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
     
-    // Create user profile document in Firestore
     const userRef = doc(db, "users", firebaseUser.uid);
     const newUserProfile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt' | 'lastLogin'> = {
         email: email,
-        name: email, // Default name to email
-        role: 'manager' // Assign default role
+        name: email, 
+        role: 'member',
+        projects: [],
     };
 
     await setDoc(userRef, {
