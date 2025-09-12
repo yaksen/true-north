@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import type { Project, Finance, Task } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Briefcase, Users, Lock, MoreVertical } from 'lucide-react';
+import { PlusCircle, Briefcase, Users, Lock, MoreVertical, Edit } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -30,12 +30,12 @@ export default function ProjectsPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   useEffect(() => {
     if (!user) return;
 
     setLoading(true);
-    // Query for projects where the current user is a member
     const projectsQuery = query(
         collection(db, 'projects'), where('members', 'array-contains', user.uid)
     );
@@ -57,7 +57,6 @@ export default function ProjectsPage() {
         setTasks(snapshot.docs.map(doc => doc.data() as Task));
     });
 
-    // Use Promise.all to wait for initial data load
     const initialLoad = async () => {
         await Promise.all([
             new Promise(resolve => onSnapshot(projectsQuery, () => resolve(true), () => resolve(true))),
@@ -101,6 +100,14 @@ export default function ProjectsPage() {
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact' }).format(amount);
   }
+
+  const handleEditClick = (project: Project) => {
+    setEditingProject(project);
+  };
+  
+  const handleEditDialogClose = () => {
+    setEditingProject(null);
+  };
 
   return (
     <>
@@ -168,10 +175,31 @@ export default function ProjectsPage() {
                             <Button asChild variant="outline" size="sm">
                                 <Link href={`/dashboard/projects/${summary.id}`}>Open</Link>
                             </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(summary)}>
+                                <Edit className="h-4 w-4" />
+                            </Button>
                         </div>
                     </div>
                 </Card>
             ))}
+             <Dialog open={!!editingProject} onOpenChange={(isOpen) => !isOpen && handleEditDialogClose()}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Edit Project</DialogTitle>
+                        <DialogDescription>
+                        Update the details for your project.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {editingProject && (
+                        <ProjectForm 
+                            project={editingProject}
+                            allProjects={projects} 
+                            closeForm={handleEditDialogClose} 
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
+
             {projectSummaries.length === 0 && !loading && (
                 <div className="col-span-full text-center text-muted-foreground py-12 border border-dashed rounded-xl">
                     <Briefcase className="mx-auto h-12 w-12" />
@@ -183,3 +211,5 @@ export default function ProjectsPage() {
     </>
   );
 }
+
+    
