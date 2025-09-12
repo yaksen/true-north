@@ -18,8 +18,6 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   updateProfile,
-  setPersistence,
-  browserSessionPersistence,
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -136,7 +134,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async (): Promise<any> => {
     const provider = new GoogleAuthProvider();
-    await setPersistence(auth, browserSessionPersistence);
     return signInWithPopup(auth, provider);
   };
 
