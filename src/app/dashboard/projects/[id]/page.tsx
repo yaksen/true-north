@@ -6,13 +6,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Action, Transaction, Lead } from '@/lib/types';
+import type { Project, Action, Transaction, Lead, UserProfile } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectTasks } from '@/components/projects/project-tasks';
 import { ProjectFinance } from '@/components/projects/project-finance';
 import { ProjectOverview } from '@/components/project/project-overview';
+import { ProjectTeam } from '@/components/projects/project-team';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -24,6 +25,7 @@ export default function ProjectDetailPage() {
   const [tasks, setTasks] = useState<Action[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,12 +75,19 @@ export default function ProjectDetailPage() {
       setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
     });
 
+    // Fetch all users for team management
+    const usersQuery = query(collection(db, 'users'));
+    const unsubscribeAllUsers = onSnapshot(usersQuery, (snapshot) => {
+        setAllUsers(snapshot.docs.map(doc => doc.data() as UserProfile));
+    });
+
 
     return () => {
         unsubscribeProject();
         unsubscribeTasks();
         unsubscribeTransactions();
         unsubscribeLeads();
+        unsubscribeAllUsers();
     };
   }, [user, id, router]);
 
@@ -112,7 +121,7 @@ export default function ProjectDetailPage() {
                 <ProjectFinance transactions={transactions} project={project} />
             </TabsContent>
              <TabsContent value="team">
-                <div className='p-4 text-center text-muted-foreground'>Team management coming soon.</div>
+                <ProjectTeam project={project} allUsers={allUsers} />
             </TabsContent>
              <TabsContent value="notes">
                 <div className='p-4 text-center text-muted-foreground'>Notes and attachments coming soon.</div>
