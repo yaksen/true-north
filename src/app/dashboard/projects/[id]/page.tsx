@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note } from '@/lib/types';
+import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Report } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,7 +16,7 @@ import { ProjectProducts } from '@/components/projects/project-products';
 import { ProjectFinance } from '@/components/projects/project-finance';
 import { ProjectTasks } from '@/components/projects/project-tasks';
 import { ProjectRecords } from '@/components/projects/project-records';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ProjectReports } from '@/components/projects/project-reports';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -33,6 +33,7 @@ export default function ProjectDetailPage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [records, setRecords] = useState<ActivityRecord[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -69,6 +70,7 @@ export default function ProjectDetailPage() {
     const unsubscribePackages = createCollectionSubscription<Package>('packages', setPackages);
     const unsubscribeRecords = createCollectionSubscription<ActivityRecord>('records', setRecords);
     const unsubscribeNotes = createCollectionSubscription<Note>('notes', setNotes);
+    const unsubscribeReports = createCollectionSubscription<Report>('reports', setReports);
 
     return () => {
         unsubscribeProject();
@@ -80,6 +82,7 @@ export default function ProjectDetailPage() {
         unsubscribePackages();
         unsubscribeRecords();
         unsubscribeNotes();
+        unsubscribeReports();
     };
   }, [user, id, router]);
 
@@ -129,17 +132,7 @@ export default function ProjectDetailPage() {
                 <ProjectRecords project={project} records={records} notes={notes} />
             </TabsContent>
             <TabsContent value="reports">
-                <Card className='mt-4'>
-                    <CardHeader>
-                        <CardTitle>Reports</CardTitle>
-                        <CardDescription>This section is under construction.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className='text-muted-foreground'>
-                            The UI and functionality for the reports section will be implemented soon.
-                        </p>
-                    </CardContent>
-                </Card>
+                <ProjectReports project={project} reports={reports} />
             </TabsContent>
         </Tabs>
     </div>

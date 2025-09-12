@@ -4,7 +4,7 @@ export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Planning' | 'In-Progress' | 'Completed' | 'On-Hold';
 export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
 export type FinanceType = 'income' | 'expense';
-export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
+export type LeadStatus = 'new' | 'contacted' | 'qualified', 'lost', 'converted';
 export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void';
 export type ActivityRecordType = 
@@ -28,7 +28,9 @@ export type ActivityRecordType =
     | 'package_created'
     | 'package_updated'
     | 'package_deleted'
-    | 'note_added';
+    | 'note_added'
+    | 'report_uploaded'
+    | 'report_deleted';
 
 
 export interface UserProfile {
@@ -185,6 +187,16 @@ export interface Note {
     updatedAt: Date;
 }
 
+export interface Report {
+    id: string;
+    projectId: string;
+    name: string;
+    storagePath: string;
+    uploadedByUid: string;
+    uploadedAt: Date;
+    sizeBytes: number;
+    mimeType: string;
+}
 
 export interface CrmSettings {
     isSignupEnabled: boolean;

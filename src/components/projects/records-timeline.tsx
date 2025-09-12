@@ -12,6 +12,7 @@ import {
   ListChecks,
   MessageSquare,
   Package,
+  FileUp,
   Tag,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -55,6 +56,8 @@ const recordDetails: Record<
   package_updated: { icon: Package, message: (p) => `Package "${p.name}" was updated.` },
   package_deleted: { icon: Package, message: (p) => `Package "${p.name}" was deleted.` },
   note_added: { icon: MessageSquare, message: (p) => `Added a new note.` },
+  report_uploaded: { icon: FileUp, message: (p) => `File "${p.name}" was uploaded.` },
+  report_deleted: { icon: FileUp, message: (p) => `File "${p.name}" was deleted.` },
 };
 
 export function RecordsTimeline({ items }: RecordsTimelineProps) {
