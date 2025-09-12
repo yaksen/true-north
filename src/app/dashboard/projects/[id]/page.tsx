@@ -17,6 +17,7 @@ import { ProjectNotes } from '@/components/projects/project-notes';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProjectDashboard } from '@/components/projects/project-dashboard';
 import { ProjectReports } from '@/components/projects/project-reports';
+import { ProjectLeadsTab } from '@/components/projects/project-leads';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -134,7 +135,7 @@ export default function ProjectDetailPage() {
         <ProjectHeader project={project} />
 
         <Tabs defaultValue="dashboard" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                 <TabsTrigger value="leads">Leads/Channels</TabsTrigger>
                 <TabsTrigger value="packages">Products/Packages</TabsTrigger>
@@ -148,7 +149,7 @@ export default function ProjectDetailPage() {
                 <ProjectDashboard project={project} tasks={tasks} transactions={transactions} />
             </TabsContent>
             <TabsContent value="leads">
-                <PlaceholderContent title="Leads/Channels" />
+                <ProjectLeadsTab leads={leads} />
             </TabsContent>
             <TabsContent value="packages">
                 <PlaceholderContent title="Products/Packages" />

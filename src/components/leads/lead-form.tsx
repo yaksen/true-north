@@ -22,13 +22,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { Lead, LeadState, CrmSettings } from '@/lib/types';
+import type { Lead, LeadState, CrmSettings, Project } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, doc, serverTimestamp, updateDoc, runTransaction, getDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, serverTimestamp, updateDoc, runTransaction, getDoc, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const leadStates: LeadState[] = ['new', 'contacted', 'interested', 'lost', 'converted'];
 
@@ -38,6 +38,7 @@ const formSchema = z.object({
   phone: z.string().optional(),
   social: z.string().optional(),
   state: z.enum(leadStates),
+  projectId: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -52,6 +53,7 @@ export function LeadForm({ lead, closeForm }: LeadFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(formSchema),
@@ -61,9 +63,20 @@ export function LeadForm({ lead, closeForm }: LeadFormProps) {
       phone: lead?.phoneNumbers?.[0] ?? '',
       social: lead?.socials?.[0] ?? '',
       state: lead?.state ?? 'new',
+      projectId: lead?.projectId ?? '',
       notes: lead?.notes ?? '',
     },
   });
+
+  useEffect(() => {
+    if (!user) return;
+    const projectsQuery = query(collection(db, `users/${user.uid}/projects`));
+    const unsubscribe = onSnapshot(projectsQuery, (snapshot) => {
+        setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
+    });
+    return () => unsubscribe();
+  }, [user]);
+
 
   async function getNextLeadId(): Promise<string> {
     const settingsRef = doc(db, 'settings', 'crm');
@@ -73,7 +86,6 @@ export function LeadForm({ lead, closeForm }: LeadFormProps) {
         const settingsDoc = await transaction.get(settingsRef);
         
         if (!settingsDoc.exists()) {
-            // If the settings document doesn't exist, create it with a default counter.
             const initialSettings: Partial<CrmSettings> = { 
                 counters: { leadId: 1 }
             };
@@ -85,7 +97,6 @@ export function LeadForm({ lead, closeForm }: LeadFormProps) {
         }
     });
 
-    // Pad the number with leading zeros to a length of 4
     return newLeadIdNumber.toString().padStart(4, '0');
 }
 
@@ -96,37 +107,29 @@ export function LeadForm({ lead, closeForm }: LeadFormProps) {
     }
     setIsSubmitting(true);
 
+    const leadData = {
+        name: values.name,
+        emails: values.email ? [values.email] : [],
+        phoneNumbers: values.phone ? [values.phone] : [],
+        socials: values.social ? [values.social] : [],
+        state: values.state,
+        notes: values.notes ?? '',
+        userId: user.uid,
+        projectId: values.projectId || null,
+    };
+
     try {
         if (lead) {
             // Update existing lead
-             const leadData = {
-                name: values.name,
-                emails: values.email ? [values.email] : [],
-                phoneNumbers: values.phone ? [values.phone] : [],
-                socials: values.social ? [values.social] : [],
-                state: values.state,
-                notes: values.notes ?? '',
-                userId: user.uid,
-            };
             const leadRef = doc(db, `users/${user.uid}/leads`, lead.id);
             await updateDoc(leadRef, { ...leadData, updatedAt: serverTimestamp() });
             toast({ title: 'Success', description: 'Lead updated successfully.' });
         } else {
             // Create new lead
             const newLeadId = await getNextLeadId();
-            const leadData = {
-                leadId: newLeadId,
-                name: values.name,
-                emails: values.email ? [values.email] : [],
-                phoneNumbers: values.phone ? [values.phone] : [],
-                socials: values.social ? [values.social] : [],
-                state: values.state,
-                notes: values.notes ?? '',
-                userId: user.uid,
-            };
-
             await addDoc(collection(db, `users/${user.uid}/leads`), {
                 ...leadData,
+                leadId: newLeadId,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
@@ -222,6 +225,29 @@ export function LeadForm({ lead, closeForm }: LeadFormProps) {
             )}
             />
         </div>
+         <FormField
+            control={form.control}
+            name="projectId"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Associated Project (Optional)</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a project" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {projects.map(proj => (
+                            <SelectItem key={proj.id} value={proj.id}>{proj.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
         <FormField
           control={form.control}
           name="notes"

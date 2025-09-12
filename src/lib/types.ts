@@ -75,6 +75,7 @@ export interface Lead extends BaseEntity {
   socials: string[];
   state: LeadState;
   notes: string;
+  projectId?: string;
 }
 
 export interface Category extends BaseEntity {
