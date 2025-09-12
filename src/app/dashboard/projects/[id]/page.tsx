@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Report, Invoice } from '@/lib/types';
+import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Invoice } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,7 +16,6 @@ import { ProjectProducts } from '@/components/projects/project-products';
 import { ProjectFinance } from '@/components/projects/project-finance';
 import { ProjectTasks } from '@/components/projects/project-tasks';
 import { ProjectRecords } from '@/components/projects/project-records';
-import { ProjectReports } from '@/components/projects/project-reports';
 import { ProjectSettings } from '@/components/projects/project-settings';
 import { ProjectBilling } from '@/components/projects/project-billing';
 
@@ -36,7 +35,6 @@ export default function ProjectDetailPage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [records, setRecords] = useState<ActivityRecord[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -79,7 +77,6 @@ export default function ProjectDetailPage() {
     const unsubscribePackages = createCollectionSubscription<Package>('packages', setPackages);
     const unsubscribeRecords = createCollectionSubscription<ActivityRecord>('records', setRecords);
     const unsubscribeNotes = createCollectionSubscription<Note>('notes', setNotes);
-    const unsubscribeReports = createCollectionSubscription<Report>('reports', setReports);
     const unsubscribeInvoices = createCollectionSubscription<Invoice>('invoices', setInvoices);
 
     return () => {
@@ -93,7 +90,6 @@ export default function ProjectDetailPage() {
         unsubscribePackages();
         unsubscribeRecords();
         unsubscribeNotes();
-        unsubscribeReports();
         unsubscribeInvoices();
     };
   }, [user, id, router]);
@@ -112,7 +108,7 @@ export default function ProjectDetailPage() {
 
         <Tabs defaultValue="dashboard" className="w-full">
             <div className='overflow-x-auto'>
-                <TabsList className="grid w-full grid-cols-9 min-w-max">
+                <TabsList className="grid w-full grid-cols-8 min-w-max">
                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                     <TabsTrigger value="leads">Leads</TabsTrigger>
                     <TabsTrigger value="products">Products</TabsTrigger>
@@ -120,7 +116,6 @@ export default function ProjectDetailPage() {
                     <TabsTrigger value="finance">Finance</TabsTrigger>
                     <TabsTrigger value="tasks">Tasks</TabsTrigger>
                     <TabsTrigger value="records">Records</TabsTrigger>
-                    <TabsTrigger value="reports">Reports</TabsTrigger>
                     <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
             </div>
@@ -149,9 +144,6 @@ export default function ProjectDetailPage() {
             </TabsContent>
             <TabsContent value="records">
                 <ProjectRecords project={project} records={records} notes={notes} />
-            </TabsContent>
-            <TabsContent value="reports">
-                <ProjectReports project={project} reports={reports} />
             </TabsContent>
             <TabsContent value="settings">
                 <ProjectSettings project={project} />
