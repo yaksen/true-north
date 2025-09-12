@@ -84,22 +84,22 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
 
   return (
     <div className="flex-1 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+            <TopProjects summaries={projectSummaries} currency={displayCurrency} />
+        </div>
+        <div className="lg:col-span-1">
+            <ForecastWidget summaries={projectSummaries} currency={globalSummary.currency} />
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <GoalTracker currentRevenue={globalSummary.totalRevenue} goal={settings?.revenueGoal} currency={globalSummary.currency} />
         <SummaryCards summary={globalSummary} />
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {projectSummaries.map(summary => (
-                    <ProjectCard key={summary.project.id} summary={summary} currency={displayCurrency} />
-                ))}
-            </div>
-        </div>
-        <div className="lg:col-span-1 space-y-6">
-            <TopProjects summaries={projectSummaries} currency={displayCurrency} />
-            <ForecastWidget summaries={projectSummaries} currency={globalSummary.currency} />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {projectSummaries.map(summary => (
+              <ProjectCard key={summary.project.id} summary={summary} currency={displayCurrency} />
+          ))}
       </div>
     </div>
   );
