@@ -93,3 +93,7 @@ export interface Report {
     projectId: string;
     // ... other fields
 }
+
+export interface CrmSettings {
+    isSignupEnabled: boolean;
+}

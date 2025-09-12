@@ -9,7 +9,7 @@ import { DataTable } from "../ui/data-table";
 import { leadsColumns } from "./leads-columns";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
-// import { LeadForm } from "./lead-form"; // To be created
+import { LeadForm } from "./lead-form";
 
 interface ProjectLeadsProps {
     project: Project;
@@ -28,7 +28,7 @@ export function ProjectLeads({ project, leads }: ProjectLeadsProps) {
                             <CardTitle>Leads</CardTitle>
                             <CardDescription>All leads associated with the &quot;{project.name}&quot; project.</CardDescription>
                         </div>
-                        {/* <Dialog open={isLeadFormOpen} onOpenChange={setIsLeadFormOpen}>
+                        <Dialog open={isLeadFormOpen} onOpenChange={setIsLeadFormOpen}>
                             <DialogTrigger asChild>
                                 <Button size="sm"><PlusCircle className="mr-2"/> Add Lead</Button>
                             </DialogTrigger>
@@ -38,7 +38,7 @@ export function ProjectLeads({ project, leads }: ProjectLeadsProps) {
                                 </DialogHeader>
                                 <LeadForm projectId={project.id} closeForm={() => setIsLeadFormOpen(false)} />
                             </DialogContent>
-                        </Dialog> */}
+                        </Dialog>
                     </div>
                 </CardHeader>
                 <CardContent>
