@@ -43,9 +43,6 @@ export function TopProjects({ summaries, currency }: TopProjectsProps) {
                 </Avatar>
                 <div className="grid gap-1 flex-1">
                     <p className="text-sm font-medium leading-none truncate">{summary.project.name}</p>
-                    <p className={cn("text-xs", summary.profitLoss >= 0 ? "text-green-400" : "text-red-400")}>
-                        P/L: {formatCurrency(summary.profitLoss, currency)}
-                    </p>
                 </div>
                 <div className="font-medium text-right">{formatCurrency(summary.totalIncome, currency)}</div>
           </Link>
@@ -57,3 +54,4 @@ export function TopProjects({ summaries, currency }: TopProjectsProps) {
     </Card>
   );
 }
+
