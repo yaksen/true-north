@@ -2,7 +2,7 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Lead, LeadStatus } from "@/lib/types";
+import { Lead, LeadStatus, Package } from "@/lib/types";
 import { ArrowUpDown, MoreHorizontal, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { FinanceForm } from "./finance-form";
 import { TaskForm } from "./task-form";
 
-const QuickActionDialogs: React.FC<{ lead: Lead, project: { id: string, currency: string } }> = ({ lead, project }) => {
+const QuickActionDialogs: React.FC<{ lead: Lead, project: { id: string, currency: string }, packages: Package[] }> = ({ lead, project, packages }) => {
     const [isFinanceOpen, setIsFinanceOpen] = useState(false);
     const [isTaskOpen, setIsTaskOpen] = useState(false);
 
@@ -45,7 +45,7 @@ const QuickActionDialogs: React.FC<{ lead: Lead, project: { id: string, currency
                     <DialogHeader>
                         <DialogTitle>Log Finance for {lead.name}</DialogTitle>
                     </DialogHeader>
-                    <FinanceForm project={project} leadId={lead.id} closeForm={() => setIsFinanceOpen(false)} />
+                    <FinanceForm project={project} leadId={lead.id} packages={packages} closeForm={() => setIsFinanceOpen(false)} />
                 </DialogContent>
             </Dialog>
 
@@ -62,7 +62,7 @@ const QuickActionDialogs: React.FC<{ lead: Lead, project: { id: string, currency
 };
 
 
-export const getLeadsColumns = (project: {id: string, currency: string}): ColumnDef<Lead>[] => [
+export const getLeadsColumns = (project: {id: string, currency: string}, packages: Package[]): ColumnDef<Lead>[] => [
     {
       accessorKey: "name",
       header: ({ column }) => {
@@ -100,7 +100,7 @@ export const getLeadsColumns = (project: {id: string, currency: string}): Column
         id: "actions",
         cell: ({ row }) => {
           const lead = row.original;
-          return <QuickActionDialogs lead={lead} project={project} />;
+          return <QuickActionDialogs lead={lead} project={project} packages={packages} />;
         },
       },
   ];

@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from "react";
-import { Project, Lead, LeadStatus } from "@/lib/types";
+import { Project, Lead, LeadStatus, Package } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle, SlidersHorizontal } from "lucide-react";
@@ -15,15 +15,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 interface ProjectLeadsProps {
     project: Project;
     leads: Lead[];
+    packages: Package[];
 }
 
 const leadStatuses: LeadStatus[] = ['new', 'contacted', 'qualified', 'lost', 'converted'];
 
-export function ProjectLeads({ project, leads }: ProjectLeadsProps) {
+export function ProjectLeads({ project, leads, packages }: ProjectLeadsProps) {
     const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
     
-    const leadsColumns = useMemo(() => getLeadsColumns(project), [project]);
+    const leadsColumns = useMemo(() => getLeadsColumns(project, packages), [project, packages]);
 
     const filteredLeads = useMemo(() => {
         if (statusFilter === 'all') return leads;

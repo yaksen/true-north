@@ -7,7 +7,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import type { Finance, FinanceType, Project } from '@/lib/types';
+import type { Finance, FinanceType, Project, Package } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -20,6 +20,7 @@ import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { logActivity } from '@/lib/activity-log';
+import { calculateDiscountedTotal } from '@/lib/billing';
 
 const financeTypes: FinanceType[] = ['income', 'expense'];
 
@@ -39,14 +40,16 @@ interface FinanceFormProps {
   finance?: Finance;
   project?: { id: string, currency: string };
   projects?: Project[];
+  packages?: Package[];
   leadId?: string;
   closeForm: () => void;
 }
 
-export function FinanceForm({ finance, project, projects, leadId, closeForm }: FinanceFormProps) {
+export function FinanceForm({ finance, project, projects, packages, leadId, closeForm }: FinanceFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
 
   const form = useForm<FinanceFormValues>({
     resolver: zodResolver(formSchema),
@@ -73,6 +76,18 @@ export function FinanceForm({ finance, project, projects, leadId, closeForm }: F
         form.setValue('currency', selectedProject.currency);
     }
   }, [selectedProject, form]);
+
+  useEffect(() => {
+    if (selectedPackageId && packages) {
+      const selectedPackage = packages.find(p => p.id === selectedPackageId);
+      if (selectedPackage) {
+        const { discountedPriceLKR } = calculateDiscountedTotal(selectedPackage);
+        form.setValue('amount', discountedPriceLKR);
+        form.setValue('description', `Payment for ${selectedPackage.name}`);
+        form.setValue('category', 'package');
+      }
+    }
+  }, [selectedPackageId, packages, form]);
 
 
   async function onSubmit(values: FinanceFormValues) {
@@ -137,6 +152,23 @@ export function FinanceForm({ finance, project, projects, leadId, closeForm }: F
                 </FormItem>
             )}
            />
+        )}
+        {packages && packages.length > 0 && (
+            <FormItem>
+                <FormLabel>Select a Package (Optional)</FormLabel>
+                <Select onValueChange={setSelectedPackageId}>
+                    <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a package to auto-fill..." />
+                        </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {packages.map(p => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </FormItem>
         )}
         <FormField
           control={form.control}
