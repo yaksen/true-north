@@ -28,12 +28,14 @@ export default function ProjectDetailPage() {
     const unsubscribeProject = onSnapshot(projectRef, (docSnap) => {
       if (docSnap.exists()) {
         const projectData = { id: docSnap.id, ...docSnap.data() } as Project;
+        // Permission check
         if (projectData.private && !projectData.members.includes(user.uid)) {
             router.push('/dashboard/projects');
             return;
         }
         setProject(projectData);
       } else {
+        // Project not found
         router.push('/dashboard/projects');
       }
       setLoading(false);
