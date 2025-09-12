@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Lead, LeadStatus, Package } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon, Edit, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -13,10 +13,33 @@ import { FinanceForm } from "./finance-form";
 import { TaskForm } from "./task-form";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import Link from "next/link";
+import { LeadForm } from "./lead-form";
+import { Checkbox } from "../ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { deleteDoc, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { logActivity } from "@/lib/activity-log";
 
-const QuickActionDialogs: React.FC<{ lead: Lead, project: { id: string, currency: string }, packages: Package[] }> = ({ lead, project, packages }) => {
+
+const ActionsCell: React.FC<{ lead: Lead, project: {id: string, currency: string}, packages: Package[] }> = ({ lead, project, packages }) => {
+    const { toast } = useToast();
+    const { user } = useAuth();
     const [isFinanceOpen, setIsFinanceOpen] = useState(false);
     const [isTaskOpen, setIsTaskOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+
+    const handleDelete = async () => {
+        if (!user) return;
+        try {
+            await deleteDoc(doc(db, 'leads', lead.id));
+            await logActivity(lead.projectId, 'lead_deleted', { name: lead.name }, user.uid);
+            toast({ title: 'Success', description: 'Lead deleted.' });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not delete lead.' });
+        }
+    };
 
     return (
         <>
@@ -28,17 +51,37 @@ const QuickActionDialogs: React.FC<{ lead: Lead, project: { id: string, currency
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit Lead
+                    </DropdownMenuItem>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Lead
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete the lead. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    <DropdownMenuSeparator />
                     <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
                     <DropdownMenuItem onClick={() => setIsFinanceOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Log Finance
+                        <PlusCircle className="mr-2 h-4 w-4" /> Log Finance
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setIsTaskOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add Task
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Task
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>View Lead Details</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
 
@@ -57,6 +100,15 @@ const QuickActionDialogs: React.FC<{ lead: Lead, project: { id: string, currency
                         <DialogTitle>Add Task for {lead.name}</DialogTitle>
                     </DialogHeader>
                     <TaskForm projectId={project.id} leadId={lead.id} closeForm={() => setIsTaskOpen(false)} />
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Lead</DialogTitle>
+                    </DialogHeader>
+                    <LeadForm lead={lead} projectId={project.id} closeForm={() => setIsEditOpen(false)} />
                 </DialogContent>
             </Dialog>
         </>
@@ -99,6 +151,28 @@ const SocialsCell: React.FC<{ lead: Lead }> = ({ lead }) => {
 
 export const getLeadsColumns = (project: {id: string, currency: string}, packages: Package[]): ColumnDef<Lead>[] => [
     {
+        id: 'select',
+        header: ({ table }) => (
+            <Checkbox
+            checked={
+                table.getIsAllPageRowsSelected() ||
+                (table.getIsSomePageRowsSelected() && 'indeterminate')
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+            />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+    },
+    {
       accessorKey: "name",
       header: ({ column }) => {
         return (
@@ -114,7 +188,7 @@ export const getLeadsColumns = (project: {id: string, currency: string}, package
       cell: ({ row }) => {
         const lead = row.original;
         return (
-            <div>
+            <div className="pl-2">
                 <p className="font-medium">{lead.name}</p>
                 <p className="text-xs text-muted-foreground">{lead.email}</p>
             </div>
@@ -145,7 +219,9 @@ export const getLeadsColumns = (project: {id: string, currency: string}, package
         id: "actions",
         cell: ({ row }) => {
           const lead = row.original;
-          return <QuickActionDialogs lead={lead} project={project} packages={packages} />;
+          return <ActionsCell lead={lead} project={project} packages={packages} />;
         },
       },
   ];
+
+    

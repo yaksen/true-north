@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import type { Invoice, InvoiceStatus, Project, Lead } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, Eye, Trash2 } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Eye, Trash2, Edit } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -15,15 +15,20 @@ import { useAuth } from "@/hooks/use-auth";
 import { logActivity } from "@/lib/activity-log";
 import Link from "next/link";
 import { useCurrency } from "@/context/CurrencyContext";
+import { Checkbox } from "../ui/checkbox";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { InvoiceForm } from "./invoice-form";
 
 interface DataDependencies {
     projects: Project[];
     leads: Lead[];
 }
 
-const ActionsCell: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
+const ActionsCell: React.FC<{ invoice: Invoice, dependencies: DataDependencies }> = ({ invoice, dependencies }) => {
     const { toast } = useToast();
     const { user } = useAuth();
+    const [isEditOpen, setIsEditOpen] = useState(false);
 
     const handleDelete = async () => {
         if (!user) return;
@@ -52,6 +57,9 @@ const ActionsCell: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
                             <Eye className="mr-2 h-4 w-4"/> View Invoice
                         </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
+                        <Edit className="mr-2 h-4 w-4"/> Edit Invoice
+                    </DropdownMenuItem>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
@@ -73,11 +81,46 @@ const ActionsCell: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
                     </AlertDialog>
                 </DropdownMenuContent>
             </DropdownMenu>
+             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>Edit Invoice</DialogTitle>
+                    </DialogHeader>
+                    <InvoiceForm
+                        invoice={invoice}
+                        projects={dependencies.projects}
+                        leads={dependencies.leads}
+                        closeForm={() => setIsEditOpen(false)}
+                    />
+                </DialogContent>
+            </Dialog>
         </>
     );
 };
 
 export const getInvoiceColumns = (dependencies: DataDependencies): ColumnDef<Invoice>[] => [
+    {
+        id: 'select',
+        header: ({ table }) => (
+            <Checkbox
+            checked={
+                table.getIsAllPageRowsSelected() ||
+                (table.getIsSomePageRowsSelected() && 'indeterminate')
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+            />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+    },
     {
       accessorKey: "invoiceNumber",
       header: ({ column }) => (
@@ -163,6 +206,8 @@ export const getInvoiceColumns = (dependencies: DataDependencies): ColumnDef<Inv
     },
     {
       id: "actions",
-      cell: ({ row }) => <ActionsCell invoice={row.original} />,
+      cell: ({ row }) => <ActionsCell invoice={row.original} dependencies={dependencies} />,
     },
 ];
+
+    
