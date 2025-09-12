@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
-type FeedItem = (ActivityRecord & { feedType: 'record' }) | (Note & { feedType: 'note' });
+type FeedItem = (ActivityRecord & { feedType: 'record' }) | (Note & { feedType: 'note'; timestamp: Date });
 
 interface RecordsTimelineProps {
   items: FeedItem[];
@@ -81,6 +81,7 @@ export function RecordsTimeline({ items }: RecordsTimelineProps) {
         {items.map((item, index) => {
           const isNote = item.feedType === 'note';
           const Icon = isNote ? MessageSquare : recordDetails[item.type as keyof typeof recordDetails]?.icon || FileText;
+          const userIdentifier = isNote ? item.authorUid : item.actorUid;
 
           return (
             <div key={item.id} className="relative mb-6 flex gap-4">
@@ -94,7 +95,7 @@ export function RecordsTimeline({ items }: RecordsTimelineProps) {
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">
-                    {item.actorUid.split('@')[0]}
+                    {userIdentifier.split('@')[0]}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
