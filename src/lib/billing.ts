@@ -1,6 +1,5 @@
 
-
-import type { Discount, Invoice, LineItem, Package } from './types';
+import type { Discount, LineItem, Package } from './types';
 
 interface DiscountedTotal {
     discountedPriceLKR: number;

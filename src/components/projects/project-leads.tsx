@@ -1,13 +1,13 @@
 
 'use client';
 
+import { useMemo, useState } from "react";
 import { Project, Lead } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
 import { DataTable } from "../ui/data-table";
-import { leadsColumns } from "./leads-columns";
-import { useState } from "react";
+import { getLeadsColumns } from "./leads-columns";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { LeadForm } from "./lead-form";
 
@@ -18,6 +18,7 @@ interface ProjectLeadsProps {
 
 export function ProjectLeads({ project, leads }: ProjectLeadsProps) {
     const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
+    const leadsColumns = useMemo(() => getLeadsColumns(project), [project]);
 
     return (
         <div className="grid gap-6 mt-4">

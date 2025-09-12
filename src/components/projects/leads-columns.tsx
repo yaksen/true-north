@@ -7,13 +7,12 @@ import { ArrowUpDown, MoreHorizontal, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
-import { Checkbox } from "../ui/checkbox";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { FinanceForm } from "./finance-form";
 import { TaskForm } from "./task-form";
 
-const QuickActionDialogs: React.FC<{ lead: Lead, projectId: string }> = ({ lead, projectId }) => {
+const QuickActionDialogs: React.FC<{ lead: Lead, project: { id: string, currency: string } }> = ({ lead, project }) => {
     const [isFinanceOpen, setIsFinanceOpen] = useState(false);
     const [isTaskOpen, setIsTaskOpen] = useState(false);
 
@@ -46,7 +45,7 @@ const QuickActionDialogs: React.FC<{ lead: Lead, projectId: string }> = ({ lead,
                     <DialogHeader>
                         <DialogTitle>Log Finance for {lead.name}</DialogTitle>
                     </DialogHeader>
-                    <FinanceForm projectId={projectId} leadId={lead.id} closeForm={() => setIsFinanceOpen(false)} />
+                    <FinanceForm project={project} leadId={lead.id} closeForm={() => setIsFinanceOpen(false)} />
                 </DialogContent>
             </Dialog>
 
@@ -55,7 +54,7 @@ const QuickActionDialogs: React.FC<{ lead: Lead, projectId: string }> = ({ lead,
                     <DialogHeader>
                         <DialogTitle>Add Task for {lead.name}</DialogTitle>
                     </DialogHeader>
-                    <TaskForm projectId={projectId} leadId={lead.id} closeForm={() => setIsTaskOpen(false)} />
+                    <TaskForm projectId={project.id} leadId={lead.id} closeForm={() => setIsTaskOpen(false)} />
                 </DialogContent>
             </Dialog>
         </>
@@ -63,7 +62,7 @@ const QuickActionDialogs: React.FC<{ lead: Lead, projectId: string }> = ({ lead,
 };
 
 
-export const leadsColumns: ColumnDef<Lead>[] = [
+export const getLeadsColumns = (project: {id: string, currency: string}): ColumnDef<Lead>[] => [
     {
       accessorKey: "name",
       header: ({ column }) => {
@@ -101,7 +100,7 @@ export const leadsColumns: ColumnDef<Lead>[] = [
         id: "actions",
         cell: ({ row }) => {
           const lead = row.original;
-          return <QuickActionDialogs lead={lead} projectId={lead.projectId} />;
+          return <QuickActionDialogs lead={lead} project={project} />;
         },
       },
   ];

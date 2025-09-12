@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ProjectDashboard } from '@/components/projects/project-dashboard';
 import { ProjectLeads } from '@/components/projects/project-leads';
 import { ProjectProducts } from '@/components/projects/project-products';
+import { ProjectFinance } from '@/components/projects/project-finance';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -126,7 +127,7 @@ export default function ProjectDetailPage() {
                 />
             </TabsContent>
             <TabsContent value="finance">
-                <PlaceholderContent title="Finance" />
+                <ProjectFinance project={project} finances={finances} />
             </TabsContent>
              <TabsContent value="tasks">
                 <PlaceholderContent title="Tasks" />

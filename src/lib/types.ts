@@ -6,6 +6,7 @@ export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
 export type FinanceType = 'income' | 'expense';
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 export type DiscountType = 'percentage' | 'flat';
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void';
 
 export interface UserProfile {
     id: string;
@@ -51,9 +52,11 @@ export interface Finance {
     leadId?: string;
     type: FinanceType;
     amount: number;
+    currency: string;
     description: string;
     date: Date;
     category?: string;
+    recordedByUid: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -111,6 +114,31 @@ export interface Package {
     duration: string;
     custom: boolean;
     discounts?: Discount[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+
+export interface LineItem {
+    id: string;
+    description: string;
+    quantity: number;
+    priceLKR: number;
+    priceUSD: number;
+}
+
+export interface Invoice {
+    id: string;
+    projectId: string;
+    leadId: string;
+    invoiceNumber: string;
+    status: InvoiceStatus;
+    issueDate: Date;
+    dueDate: Date;
+    lineItems: LineItem[];
+    discounts: Discount[];
+    taxRate: number; // Percentage
+    notes?: string;
     createdAt: Date;
     updatedAt: Date;
 }

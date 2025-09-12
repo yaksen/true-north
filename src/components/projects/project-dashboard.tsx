@@ -95,7 +95,7 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
                                 <DialogHeader>
                                     <DialogTitle>Log Financial Record</DialogTitle>
                                 </DialogHeader>
-                                <FinanceForm projectId={project.id} closeForm={() => setIsFinanceFormOpen(false)} />
+                                <FinanceForm project={project} closeForm={() => setIsFinanceFormOpen(false)} />
                             </DialogContent>
                         </Dialog>
                     </CardContent>

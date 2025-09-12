@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -12,12 +12,10 @@ import type { Package, Service } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
+import { ChevronsUpDown, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Checkbox } from '../ui/checkbox';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { ScrollArea } from '../ui/scroll-area';
 
 const formSchema = z.object({
@@ -42,7 +40,6 @@ interface PackageFormProps {
 export function PackageForm({ pkg, projectId, services, closeForm }: PackageFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [open, setOpen] = useState(false)
 
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(formSchema),
@@ -125,57 +122,44 @@ export function PackageForm({ pkg, projectId, services, closeForm }: PackageForm
             render={({ field }) => (
                 <FormItem className="flex flex-col">
                     <FormLabel>Included Services</FormLabel>
-                    <Popover open={open} onOpenChange={setOpen}>
-                        <PopoverTrigger asChild>
-                        <FormControl>
-                            <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={open}
-                            className="w-full justify-between"
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between"
+                        >
+                          {field.value?.length > 0
+                              ? `${field.value.length} service(s) selected`
+                              : "Select services..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] p-0">
+                        <ScrollArea className='h-48'>
+                          {services.map((service) => (
+                            <DropdownMenuItem
+                              key={service.id}
+                              onSelect={(e) => e.preventDefault()}
                             >
-                            {field.value?.length > 0
-                                ? `${field.value.length} service(s) selected`
-                                : "Select services..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                        </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                            <Command>
-                                <CommandInput placeholder="Search services..." />
-                                <CommandList>
-                                <CommandEmpty>No services found.</CommandEmpty>
-                                <CommandGroup>
-                                    <ScrollArea className='h-48'>
-                                        {services.map((service) => (
-                                        <CommandItem
-                                            key={service.id}
-                                            value={service.name}
-                                            onSelect={() => {
-                                                const currentServices = field.value || [];
-                                                const serviceId = service.id;
-                                                const newServices = currentServices.includes(serviceId)
-                                                    ? currentServices.filter(id => id !== serviceId)
-                                                    : [...currentServices, serviceId];
-                                                field.onChange(newServices);
-                                            }}
-                                        >
-                                            <Check
-                                                className={cn(
-                                                    "mr-2 h-4 w-4",
-                                                    field.value?.includes(service.id) ? "opacity-100" : "opacity-0"
-                                                )}
-                                            />
-                                            {service.name}
-                                        </CommandItem>
-                                        ))}
-                                    </ScrollArea>
-                                </CommandGroup>
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
+                              <Checkbox
+                                id={`service-${service.id}`}
+                                checked={field.value.includes(service.id)}
+                                onCheckedChange={(checked) => {
+                                  const currentServices = field.value || [];
+                                  const serviceId = service.id;
+                                  const newServices = checked
+                                    ? [...currentServices, serviceId]
+                                    : currentServices.filter(id => id !== serviceId);
+                                  field.onChange(newServices);
+                                }}
+                                className="mr-2"
+                              />
+                              <label htmlFor={`service-${service.id}`} className="flex-1">{service.name}</label>
+                            </DropdownMenuItem>
+                          ))}
+                        </ScrollArea>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <FormMessage />
                 </FormItem>
             )}

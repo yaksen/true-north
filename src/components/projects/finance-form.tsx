@@ -29,18 +29,19 @@ const formSchema = z.object({
   description: z.string().min(2, { message: 'Description must be at least 2 characters.' }),
   date: z.date({ required_error: 'A date is required.' }),
   category: z.string().optional(),
+  currency: z.string(), // Added currency
 });
 
 type FinanceFormValues = z.infer<typeof formSchema>;
 
 interface FinanceFormProps {
   finance?: Finance;
-  projectId: string;
+  project: { id: string, currency: string };
   leadId?: string;
   closeForm: () => void;
 }
 
-export function FinanceForm({ finance, projectId, leadId, closeForm }: FinanceFormProps) {
+export function FinanceForm({ finance, project, leadId, closeForm }: FinanceFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,6 +57,7 @@ export function FinanceForm({ finance, projectId, leadId, closeForm }: FinanceFo
       description: '',
       date: new Date(),
       category: '',
+      currency: project.currency,
     },
   });
 
@@ -74,7 +76,8 @@ export function FinanceForm({ finance, projectId, leadId, closeForm }: FinanceFo
       } else {
         const financeData: any = {
           ...values,
-          projectId: projectId,
+          projectId: project.id,
+          recordedByUid: user.uid,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
@@ -133,7 +136,7 @@ export function FinanceForm({ finance, projectId, leadId, closeForm }: FinanceFo
                 name="amount"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Amount</FormLabel>
+                        <FormLabel>Amount ({project.currency})</FormLabel>
                         <FormControl>
                             <Input type="number" placeholder="0.00" {...field} />
                         </FormControl>
