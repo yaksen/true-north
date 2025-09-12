@@ -34,7 +34,7 @@ const ActionsCell: React.FC<{ task: Task, leads: Lead[] }> = ({ task, leads }) =
             await deleteDoc(doc(db, 'tasks', task.id));
             await logActivity(task.projectId, 'task_deleted', { title: task.title }, user.uid);
             toast({ title: 'Success', description: 'Task deleted.' });
-        } catch (error) => {
+        } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not delete task.' });
         }
     };
