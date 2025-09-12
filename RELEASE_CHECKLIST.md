@@ -20,41 +20,37 @@ This checklist provides a set of steps to ensure the CRM application is ready fo
   ```
 - [ ] **E2E Testing**: Run end-to-end tests (e.g., using Playwright or Cypress) on a staging environment that mirrors production.
     - [ ] User signup and login flow.
-    - [ ] Create, Read, Update, Delete (CRUD) for Leads, Services, Categories, Packages, Actions, and Invoices.
-    - [ ] Filter functionality on all data tables.
-    - [ ] AI Planner: Generate a plan and save the actions.
-    - [ ] Discount Calculator: Apply discounts to packages and invoices and verify totals.
+    - [ ] Create, Read, Update, Delete (CRUD) for Leads, Services, Categories, and Packages.
+    - [ ] Create and complete a Task.
+    - [ ] Log an income and an expense transaction.
     - [ ] **Data Table Controls**:
         - [ ] Verify page-size selector changes the number of items per page.
         - [ ] Test pagination controls (next, previous) work correctly.
         - [ ] Test "select all" on the current page.
         - [ ] Test bulk delete for selected items and verify they are removed.
     - [ ] **Exporting**:
-        - [ ] Export selected leads to CSV and verify the CSV content, including social media URLs.
-        - [ ] Export an invoice to PDF using a template and verify the output. Check that social links render with icons.
+        - [ ] Export selected leads to CSV and verify the CSV content.
+    - [ ] **File Management**:
+        - [ ] Upload a report to the Reports tab.
+        - [ ] Preview and download the uploaded report.
+        - [ ] Delete the uploaded report.
 - [ ] **Manual QA**: Perform manual testing on critical user flows.
     - [ ] Test on major browsers (Chrome, Firefox, Safari).
     - [ ] Test on mobile devices to check for responsiveness.
     - [ ] Verify that all UI elements are aligned and styled correctly.
     - [ ] Check that all forms handle validation and errors gracefully.
-    - [ ] **Template Admin**:
-        - [ ] Create a new PDF template and save it.
-        - [ ] Preview the template with sample data.
-        - [ ] Apply the new template during a PDF export and confirm it is used.
 
 ### 3. Security & Configuration
 - [ ] **Environment Variables**:
     - [ ] Create a `.env.production` file or configure secrets in your hosting provider's dashboard (e.g., Firebase App Hosting, Vercel).
-    - [ ] Ensure all required variables from `.env.example` are set with their production values. **Do not commit this file to version control.**
+    - [ ] Ensure all required variables from your local `.env` file are set with their production values. **Do not commit this file to version control.**
 - [ ] **Firestore Security Rules**:
     - [ ] Review and test all Firestore security rules in the emulator to ensure users can only access their own data.
-    - [ ] Pay special attention to rules for creating, updating, and deleting documents. Ensure admin/manager roles are respected.
+    - [ ] Pay special attention to rules for creating, updating, and deleting documents. Ensure project member roles are respected for private projects.
 - [ ] **Firebase API Key Security**:
     - [ ] In the Google Cloud Console, restrict your Firebase API key to your application's domain to prevent unauthorized use.
 - [ ] **Firebase Storage Security**:
-    - [ ] Review and test Storage security rules to ensure that exported PDFs are only accessible to authorized users.
-    - [ ] Consider setting up lifecycle rules to automatically delete old exports if necessary.
-
+    - [ ] Review and test Storage security rules to ensure that uploaded reports are only accessible to authorized users.
 
 ### 4. Database & Backups
 - [ ] **Seed Data**: Ensure any production seed scripts are ready but disabled by default.
@@ -74,7 +70,7 @@ This checklist provides a set of steps to ensure the CRM application is ready fo
   ```bash
   firebase deploy --only hosting
   ```
-- [ ] Deploy Firestore security rules, indexes, and any Cloud Functions.
+- [ ] Deploy Firestore security rules and indexes.
   ```bash
   firebase deploy --only firestore:rules,firestore:indexes
   ```
@@ -89,8 +85,7 @@ This checklist provides a set of steps to ensure the CRM application is ready fo
 - [ ] Immediately after deployment, perform a quick round of manual smoke tests on the live production site.
     - [ ] Can users sign up and log in?
     - [ ] Is the main dashboard loading correctly?
-    - [ ] Can a new lead be created?
-    - [ ] Does the AI insight generation work?
+    - [ ] Can a new project and a new lead be created?
 - [ ] Run automated smoke tests if they are available.
 
 ### 2. Monitoring
