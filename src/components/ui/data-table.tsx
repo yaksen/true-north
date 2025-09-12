@@ -83,6 +83,10 @@ export function DataTable<TData, TValue>({
     },
   });
 
+  if (!table) {
+    return null; // or a loading indicator
+  }
+
   const handleExport = () => {
     const selectedRows = table.getFilteredSelectedRowModel().rows;
     if (selectedRows.length === 0) {
