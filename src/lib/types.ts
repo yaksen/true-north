@@ -47,6 +47,25 @@ export interface Project extends BaseEntity {
     status: 'Planning' | 'In-Progress' | 'Completed' | 'On-Hold';
 }
 
+export interface Note {
+    id: string;
+    content: string;
+    createdBy: string;
+    authorName: string;
+    authorPhotoURL?: string;
+    createdAt: any;
+}
+
+export interface Attachment {
+    id: string;
+    url: string;
+    description: string;
+    fileName: string;
+    uploadedBy: string;
+    createdAt: any;
+}
+
+
 export interface Lead extends BaseEntity {
   leadId: string;
   name: string;

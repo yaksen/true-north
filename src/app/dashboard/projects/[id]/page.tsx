@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Action, Transaction, Lead, UserProfile } from '@/lib/types';
+import type { Project, Action, Transaction, Lead, UserProfile, Note } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,6 +14,7 @@ import { ProjectTasks } from '@/components/projects/project-tasks';
 import { ProjectFinance } from '@/components/projects/project-finance';
 import { ProjectOverview } from '@/components/project/project-overview';
 import { ProjectTeam } from '@/components/projects/project-team';
+import { ProjectNotes } from '@/components/projects/project-notes';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -26,6 +27,7 @@ export default function ProjectDetailPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -78,7 +80,18 @@ export default function ProjectDetailPage() {
     // Fetch all users for team management
     const usersQuery = query(collection(db, 'users'));
     const unsubscribeAllUsers = onSnapshot(usersQuery, (snapshot) => {
-        setAllUsers(snapshot.docs.map(doc => doc.data() as UserProfile));
+        setAllUsers(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as UserProfile)));
+    });
+    
+    // Fetch notes
+    const notesQuery = query(collection(db, `users/${user.uid}/projects/${id}/notes`));
+    const unsubscribeNotes = onSnapshot(notesQuery, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate(),
+        } as Note));
+        setNotes(data);
     });
 
 
@@ -88,6 +101,7 @@ export default function ProjectDetailPage() {
         unsubscribeTransactions();
         unsubscribeLeads();
         unsubscribeAllUsers();
+        unsubscribeNotes();
     };
   }, [user, id, router]);
 
@@ -109,7 +123,7 @@ export default function ProjectDetailPage() {
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
                 <TabsTrigger value="finance">Finance</TabsTrigger>
                 <TabsTrigger value="team">Team</TabsTrigger>
-                <TabsTrigger value="notes">Notes & Files</TabsTrigger>
+                <TabsTrigger value="notes">Notes &amp; Files</TabsTrigger>
             </TabsList>
             <TabsContent value="overview">
                <ProjectOverview project={project} />
@@ -124,7 +138,7 @@ export default function ProjectDetailPage() {
                 <ProjectTeam project={project} allUsers={allUsers} />
             </TabsContent>
              <TabsContent value="notes">
-                <div className='p-4 text-center text-muted-foreground'>Notes and attachments coming soon.</div>
+                <ProjectNotes projectId={project.id} notes={notes} allUsers={allUsers} />
             </TabsContent>
         </Tabs>
     </div>
