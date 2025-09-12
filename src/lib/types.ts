@@ -1,6 +1,7 @@
 
 
 
+
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'To-Do' | 'In-Progress' | 'Done';
@@ -96,13 +97,18 @@ export interface Finance {
     updatedAt: Date;
 }
 
+export interface SocialLink {
+    platform: string;
+    url: string;
+}
+
 export interface Lead {
     id: string;
     projectId: string;
     name: string;
     email?: string;
     phone?: string;
-    socials?: Record<string, string>;
+    socials?: SocialLink[];
     status: LeadStatus;
     notes?: string;
     createdAt: Date;

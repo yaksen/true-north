@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Lead, LeadStatus, Package } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, PlusCircle } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -11,6 +11,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { FinanceForm } from "./finance-form";
 import { TaskForm } from "./task-form";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import Link from "next/link";
 
 const QuickActionDialogs: React.FC<{ lead: Lead, project: { id: string, currency: string }, packages: Package[] }> = ({ lead, project, packages }) => {
     const [isFinanceOpen, setIsFinanceOpen] = useState(false);
@@ -61,6 +63,39 @@ const QuickActionDialogs: React.FC<{ lead: Lead, project: { id: string, currency
     );
 };
 
+const SocialsCell: React.FC<{ lead: Lead }> = ({ lead }) => {
+    if (!lead.socials || lead.socials.length === 0) return null;
+
+    const getIcon = (platform: string) => {
+        const p = platform.toLowerCase();
+        if (p.includes('linkedin')) return <Linkedin className="h-4 w-4" />;
+        if (p.includes('twitter')) return <Twitter className="h-4 w-4" />;
+        if (p.includes('github')) return <Github className="h-4 w-4" />;
+        return <LinkIcon className="h-4 w-4" />;
+    };
+
+    return (
+        <div className="flex items-center gap-2">
+            <TooltipProvider>
+                {lead.socials.map((social) => (
+                    <Tooltip key={social.url}>
+                        <TooltipTrigger asChild>
+                            <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                                <Link href={social.url} target="_blank" rel="noopener noreferrer">
+                                    {getIcon(social.platform)}
+                                </Link>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{social.platform}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                ))}
+            </TooltipProvider>
+        </div>
+    )
+}
+
 
 export const getLeadsColumns = (project: {id: string, currency: string}, packages: Package[]): ColumnDef<Lead>[] => [
     {
@@ -76,14 +111,24 @@ export const getLeadsColumns = (project: {id: string, currency: string}, package
           </Button>
         );
       },
-    },
-    {
-        accessorKey: "email",
-        header: "Email",
+      cell: ({ row }) => {
+        const lead = row.original;
+        return (
+            <div>
+                <p className="font-medium">{lead.name}</p>
+                <p className="text-xs text-muted-foreground">{lead.email}</p>
+            </div>
+        )
+      }
     },
     {
         accessorKey: "phone",
         header: "Phone",
+    },
+    {
+        accessorKey: "socials",
+        header: "Socials",
+        cell: ({ row }) => <SocialsCell lead={row.original} />
     },
     {
       accessorKey: "status",
