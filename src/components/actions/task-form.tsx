@@ -39,6 +39,7 @@ const taskSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   relatedLeadId: z.string().optional(),
   projectId: z.string().optional(),
+  parentTaskId: z.string().optional(),
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']),
   deadline: z.date(),
   status: z.enum(['Pending', 'In-progress', 'Done', 'Blocked']),
@@ -50,10 +51,11 @@ type TaskFormValues = z.infer<typeof taskSchema>;
 
 interface TaskFormProps {
   leads: Lead[];
+  allTasks: Action[];
   closeDialog: (open: boolean) => void;
 }
 
-export function TaskForm({ leads, closeDialog }: TaskFormProps) {
+export function TaskForm({ leads, allTasks, closeDialog }: TaskFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,6 +100,7 @@ export function TaskForm({ leads, closeDialog }: TaskFormProps) {
         notes: values.notes,
         details: taskDetails,
         projectId: values.projectId,
+        parentTaskId: values.parentTaskId,
     };
 
     try {
@@ -125,9 +128,28 @@ export function TaskForm({ leads, closeDialog }: TaskFormProps) {
           name="description"
           render={({ field }) => (
             <FormItem>
-                <FormLabel>Task Description</FormLabel>
+                <FormLabel>Task Title</FormLabel>
                 <FormControl><Textarea placeholder="e.g. Follow up with a lead..." {...field} /></FormControl>
                 <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="parentTaskId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Parent Task (Optional)</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger><SelectValue placeholder="Select a parent task" /></SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {allTasks.filter(t => t.category === 'Tasks').map(task => <SelectItem key={task.id} value={task.id}>{task.details.description}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <FormMessage />
             </FormItem>
           )}
         />

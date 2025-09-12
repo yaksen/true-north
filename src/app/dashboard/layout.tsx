@@ -19,6 +19,7 @@ import {
   Shapes,
   ShoppingBag,
   Users,
+  ListTodo,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -34,12 +35,12 @@ import { UserNav } from '@/components/user-nav';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/projects', label: 'Projects', icon: Briefcase },
+  { href: '/dashboard/tasks', label: 'Tasks', icon: ListTodo },
   { href: '/dashboard/leads', label: 'Leads', icon: Contact },
   { href: '/dashboard/services', label: 'Services', icon: ShoppingBag },
   { href: '/dashboard/categories', label: 'Categories', icon: Shapes },
   { href: '/dashboard/packages', label: 'Packages', icon: Box },
   { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
-  { href: '/dashboard/actions', label: 'Actions', icon: CheckSquare },
   { href: '/dashboard/financials', label: 'Financials', icon: DollarSign },
   { href: '/dashboard/users', label: 'User Management', icon: Users, roles: ['admin', 'manager'] },
 ];
@@ -85,7 +86,7 @@ export default function DashboardLayout({
                   href={item.href}
                   className={cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-                    { 'bg-muted text-primary': pathname === item.href }
+                    { 'bg-muted text-primary': pathname === item.href || (item.href === '/dashboard/tasks' && pathname.startsWith('/dashboard/actions')) }
                   )}
                 >
                   <item.icon className="h-4 w-4" />

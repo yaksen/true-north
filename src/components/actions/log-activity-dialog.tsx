@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '../ui/button';
 import { PlusCircle, ShoppingCart, Receipt, CheckSquare, Smile, Users } from 'lucide-react';
-import { type ActivityCategory, type Lead, type Service, type Package } from '@/lib/types';
+import { type ActivityCategory, type Lead, type Service, type Package, type Action } from '@/lib/types';
 import { SalesForm } from './sales-form';
 import { ExpenseForm } from './expense-form';
 import { TaskForm } from './task-form';
@@ -21,17 +21,18 @@ interface LogActivityDialogProps {
   leads: Lead[];
   services: Service[];
   packages: Package[];
+  allTasks?: Action[];
 }
 
 const activityCategories: { name: ActivityCategory, icon: React.ElementType }[] = [
+    { name: 'Tasks', icon: CheckSquare },
     { name: 'Sales', icon: ShoppingCart },
     { name: 'Expenses', icon: Receipt },
-    { name: 'Tasks', icon: CheckSquare },
     { name: 'Customer Service', icon: Smile },
     { name: 'HR & Team', icon: Users },
 ];
 
-export function LogActivityDialog({ leads, services, packages }: LogActivityDialogProps) {
+export function LogActivityDialog({ leads, services, packages, allTasks = [] }: LogActivityDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | null>(null);
 
@@ -49,7 +50,7 @@ export function LogActivityDialog({ leads, services, packages }: LogActivityDial
       case 'Expenses':
         return <ExpenseForm closeDialog={handleOpenChange} />;
       case 'Tasks':
-        return <TaskForm leads={leads} closeDialog={handleOpenChange} />;
+        return <TaskForm leads={leads} allTasks={allTasks} closeDialog={handleOpenChange} />;
       default:
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">

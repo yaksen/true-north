@@ -99,6 +99,7 @@ export interface Action<T extends ActivityCategory = ActivityCategory> extends B
   notes?: string;
   priority?: 'Low' | 'Medium' | 'High' | 'Critical';
   projectId?: string;
+  parentTaskId?: string;
   details: T extends 'Sales' ? SalesDetails :
            T extends 'Expenses' ? ExpenseDetails :
            T extends 'Tasks' ? TaskDetails :

@@ -4,7 +4,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 import type { Action, ActivityCategory } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, ArrowUp, ArrowRight, ArrowDown } from 'lucide-react';
+import { MoreHorizontal, ArrowUp, ArrowRight, ArrowDown, GitCommitVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -86,7 +86,15 @@ export const getColumns = ({ setActions }: ColumnProps): ColumnDef<Action>[] => 
         } else if (action.category === 'Expenses') {
             description = `${action.details.expenseType}: ${action.details.amount}`;
         }
-        return <p className="font-medium">{description}</p>;
+
+        const isSubtask = !!action.parentTaskId;
+
+        return (
+          <div className="flex items-center gap-2">
+            {isSubtask && <GitCommitVertical className="h-4 w-4 text-muted-foreground self-start mt-1" />}
+            <p className="font-medium">{description}</p>
+          </div>
+        );
     }
   },
   {
