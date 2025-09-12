@@ -44,17 +44,27 @@ export function ServiceForm({ service, project, categories, closeForm }: Service
   const { globalCurrency } = useCurrency();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [timeValue, setTimeValue] = useState(() => service?.finishTime?.split(' ')[0] || '1');
+  const [timeUnit, setTimeUnit] = useState(() => service?.finishTime?.split(' ')[1] || 'Days');
+
+
   const form = useForm<ServiceFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: service || {
       name: '',
       categoryId: '',
-      finishTime: '',
+      finishTime: '1 Days',
       price: 0,
       currency: project.currency || (globalCurrency as any) || 'USD',
       notes: '',
     },
   });
+
+  const handleTimeChange = (value: string, unit: string) => {
+    setTimeValue(value);
+    setTimeUnit(unit);
+    form.setValue('finishTime', `${value} ${unit}`);
+  }
 
   async function onSubmit(values: ServiceFormValues) {
     if (!user) return;
@@ -125,9 +135,29 @@ export function ServiceForm({ service, project, categories, closeForm }: Service
                 render={({ field }) => (
                     <FormItem>
                         <FormLabel>Finish Time</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g. 3-5 business days" {...field} />
-                        </FormControl>
+                        <div className="flex items-center gap-2">
+                            <Input 
+                                type="number" 
+                                value={timeValue}
+                                onChange={(e) => handleTimeChange(e.target.value, timeUnit)}
+                                className="w-24"
+                            />
+                            <Select 
+                                value={timeUnit}
+                                onValueChange={(unit) => handleTimeChange(timeValue, unit)}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Minutes">Minutes</SelectItem>
+                                    <SelectItem value="Hours">Hours</SelectItem>
+                                    <SelectItem value="Days">Days</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <FormMessage />
                     </FormItem>
                 )}

@@ -103,6 +103,14 @@ export const getServicesColumns = (dependencies: ColumnDependencies): ColumnDef<
     {
       accessorKey: "finishTime",
       header: "Finish Time",
+      cell: ({ row }) => {
+        const finishTime = row.getValue("finishTime") as string;
+        const [value, unit] = finishTime.split(' ');
+        if (!value || !unit) return finishTime;
+        // Make unit singular if value is 1
+        const formattedUnit = Number(value) === 1 ? unit.replace(/s$/, '') : unit;
+        return `${value} ${formattedUnit}`;
+      }
     },
     {
       id: "actions",
