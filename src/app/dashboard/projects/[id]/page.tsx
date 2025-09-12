@@ -15,6 +15,7 @@ import { ProjectDashboard } from '@/components/projects/project-dashboard';
 import { ProjectLeads } from '@/components/projects/project-leads';
 import { ProjectProducts } from '@/components/projects/project-products';
 import { ProjectFinance } from '@/components/projects/project-finance';
+import { ProjectTasks } from '@/components/projects/project-tasks';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -130,7 +131,7 @@ export default function ProjectDetailPage() {
                 <ProjectFinance project={project} finances={finances} />
             </TabsContent>
              <TabsContent value="tasks">
-                <PlaceholderContent title="Tasks" />
+                <ProjectTasks project={project} tasks={tasks} />
             </TabsContent>
             <TabsContent value="records">
                 <PlaceholderContent title="Records" />

@@ -103,7 +103,7 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
+                    <CardTitle>Recent Tasks</CardTitle>
                     <CardDescription>A log of the most recent tasks in this project.</CardDescription>
                 </CardHeader>
                 <CardContent>

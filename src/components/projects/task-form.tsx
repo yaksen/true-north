@@ -48,9 +48,7 @@ export function TaskForm({ task, projectId, leadId, closeForm }: TaskFormProps) 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: task ? {
-        title: task.title,
-        description: task.description,
-        status: task.status,
+        ...task,
         dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
     } : {
       title: '',
