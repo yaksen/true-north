@@ -77,7 +77,7 @@ export default function ProjectDetailPage() {
                     date: p.date.toDate ? p.date.toDate() : new Date(p.date)
                   }));
                 }
-                return { id: doc.id, ...docData } as T;
+                return { id: doc.id, ...docData } as unknown as T;
             });
             setter(data);
         });
