@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Project, Category, Service, Package } from '@/lib/types';
+import type { Project, Category, Service, Package, Product } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { ArrowRight, Edit, Package as PackageIcon, PlusCircle, SlidersHorizontal, Trash2 } from 'lucide-react';
@@ -24,27 +24,32 @@ import { formatCurrency } from '@/lib/utils';
 import { deleteDoc, doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { logActivity } from '@/lib/activity-log';
+import { ProductForm } from './product-form';
+import { getProductsColumns } from './product-columns';
 
 interface ProjectProductsProps {
   project: Project;
   categories: Category[];
   services: Service[];
+  products: Product[];
   packages: Package[];
 }
 
-export function ProjectProducts({ project, categories, services, packages }: ProjectProductsProps) {
+export function ProjectProducts({ project, categories, services, products, packages }: ProjectProductsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
   const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
   const [isPackageFormOpen, setIsPackageFormOpen] = useState(false);
   const [editingPackage, setEditingPackage] = useState<Package | undefined>(undefined);
   const [serviceCategoryFilter, setServiceCategoryFilter] = useState<string | 'all'>('all');
+  const [productCategoryFilter, setProductCategoryFilter] = useState<string | 'all'>('all');
   const [packageTypeFilter, setPackageTypeFilter] = useState<'all' | 'custom' | 'fixed'>('all');
   const [packageCategoryFilter, setPackageCategoryFilter] = useState<string | 'all'>('all');
   const [packageServiceFilter, setPackageServiceFilter] = useState<string | 'all'>('all');
 
-  const handleStar = (collectionName: 'categories' | 'services' | 'packages') => async (id: string, starred: boolean) => {
+  const handleStar = (collectionName: 'categories' | 'services' | 'products' | 'packages') => async (id: string, starred: boolean) => {
     try {
         await updateDoc(doc(db, collectionName, id), { starred });
     } catch (error) {
@@ -52,7 +57,7 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
     }
   }
 
-  const handleDeleteSelected = (collectionName: 'categories' | 'services') => async (ids: string[]) => {
+  const handleDeleteSelected = (collectionName: 'categories' | 'services' | 'products') => async (ids: string[]) => {
     const batch = writeBatch(db);
     ids.forEach(id => {
         batch.delete(doc(db, collectionName, id));
@@ -67,11 +72,17 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
 
   const categoryColumns = useMemo(() => getCategoriesColumns(handleStar('categories')), []);
   const serviceColumns = useMemo(() => getServicesColumns({ categories, project, onStar: handleStar('services') }), [categories, project]);
+  const productColumns = useMemo(() => getProductsColumns({ categories, onStar: handleStar('products') }), [categories]);
 
   const filteredServices = useMemo(() => {
     if (serviceCategoryFilter === 'all') return services;
     return services.filter(s => s.categoryId === serviceCategoryFilter);
   }, [services, serviceCategoryFilter]);
+  
+  const filteredProducts = useMemo(() => {
+    if (productCategoryFilter === 'all') return products;
+    return products.filter(p => p.categoryId === productCategoryFilter);
+  }, [products, productCategoryFilter]);
 
   const filteredPackages = useMemo(() => {
     let tempPackages = packages;
@@ -147,12 +158,34 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
     </div>
   );
 
+  const ProductToolbar = () => (
+    <div className="flex items-center gap-2">
+        <Select value={productCategoryFilter} onValueChange={(value) => setProductCategoryFilter(value)}>
+            <SelectTrigger className="w-48 h-9 text-sm">
+                <SelectValue placeholder="Filter by category..." />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(cat => (
+                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+        {productCategoryFilter !== 'all' && (
+            <Button variant="ghost" size="sm" onClick={() => setProductCategoryFilter('all')}>
+                Clear Filter
+            </Button>
+        )}
+    </div>
+  );
+
   return (
     <Tabs defaultValue="services" className="mt-4">
       <div className="flex justify-between items-center mb-4">
         <TabsList>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
+          <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="packages">Packages</TabsTrigger>
         </TabsList>
         <div className="flex gap-2">
@@ -164,6 +197,10 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
                 <DialogTrigger asChild><Button size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> New Service</Button></DialogTrigger>
                 <DialogContent><DialogHeader><DialogTitle>Create New Service</DialogTitle></DialogHeader><ServiceForm project={project} categories={categories} closeForm={() => setIsServiceFormOpen(false)} /></DialogContent>
             </Dialog>
+             <Dialog open={isProductFormOpen} onOpenChange={setIsProductFormOpen}>
+                <DialogTrigger asChild><Button size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> New Product</Button></DialogTrigger>
+                <DialogContent><DialogHeader><DialogTitle>Create New Product</DialogTitle></DialogHeader><ProductForm project={project} categories={categories} closeForm={() => setIsProductFormOpen(false)} /></DialogContent>
+            </Dialog>
             <Dialog open={isPackageFormOpen} onOpenChange={setIsPackageFormOpen}>
                 <DialogTrigger asChild><Button size="sm" onClick={handleCreateNewPackage}><PlusCircle className="mr-2 h-4 w-4" /> New Package</Button></DialogTrigger>
                 <DialogContent className='max-w-3xl'>
@@ -171,6 +208,7 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
                     <PackageForm 
                         project={project} 
                         services={services} 
+                        products={products}
                         pkg={editingPackage}
                         closeForm={() => setIsPackageFormOpen(false)} 
                     />
@@ -182,8 +220,8 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
       <TabsContent value="categories">
         <Card>
           <CardHeader>
-            <CardTitle>Product Categories</CardTitle>
-            <CardDescription>Manage the categories for your services.</CardDescription>
+            <CardTitle>Product & Service Categories</CardTitle>
+            <CardDescription>Manage the categories for your services and products.</CardDescription>
           </CardHeader>
           <CardContent>
             <DataTable columns={categoryColumns} data={categories} onDeleteSelected={handleDeleteSelected('categories')} />
@@ -203,13 +241,25 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
         </Card>
       </TabsContent>
 
+      <TabsContent value="products">
+        <Card>
+          <CardHeader>
+            <CardTitle>Products</CardTitle>
+            <CardDescription>Manage individual products offered in this project.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DataTable columns={productColumns} data={filteredProducts} toolbar={<ProductToolbar />} onDeleteSelected={handleDeleteSelected('products')} />
+          </CardContent>
+        </Card>
+      </TabsContent>
+
       <TabsContent value="packages">
          <Card>
           <CardHeader>
             <div className='flex justify-between items-center'>
                 <div>
                     <CardTitle>Packages</CardTitle>
-                    <CardDescription>Bundle services into fixed-price packages.</CardDescription>
+                    <CardDescription>Bundle services and products into fixed-price packages.</CardDescription>
                 </div>
                 <div className='flex items-center gap-2'>
                   <Select value={packageCategoryFilter} onValueChange={(value) => setPackageCategoryFilter(value)}>
@@ -256,6 +306,7 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
                     <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-4'>
                         {filteredPackages.map(pkg => {
                             const includedServices = pkg.services.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
+                            const includedProducts = (pkg.products || []).map(id => products.find(p => p.id === id)).filter(Boolean) as Product[];
                             return (
                             <Card key={pkg.id}>
                                 <CardHeader>
@@ -289,9 +340,10 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <h4 className='font-semibold text-sm mb-2'>Included Services:</h4>
+                                    <h4 className='font-semibold text-sm mb-2'>Included Items:</h4>
                                     <ul className='space-y-1 text-sm text-muted-foreground'>
                                         {includedServices.map(s => <li key={s.id} className='flex items-center gap-2'><ArrowRight className='h-3 w-3'/>{s.name}</li>)}
+                                        {includedProducts.map(p => <li key={p.id} className='flex items-center gap-2'><ArrowRight className='h-3 w-3'/>{p.name}</li>)}
                                     </ul>
                                 </CardContent>
                                 <CardFooter>

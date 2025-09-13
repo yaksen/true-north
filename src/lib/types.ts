@@ -1,4 +1,5 @@
 
+
 import { CurrencyCode } from "@/context/CurrencyContext";
 
 export type UserRole = 'admin' | 'manager' | 'member';
@@ -28,6 +29,9 @@ export type ActivityRecordType =
     | 'service_created'
     | 'service_updated'
     | 'service_deleted'
+    | 'product_created'
+    | 'product_updated'
+    | 'product_deleted'
     | 'package_created'
     | 'package_updated'
     | 'package_deleted'
@@ -149,6 +153,21 @@ export interface Service {
     updatedAt: Date;
 }
 
+export interface Product {
+    id: string;
+    projectId: string;
+    name: string;
+    categoryId: string;
+    quantity: number;
+    price: number;
+    currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
+    notes?: string;
+    sku?: string;
+    starred?: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
 export interface Discount {
     id: string;
     name: string;
@@ -162,6 +181,7 @@ export interface Package {
     name: string;
     description: string;
     services: string[]; // Array of service IDs
+    products: string[]; // Array of product IDs
     price: number;
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     duration: string;

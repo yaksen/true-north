@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Invoice } from '@/lib/types';
+import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Invoice, Product } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,6 +32,7 @@ export default function ProjectDetailPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [records, setRecords] = useState<ActivityRecord[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -88,6 +89,7 @@ export default function ProjectDetailPage() {
     const unsubscribeLeads = createCollectionSubscription<Lead>('leads', setLeads);
     const unsubscribeCategories = createCollectionSubscription<Category>('categories', setCategories);
     const unsubscribeServices = createCollectionSubscription<Service>('services', setServices);
+    const unsubscribeProducts = createCollectionSubscription<Product>('products', setProducts);
     const unsubscribePackages = createCollectionSubscription<Package>('packages', setPackages);
     const unsubscribeRecords = createCollectionSubscription<ActivityRecord>('records', setRecords);
     const unsubscribeNotes = createCollectionSubscription<Note>('notes', setNotes);
@@ -101,6 +103,7 @@ export default function ProjectDetailPage() {
         unsubscribeLeads();
         unsubscribeCategories();
         unsubscribeServices();
+        unsubscribeProducts();
         unsubscribePackages();
         unsubscribeRecords();
         unsubscribeNotes();
@@ -125,7 +128,7 @@ export default function ProjectDetailPage() {
                 <TabsList className="grid w-full grid-cols-7 min-w-max">
                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                     <TabsTrigger value="leads">Leads</TabsTrigger>
-                    <TabsTrigger value="products">Products</TabsTrigger>
+                    <TabsTrigger value="products">Products & Services</TabsTrigger>
                     <TabsTrigger value="billing">Billing</TabsTrigger>
                     <TabsTrigger value="finance">Finance</TabsTrigger>
                     <TabsTrigger value="tasks">Tasks</TabsTrigger>
@@ -143,6 +146,7 @@ export default function ProjectDetailPage() {
                     project={project} 
                     categories={categories}
                     services={services}
+                    products={products}
                     packages={packages}
                 />
             </TabsContent>

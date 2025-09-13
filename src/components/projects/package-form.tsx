@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Package, Project, Service } from '@/lib/types';
+import type { Package, Project, Service, Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -32,12 +32,16 @@ const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   sku: z.string().optional(),
   description: z.string().optional(),
-  services: z.array(z.string()).min(1, 'At least one service must be selected.'),
+  services: z.array(z.string()).default([]),
+  products: z.array(z.string()).default([]),
   price: z.coerce.number().min(0),
   currency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
   duration: z.string().min(1, { message: 'Duration is required.' }),
   custom: z.boolean().default(false),
   discountPercentage: z.coerce.number().min(-100).max(100).default(0),
+}).refine(data => data.services.length > 0 || data.products.length > 0, {
+    message: "At least one service or product must be selected.",
+    path: ["services"], // you can point to either services or products
 });
 
 type PackageFormValues = z.infer<typeof formSchema>;
@@ -46,15 +50,16 @@ interface PackageFormProps {
   pkg?: Package;
   project: Project;
   services: Service[];
+  products: Product[];
   closeForm: () => void;
 }
 
-export function PackageForm({ pkg, project, services, closeForm }: PackageFormProps) {
+export function PackageForm({ pkg, project, services, products, closeForm }: PackageFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const { globalCurrency } = useCurrency();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isServicesPopoverOpen, setIsServicesPopoverOpen] = useState(false);
+  const [isItemsPopoverOpen, setIsItemsPopoverOpen] = useState(false);
 
   const [durationValue, setDurationValue] = useState(() => pkg?.duration?.split(' ')[0] || '1');
   const [durationUnit, setDurationUnit] = useState(() => pkg?.duration?.split(' ')[1] || 'Days');
@@ -65,11 +70,13 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
     defaultValues: pkg ? {
         ...pkg,
         services: pkg.services || [],
+        products: pkg.products || [],
     } : {
       name: '',
       sku: '',
       description: '',
       services: [],
+      products: [],
       price: 0,
       currency: project.currency || (globalCurrency as any) || 'USD',
       duration: '1 Days',
@@ -79,6 +86,7 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
   });
 
   const selectedServiceIds = form.watch('services');
+  const selectedProductIds = form.watch('products');
   const packageCurrency = form.watch('currency');
   const discountPercentage = form.watch('discountPercentage');
   const isCustom = form.watch('custom');
@@ -101,14 +109,22 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
   }, [isCustom, pkg, form]);
 
   useEffect(() => {
-    if (selectedServiceIds.length > 0) {
       const selectedServiceDetails = selectedServiceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
-      
-      const basePriceInUSD = selectedServiceDetails.reduce((sum, s) => {
+      const selectedProductDetails = selectedProductIds.map(id => products.find(p => p.id === id)).filter(Boolean) as Product[];
+
+      const totalServicePriceUSD = selectedServiceDetails.reduce((sum, s) => {
         const rate = MOCK_RATES[s.currency] || 1;
         const priceInUSD = s.price / rate;
         return sum + priceInUSD;
       }, 0);
+
+      const totalProductPriceUSD = selectedProductDetails.reduce((sum, p) => {
+        const rate = MOCK_RATES[p.currency] || 1;
+        const priceInUSD = p.price / rate;
+        return sum + priceInUSD;
+      }, 0);
+
+      const basePriceInUSD = totalServicePriceUSD + totalProductPriceUSD;
 
       const targetRate = MOCK_RATES[packageCurrency] || 1;
       const basePriceInTargetCurrency = basePriceInUSD * targetRate;
@@ -116,10 +132,8 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
       const finalPrice = basePriceInTargetCurrency * (1 - (discountPercentage / 100));
 
       form.setValue('price', parseFloat(finalPrice.toFixed(2)));
-    } else {
-        form.setValue('price', 0);
-    }
-  }, [selectedServiceIds, services, packageCurrency, discountPercentage, form]);
+    
+  }, [selectedServiceIds, selectedProductIds, services, products, packageCurrency, discountPercentage, form]);
 
 
   async function onSubmit(values: PackageFormValues) {
@@ -149,6 +163,8 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
       setIsSubmitting(false);
     }
   }
+
+  const selectedItemsCount = (selectedServiceIds?.length || 0) + (selectedProductIds?.length || 0);
 
   return (
     <Form {...form}>
@@ -197,53 +213,76 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
 
         <FormField
             control={form.control}
-            name="services"
+            name="services" // Also need to handle products here, but hook form name is singular
             render={({ field }) => (
                 <FormItem className="flex flex-col">
-                    <FormLabel>Included Services</FormLabel>
-                    <Popover open={isServicesPopoverOpen} onOpenChange={setIsServicesPopoverOpen}>
+                    <FormLabel>Included Items</FormLabel>
+                    <Popover open={isItemsPopoverOpen} onOpenChange={setIsItemsPopoverOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
                           role="combobox"
-                          aria-expanded={isServicesPopoverOpen}
+                          aria-expanded={isItemsPopoverOpen}
                           className="w-full justify-between"
                         >
-                          {field.value?.length > 0
-                              ? `${field.value.length} service(s) selected`
-                              : "Select services..."}
+                          {selectedItemsCount > 0
+                              ? `${selectedItemsCount} item(s) selected`
+                              : "Select items..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                         <Command>
-                            <CommandInput placeholder="Search services..." />
-                            <CommandEmpty>No services found.</CommandEmpty>
-                            <CommandGroup>
-                                <ScrollArea className='h-48'>
-                                {services.map((service) => (
-                                    <CommandItem
-                                        key={service.id}
-                                        onSelect={() => {
-                                            const currentServices = field.value || [];
-                                            const serviceId = service.id;
-                                            const newServices = currentServices.includes(serviceId)
-                                                ? currentServices.filter(id => id !== serviceId)
-                                                : [...currentServices, serviceId];
-                                            field.onChange(newServices);
-                                        }}
-                                    >
-                                        <CheckIcon
-                                            className={cn(
-                                                "mr-2 h-4 w-4",
-                                                field.value.includes(service.id) ? "opacity-100" : "opacity-0"
-                                            )}
-                                        />
-                                        {service.name}
-                                    </CommandItem>
-                                ))}
-                                </ScrollArea>
-                            </CommandGroup>
+                            <CommandInput placeholder="Search items..." />
+                            <CommandEmpty>No items found.</CommandEmpty>
+                            <ScrollArea className='h-48'>
+                                {services.length > 0 && <CommandGroup heading="Services">
+                                    {services.map((service) => (
+                                        <CommandItem
+                                            key={`s-${service.id}`}
+                                            onSelect={() => {
+                                                const currentServices = field.value || [];
+                                                const serviceId = service.id;
+                                                const newServices = currentServices.includes(serviceId)
+                                                    ? currentServices.filter(id => id !== serviceId)
+                                                    : [...currentServices, serviceId];
+                                                field.onChange(newServices);
+                                            }}
+                                        >
+                                            <CheckIcon
+                                                className={cn(
+                                                    "mr-2 h-4 w-4",
+                                                    field.value.includes(service.id) ? "opacity-100" : "opacity-0"
+                                                )}
+                                            />
+                                            {service.name}
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>}
+                                {products.length > 0 && <CommandGroup heading="Products">
+                                    {products.map((product) => (
+                                        <CommandItem
+                                            key={`p-${product.id}`}
+                                            onSelect={() => {
+                                                const currentProducts = form.getValues('products') || [];
+                                                const productId = product.id;
+                                                const newProducts = currentProducts.includes(productId)
+                                                    ? currentProducts.filter(id => id !== productId)
+                                                    : [...currentProducts, productId];
+                                                form.setValue('products', newProducts);
+                                            }}
+                                        >
+                                            <CheckIcon
+                                                className={cn(
+                                                    "mr-2 h-4 w-4",
+                                                    form.getValues('products').includes(product.id) ? "opacity-100" : "opacity-0"
+                                                )}
+                                            />
+                                            {product.name}
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>}
+                            </ScrollArea>
                         </Command>
                       </PopoverContent>
                     </Popover>
