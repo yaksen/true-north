@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import type { Finance, FinanceType, Project, Package, Service } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -18,10 +18,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { logActivity } from '@/lib/activity-log';
 import { CurrencyInput } from '../ui/currency-input';
 import { useCurrency } from '@/context/CurrencyContext';
+import { v4 as uuidv4 } from 'uuid';
 
 const financeTypes = ['income', 'expense'] as const;
 
@@ -116,12 +117,14 @@ export function FinanceForm({ finance, project, projects, packages, services, le
     setIsSubmitting(true);
 
     try {
-      if (finance) {
+      if (finance) { // UPDATE existing finance record
         const financeRef = doc(db, 'finances', finance.id);
         await updateDoc(financeRef, { ...values, updatedAt: serverTimestamp() });
         await logActivity(values.projectId, 'finance_updated', { description: values.description }, user.uid);
         toast({ title: 'Success', description: 'Record updated successfully.' });
-      } else {
+      } else { // CREATE new finance record (and maybe invoice)
+        const batch = writeBatch(db);
+
         const financeData: any = {
           ...values,
           recordedByUid: user.uid,
@@ -131,7 +134,39 @@ export function FinanceForm({ finance, project, projects, packages, services, le
         if (leadId) {
             financeData.leadId = leadId;
         }
-        await addDoc(collection(db, 'finances'), financeData);
+
+        const financeRef = doc(collection(db, 'finances'));
+        
+        // If it's an income record for a specific lead, create an invoice
+        if (leadId && values.type === 'income') {
+            const invoiceRef = doc(collection(db, 'invoices'));
+            const invoiceData = {
+                id: invoiceRef.id,
+                projectId: values.projectId,
+                leadId: leadId,
+                invoiceNumber: `INV-${Date.now()}`,
+                status: 'paid', // Assume paid since we are logging income
+                issueDate: values.date,
+                dueDate: addDays(values.date, 30),
+                lineItems: [{
+                    id: uuidv4(),
+                    description: values.description,
+                    quantity: 1,
+                    price: values.amount,
+                    currency: values.currency,
+                }],
+                discounts: [],
+                taxRate: 0,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+            batch.set(invoiceRef, invoiceData);
+            financeData.invoiceId = invoiceRef.id;
+        }
+
+        batch.set(financeRef, financeData);
+        await batch.commit();
+        
         await logActivity(values.projectId, 'finance_created', { description: values.description }, user.uid);
         toast({ title: 'Success', description: 'Record created successfully.' });
       }
@@ -324,3 +359,5 @@ export function FinanceForm({ finance, project, projects, packages, services, le
     </Form>
   );
 }
+
+    

@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectType = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'Call' | 'Meeting' | 'Project';
@@ -85,6 +86,7 @@ export interface Finance {
     id: string;
     projectId: string;
     leadId?: string;
+    invoiceId?: string;
     type: FinanceType;
     amount: number;
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
@@ -221,3 +223,5 @@ export interface CrmSettings {
     revenueGoal?: number;
     currency?: 'USD' | 'LKR' | 'EUR' | 'GBP';
 }
+
+    
