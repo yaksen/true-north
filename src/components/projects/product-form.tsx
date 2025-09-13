@@ -19,6 +19,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/lib/activity-log';
 import { CurrencyInput } from '../ui/currency-input';
 import { useCurrency } from '@/context/CurrencyContext';
+import { v4 as uuidv4 } from 'uuid';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -51,7 +52,7 @@ export function ProductForm({ product, project, categories, closeForm }: Product
     resolver: zodResolver(formSchema),
     defaultValues: product || {
       name: '',
-      sku: '',
+      sku: `SKU-${uuidv4().substring(0, 8).toUpperCase()}`,
       categoryId: '',
       quantity: 0,
       price: 0,
