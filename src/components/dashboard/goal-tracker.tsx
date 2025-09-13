@@ -113,7 +113,7 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
         <CardTitle>Revenue Goal</CardTitle>
-        <CardDescription>This month&apos;s target</CardDescription>
+        <CardDescription>{formatCurrency(convertedGoal)}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer
