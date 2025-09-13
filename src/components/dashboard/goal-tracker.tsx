@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,13 +10,12 @@ import { ChartConfig, ChartContainer } from '../ui/chart';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
-import { Input } from '../ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
-import { useCurrency } from '@/context/CurrencyContext';
 import type { CurrencyCode } from '@/context/CurrencyContext';
+import { CurrencyInput } from '../ui/currency-input';
 
 interface GoalTrackerProps {
   currentRevenue: number;
@@ -35,6 +34,7 @@ const chartConfig = {
 
 const formSchema = z.object({
   revenueGoal: z.coerce.number().min(1, 'Goal must be a positive number.'),
+  goalCurrency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
 });
 type GoalFormValues = z.infer<typeof formSchema>;
 
@@ -48,7 +48,7 @@ const convert = (amount: number, from: string, to: string) => {
 };
 
 
-export function GoalTracker({ currentRevenue, goal = 100000, goalCurrency = 'LKR', currency }: GoalTrackerProps) {
+export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR', currency }: GoalTrackerProps) {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,14 +59,25 @@ export function GoalTracker({ currentRevenue, goal = 100000, goalCurrency = 'LKR
   
   const form = useForm<GoalFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { revenueGoal: Math.round(convertedGoal) },
+    defaultValues: { 
+        revenueGoal: goal,
+        goalCurrency: goalCurrency as 'LKR' | 'USD' | 'EUR' | 'GBP',
+    },
   });
+
+  useEffect(() => {
+    form.reset({
+        revenueGoal: goal,
+        goalCurrency: goalCurrency as 'LKR' | 'USD' | 'EUR' | 'GBP',
+    });
+  }, [goal, goalCurrency, form]);
+
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact' }).format(amount);
   };
 
-  const progress = Math.min((currentRevenue / convertedGoal) * 100, 100);
+  const progress = convertedGoal > 0 ? Math.min((currentRevenue / convertedGoal) * 100, 100) : 0;
   const chartData = [{ name: 'revenue', value: progress, fill: 'hsl(var(--primary))' }];
 
   async function onSubmit(values: GoalFormValues) {
@@ -74,7 +85,7 @@ export function GoalTracker({ currentRevenue, goal = 100000, goalCurrency = 'LKR
     try {
         await setDoc(doc(db, 'settings', 'crm'), { 
             revenueGoal: values.revenueGoal,
-            goalCurrency: currency,
+            goalCurrency: values.goalCurrency,
         }, { merge: true });
         toast({ title: 'Success', description: 'Revenue goal updated!' });
         setIsDialogOpen(false);
@@ -143,17 +154,22 @@ export function GoalTracker({ currentRevenue, goal = 100000, goalCurrency = 'LKR
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <FormField
-                        control={form.control}
-                        name="revenueGoal"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Revenue Goal ({currency})</FormLabel>
-                            <FormControl>
-                                <Input type="number" placeholder="e.g. 10000" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
+                            control={form.control}
+                            name="revenueGoal"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Revenue Goal</FormLabel>
+                                <FormControl>
+                                    <CurrencyInput
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                        currency={form.watch('goalCurrency')}
+                                        onCurrencyChange={(value) => form.setValue('goalCurrency', value)}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
                         />
                         <div className="flex justify-end">
                             <Button type="submit" disabled={isSubmitting}>
