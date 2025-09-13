@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Invoice, Payment, PaymentMethod, Project, InvoiceStatus } from '@/lib/types';
+import type { Invoice, Payment, PaymentMethod, Project, InvoiceStatus, Finance } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, serverTimestamp, getDocs, collection, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -61,44 +61,70 @@ export function PaymentForm({ invoice, project, closeForm }: PaymentFormProps) {
     setIsSubmitting(true);
     
     try {
-      const invoiceRef = doc(db, 'invoices', invoice.id);
+        const batch = writeBatch(db);
+        const invoiceRef = doc(db, 'invoices', invoice.id);
       
-      const newPayment: Payment = {
-        id: uuidv4(),
-        ...values,
-      };
+        const newPayment: Payment = {
+            id: uuidv4(),
+            ...values,
+        };
 
-      const updatedPayments = arrayUnion(newPayment);
+        // --- 1. Update Invoice ---
+        const updatedPayments = arrayUnion(newPayment);
+        const totalPaid = (invoice.payments || []).reduce((sum, p) => sum + p.amount, 0) + newPayment.amount;
+        const invoiceTotal = invoice.lineItems.reduce((sum, item) => sum + (item.price * item.quantity), 0); // Simplified total for status check
 
-      const totalPaid = (invoice.payments || []).reduce((sum, p) => sum + p.amount, 0) + newPayment.amount;
-      
-      const invoiceTotal = invoice.lineItems.reduce((sum, item) => sum + (item.price * item.quantity), 0); // Simplified total for status check
+        let newStatus: InvoiceStatus = 'partial';
+        if (totalPaid >= invoiceTotal) {
+            newStatus = 'paid';
+        } else if (totalPaid <= 0) {
+            newStatus = 'unpaid';
+        }
 
-      let newStatus: InvoiceStatus = 'partial';
-      if (totalPaid >= invoiceTotal) {
-        newStatus = 'paid';
-      } else if (totalPaid <= 0) {
-        newStatus = 'unpaid';
-      }
+        batch.update(invoiceRef, {
+            payments: updatedPayments,
+            status: newStatus,
+            updatedAt: serverTimestamp(),
+        });
 
-      await updateDoc(invoiceRef, {
-        payments: updatedPayments,
-        status: newStatus,
-        updatedAt: serverTimestamp(),
-      });
+        // --- 2. Update associated Finance record ---
+        const financeQuery = query(collection(db, 'finances'), where('invoiceId', '==', invoice.id));
+        const financeSnap = await getDocs(financeQuery);
 
-      await logActivity(invoice.projectId, 'payment_added', { 
-        invoiceNumber: invoice.invoiceNumber, 
-        amount: formatCurrency(values.amount, project.currency),
-      }, user.uid);
+        if (!financeSnap.empty) {
+            const financeDoc = financeSnap.docs[0];
+            const financeData = financeDoc.data() as Finance;
+            const financeRef = financeDoc.ref;
+            
+            const newPaidPrice = (financeData.paidPrice || 0) + values.amount;
 
-      toast({ title: 'Success', description: 'Payment added successfully.' });
-      closeForm();
+            const updateNote = `\n---
+Updated on ${new Date().toLocaleString()} – Payment of ${formatCurrency(values.amount, project.currency)} added (method: ${values.method}${values.note ? ', note: ' + values.note : ''}).`;
+            
+            const newDescription = (financeData.description || '') + updateNote;
+
+            batch.update(financeRef, {
+                paidPrice: newPaidPrice,
+                description: newDescription,
+                updatedAt: serverTimestamp()
+            });
+        }
+        
+        // --- 3. Commit Batch and Log Activity ---
+        await batch.commit();
+
+        await logActivity(invoice.projectId, 'payment_added', { 
+            invoiceNumber: invoice.invoiceNumber, 
+            amount: formatCurrency(values.amount, project.currency),
+        }, user.uid);
+
+        toast({ title: 'Success', description: 'Payment added and finance record updated.' });
+        closeForm();
     } catch (error) {
-      console.error("Error adding payment: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Something went wrong.' });
+        console.error("Error adding payment: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Something went wrong.' });
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
   }
 

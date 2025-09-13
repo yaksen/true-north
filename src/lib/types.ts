@@ -91,6 +91,7 @@ export interface Finance {
     invoiceId?: string;
     type: FinanceType;
     amount: number;
+    paidPrice?: number;
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     description: string;
     date: Date;
