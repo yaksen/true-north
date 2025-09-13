@@ -26,7 +26,12 @@ export default function InvoiceDetailPage() {
 
     const unsubscribe = onSnapshot(doc(db, 'invoices', id), async (docSnap) => {
       if (docSnap.exists()) {
-        const invoiceData = { id: docSnap.id, ...docSnap.data() } as Invoice;
+        const invoiceData = { 
+            id: docSnap.id, 
+            ...docSnap.data(),
+            issueDate: docSnap.data().issueDate.toDate(),
+            dueDate: docSnap.data().dueDate.toDate(),
+         } as Invoice;
         setInvoice(invoiceData);
 
         // Fetch related project and lead
