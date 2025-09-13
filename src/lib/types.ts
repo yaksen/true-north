@@ -1,4 +1,5 @@
 
+import { CurrencyCode } from "@/context/CurrencyContext";
 
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectType = 'Active' | 'Passive' | 'Fun' | 'Sub';
@@ -92,7 +93,7 @@ export interface Finance {
     leadId?: string;
     invoiceId?: string;
     type: FinanceType;
-    amount: number; // The amount of the transaction (e.g., a single payment or the initial paid amount)
+    amount: number; // The amount paid
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     description: string;
     date: Date;
@@ -240,5 +241,6 @@ export interface Report {
 export interface CrmSettings {
     isSignupEnabled: boolean;
     revenueGoal?: number;
+    goalCurrency?: CurrencyCode;
     currency?: 'USD' | 'LKR' | 'EUR' | 'GBP';
 }

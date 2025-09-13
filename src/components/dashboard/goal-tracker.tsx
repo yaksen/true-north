@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,10 +16,12 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { useCurrency } from '@/context/CurrencyContext';
+import type { CurrencyCode } from '@/context/CurrencyContext';
 
 interface GoalTrackerProps {
   currentRevenue: number;
   goal?: number;
+  goalCurrency?: CurrencyCode;
   currency: string;
 }
 
@@ -36,27 +38,44 @@ const formSchema = z.object({
 });
 type GoalFormValues = z.infer<typeof formSchema>;
 
-export function GoalTracker({ currentRevenue, goal = 10000, currency }: GoalTrackerProps) {
+// Mock conversion rates - replace with a real API call in a real app
+const MOCK_RATES: { [key: string]: number } = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
+
+const convert = (amount: number, from: string, to: string) => {
+    const fromRate = MOCK_RATES[from] || 1;
+    const toRate = MOCK_RATES[to] || 1;
+    return (amount / fromRate) * toRate;
+};
+
+
+export function GoalTracker({ currentRevenue, goal = 100000, goalCurrency = 'LKR', currency }: GoalTrackerProps) {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const convertedGoal = useMemo(() => {
+    return convert(goal, goalCurrency, currency);
+  }, [goal, goalCurrency, currency]);
+  
   const form = useForm<GoalFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { revenueGoal: goal },
+    defaultValues: { revenueGoal: Math.round(convertedGoal) },
   });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact' }).format(amount);
   };
 
-  const progress = Math.min((currentRevenue / goal) * 100, 100);
+  const progress = Math.min((currentRevenue / convertedGoal) * 100, 100);
   const chartData = [{ name: 'revenue', value: progress, fill: 'hsl(var(--primary))' }];
 
   async function onSubmit(values: GoalFormValues) {
     setIsSubmitting(true);
     try {
-        await setDoc(doc(db, 'settings', 'crm'), { revenueGoal: values.revenueGoal }, { merge: true });
+        await setDoc(doc(db, 'settings', 'crm'), { 
+            revenueGoal: values.revenueGoal,
+            goalCurrency: currency,
+        }, { merge: true });
         toast({ title: 'Success', description: 'Revenue goal updated!' });
         setIsDialogOpen(false);
     } catch (error) {
@@ -111,7 +130,7 @@ export function GoalTracker({ currentRevenue, goal = 10000, currency }: GoalTrac
       </CardContent>
       <div className="flex flex-col gap-2 p-6 pt-0">
         <div className='text-center text-sm text-muted-foreground'>
-            <p>{formatCurrency(currentRevenue)} / {formatCurrency(goal)}</p>
+            <p>{formatCurrency(currentRevenue)} / {formatCurrency(convertedGoal)}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
