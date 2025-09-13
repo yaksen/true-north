@@ -7,7 +7,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import type { Finance, FinanceType, Project, Package } from '@/lib/types';
+import type { Finance, FinanceType, Project, Package, Service } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -42,16 +42,18 @@ interface FinanceFormProps {
   project?: { id: string, currency: 'LKR' | 'USD' | 'EUR' | 'GBP' };
   projects?: Project[];
   packages?: Package[];
+  services?: Service[];
   leadId?: string;
   closeForm: () => void;
 }
 
-export function FinanceForm({ finance, project, projects, packages, leadId, closeForm }: FinanceFormProps) {
+export function FinanceForm({ finance, project, projects, packages, services, leadId, closeForm }: FinanceFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { globalCurrency } = useCurrency();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
 
   const form = useForm<FinanceFormValues>({
     resolver: zodResolver(formSchema),
@@ -81,15 +83,29 @@ export function FinanceForm({ finance, project, projects, packages, leadId, clos
 
   useEffect(() => {
     if (selectedPackageId && packages) {
+      setSelectedServiceId(null); // Ensure only one is selected
       const selectedPackage = packages.find(p => p.id === selectedPackageId);
       if (selectedPackage) {
         form.setValue('amount', selectedPackage.price);
         form.setValue('currency', selectedPackage.currency);
-        form.setValue('description', `Payment for ${selectedPackage.name}`);
+        form.setValue('description', `Purchased ${selectedPackage.sku || selectedPackage.name}`);
         form.setValue('category', 'Package Sale');
       }
     }
   }, [selectedPackageId, packages, form]);
+
+  useEffect(() => {
+    if (selectedServiceId && services) {
+        setSelectedPackageId(null); // Ensure only one is selected
+        const selectedService = services.find(s => s.id === selectedServiceId);
+        if (selectedService) {
+            form.setValue('amount', selectedService.price);
+            form.setValue('currency', selectedService.currency);
+            form.setValue('description', `Purchased ${selectedService.sku || selectedService.name}`);
+            form.setValue('category', 'Service Sale');
+        }
+    }
+  }, [selectedServiceId, services, form]);
 
 
   async function onSubmit(values: FinanceFormValues) {
@@ -155,23 +171,44 @@ export function FinanceForm({ finance, project, projects, packages, leadId, clos
             )}
            />
         )}
-        {packages && packages.length > 0 && (
-            <FormItem>
-                <FormLabel>Select a Package (Optional)</FormLabel>
-                <Select onValueChange={setSelectedPackageId}>
-                    <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a package to auto-fill..." />
-                        </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        {packages.map(p => (
-                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </FormItem>
-        )}
+        {(packages && packages.length > 0) || (services && services.length > 0) ? (
+          <div className="grid grid-cols-2 gap-4">
+            {packages && packages.length > 0 && (
+              <FormItem>
+                  <FormLabel>Select a Package (Optional)</FormLabel>
+                  <Select value={selectedPackageId || ''} onValueChange={setSelectedPackageId}>
+                      <FormControl>
+                          <SelectTrigger>
+                              <SelectValue placeholder="Select a package..." />
+                          </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                          {packages.map(p => (
+                              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
+              </FormItem>
+            )}
+            {services && services.length > 0 && (
+                <FormItem>
+                    <FormLabel>Select a Service (Optional)</FormLabel>
+                    <Select value={selectedServiceId || ''} onValueChange={setSelectedServiceId}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a service..." />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {services.map(s => (
+                                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </FormItem>
+            )}
+          </div>
+        ) : null}
         <FormField
           control={form.control}
           name="description"

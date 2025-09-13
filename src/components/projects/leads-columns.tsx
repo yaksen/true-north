@@ -2,7 +2,7 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Lead, LeadStatus, Package } from "@/lib/types";
+import { Lead, LeadStatus, Package, Service } from "@/lib/types";
 import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon, Edit, Trash2, Facebook, Instagram, CaseUpper } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -23,7 +23,7 @@ import { db } from "@/lib/firebase";
 import { logActivity } from "@/lib/activity-log";
 
 
-const ActionsCell: React.FC<{ lead: Lead, project: {id: string, currency: string}, packages: Package[] }> = ({ lead, project, packages }) => {
+const ActionsCell: React.FC<{ lead: Lead, project: {id: string, currency: string}, packages: Package[], services: Service[] }> = ({ lead, project, packages, services }) => {
     const { toast } = useToast();
     const { user } = useAuth();
     const [isFinanceOpen, setIsFinanceOpen] = useState(false);
@@ -90,7 +90,7 @@ const ActionsCell: React.FC<{ lead: Lead, project: {id: string, currency: string
                     <DialogHeader>
                         <DialogTitle>Log Finance for {lead.name}</DialogTitle>
                     </DialogHeader>
-                    <FinanceForm project={project} leadId={lead.id} packages={packages} closeForm={() => setIsFinanceOpen(false)} />
+                    <FinanceForm project={project} leadId={lead.id} packages={packages} services={services} closeForm={() => setIsFinanceOpen(false)} />
                 </DialogContent>
             </Dialog>
 
@@ -152,7 +152,7 @@ const SocialsCell: React.FC<{ lead: Lead }> = ({ lead }) => {
 }
 
 
-export const getLeadsColumns = (project: {id: string, currency: string}, packages: Package[]): ColumnDef<Lead>[] => [
+export const getLeadsColumns = (project: {id: string, currency: string}, packages: Package[], services: Service[]): ColumnDef<Lead>[] => [
     {
         id: 'select',
         header: ({ table }) => (
@@ -222,7 +222,7 @@ export const getLeadsColumns = (project: {id: string, currency: string}, package
         id: "actions",
         cell: ({ row }) => {
           const lead = row.original;
-          return <ActionsCell lead={lead} project={project} packages={packages} />;
+          return <ActionsCell lead={lead} project={project} packages={packages} services={services} />;
         },
       },
   ];

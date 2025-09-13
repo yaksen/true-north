@@ -108,14 +108,13 @@ export default function ProjectDetailPage() {
 
         <Tabs defaultValue="dashboard" className="w-full">
             <div className='overflow-x-auto'>
-                <TabsList className="grid w-full grid-cols-8 min-w-max">
+                <TabsList className="grid w-full grid-cols-7 min-w-max">
                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                     <TabsTrigger value="leads">Leads</TabsTrigger>
                     <TabsTrigger value="products">Products</TabsTrigger>
                     <TabsTrigger value="billing">Billing</TabsTrigger>
                     <TabsTrigger value="finance">Finance</TabsTrigger>
                     <TabsTrigger value="tasks">Tasks</TabsTrigger>
-                    <TabsTrigger value="records">Records</TabsTrigger>
                     <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
             </div>
@@ -123,7 +122,7 @@ export default function ProjectDetailPage() {
                 <ProjectDashboard project={project} tasks={tasks} finances={finances} />
             </TabsContent>
             <TabsContent value="leads">
-                <ProjectLeads project={project} leads={leads} packages={packages} />
+                <ProjectLeads project={project} leads={leads} packages={packages} services={services} />
             </TabsContent>
             <TabsContent value="products">
                 <ProjectProducts 
