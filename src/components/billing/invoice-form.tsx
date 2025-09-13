@@ -66,24 +66,35 @@ export function InvoiceForm({ invoice, projects, leads, closeForm }: InvoiceForm
   
   const defaultCurrency = (globalCurrency as 'LKR' | 'USD' | 'EUR' | 'GBP') || 'USD';
 
-  const form = useForm<InvoiceFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: invoice ? {
-        ...invoice,
-        issueDate: new Date(invoice.issueDate),
-        dueDate: new Date(invoice.dueDate),
-    } : {
+  const getInitialFormValues = () => {
+    if (invoice) {
+        // Firestore timestamps can be objects or Dates. Ensure they are Dates.
+        const issueDate = invoice.issueDate instanceof Date ? invoice.issueDate : new Date(invoice.issueDate);
+        const dueDate = invoice.dueDate instanceof Date ? invoice.dueDate : new Date(invoice.dueDate);
+        
+        return {
+            ...invoice,
+            issueDate,
+            dueDate,
+        };
+    }
+    return {
       projectId: '',
       leadId: '',
       invoiceNumber: `INV-${Date.now()}`,
-      status: 'draft',
+      status: 'draft' as const,
       issueDate: new Date(),
       dueDate: addDays(new Date(), 30),
       lineItems: [{ id: uuidv4(), description: '', quantity: 1, price: 0, currency: defaultCurrency }],
       discounts: [],
       taxRate: 0,
       notes: '',
-    },
+    };
+  }
+
+  const form = useForm<InvoiceFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: getInitialFormValues(),
   });
 
   const { fields: lineItemFields, append: appendLineItem, remove: removeLineItem } = useFieldArray({
@@ -222,3 +233,5 @@ export function InvoiceForm({ invoice, projects, leads, closeForm }: InvoiceForm
     </Form>
   );
 }
+
+    
