@@ -78,6 +78,7 @@ export function PaymentForm({ invoice, project, closeForm }: PaymentFormProps) {
         
         const invoiceTotal = invoice.lineItems.reduce((sum, item) => {
             const itemTotal = item.price * item.quantity;
+            // A more robust solution would handle currency conversion here if line items can have different currencies
             return sum + itemTotal;
         }, 0);
 
@@ -103,10 +104,12 @@ export function PaymentForm({ invoice, project, closeForm }: PaymentFormProps) {
             const financeData = financeDoc.data() as Finance;
             const financeRef = financeDoc.ref;
             
+            // Correctly update paidPrice by adding the new payment amount to the existing paid amount
             const newPaidPrice = (financeData.paidPrice || 0) + values.amount;
 
             const updateNote = `\nUpdated on ${new Date().toLocaleString()} – Payment of ${formatCurrency(values.amount, project.currency)} added (method: ${values.method}${values.note ? ', note: ' + values.note : ''}).`;
             
+            // Append note instead of overwriting
             const newDescription = (financeData.description || '') + updateNote;
 
             batch.update(financeRef, {
