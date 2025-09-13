@@ -243,5 +243,7 @@ export interface CrmSettings {
     isSignupEnabled: boolean;
     revenueGoal?: number;
     goalCurrency?: CurrencyCode;
+    goalReward?: string;
+    goalRewardEmoji?: string;
     currency?: 'USD' | 'LKR' | 'EUR' | 'GBP';
 }

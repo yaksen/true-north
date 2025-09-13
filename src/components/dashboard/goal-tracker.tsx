@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -8,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { PolarAngleAxis, RadialBar, RadialBarChart } from 'recharts';
 import { ChartConfig, ChartContainer } from '../ui/chart';
 import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc } from 'firebase/firestore';
@@ -16,11 +17,14 @@ import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import type { CurrencyCode } from '@/context/CurrencyContext';
 import { CurrencyInput } from '../ui/currency-input';
+import { Input } from '../ui/input';
 
 interface GoalTrackerProps {
   currentRevenue: number;
   goal?: number;
   goalCurrency?: CurrencyCode;
+  goalReward?: string;
+  goalRewardEmoji?: string;
   currency: string;
 }
 
@@ -35,6 +39,8 @@ const chartConfig = {
 const formSchema = z.object({
   revenueGoal: z.coerce.number().min(1, 'Goal must be a positive number.'),
   goalCurrency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
+  goalReward: z.string().optional(),
+  goalRewardEmoji: z.string().optional(),
 });
 type GoalFormValues = z.infer<typeof formSchema>;
 
@@ -48,7 +54,7 @@ const convert = (amount: number, from: string, to: string) => {
 };
 
 
-export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR', currency }: GoalTrackerProps) {
+export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR', goalReward, goalRewardEmoji, currency }: GoalTrackerProps) {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,6 +68,8 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
     defaultValues: { 
         revenueGoal: goal,
         goalCurrency: goalCurrency as 'LKR' | 'USD' | 'EUR' | 'GBP',
+        goalReward: goalReward || '',
+        goalRewardEmoji: goalRewardEmoji || '',
     },
   });
 
@@ -69,8 +77,10 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
     form.reset({
         revenueGoal: goal,
         goalCurrency: goalCurrency as 'LKR' | 'USD' | 'EUR' | 'GBP',
+        goalReward: goalReward || '',
+        goalRewardEmoji: goalRewardEmoji || '',
     });
-  }, [goal, goalCurrency, form]);
+  }, [goal, goalCurrency, goalReward, goalRewardEmoji, form]);
 
 
   const formatCurrency = (amount: number) => {
@@ -78,6 +88,7 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
   };
 
   const progress = convertedGoal > 0 ? Math.min((currentRevenue / convertedGoal) * 100, 100) : 0;
+  const isGoalReached = progress >= 100;
   const chartData = [{ name: 'revenue', value: progress, fill: 'hsl(var(--primary))' }];
 
   async function onSubmit(values: GoalFormValues) {
@@ -86,6 +97,8 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
         await setDoc(doc(db, 'settings', 'crm'), { 
             revenueGoal: values.revenueGoal,
             goalCurrency: values.goalCurrency,
+            goalReward: values.goalReward,
+            goalRewardEmoji: values.goalRewardEmoji,
         }, { merge: true });
         toast({ title: 'Success', description: 'Revenue goal updated!' });
         setIsDialogOpen(false);
@@ -110,7 +123,7 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
           <RadialBarChart
             data={chartData}
             startAngle={-90}
-            endAngle={270}
+            endAngle={isGoalReached ? 270 : -90 + (progress / 100) * 360}
             innerRadius="70%"
             outerRadius="100%"
             barSize={20}
@@ -127,21 +140,37 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
               cornerRadius={10}
               
             />
-             <text
-                x="50%"
-                y="50%"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                className="fill-foreground text-2xl font-bold"
-            >
-                {`${Math.round(progress)}%`}
-            </text>
+             {isGoalReached ? (
+                <text
+                    x="50%"
+                    y="50%"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-foreground text-4xl"
+                >
+                    {goalRewardEmoji || '🎉'}
+                </text>
+             ) : (
+                <text
+                    x="50%"
+                    y="50%"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-foreground text-2xl font-bold"
+                >
+                    {`${Math.round(progress)}%`}
+                </text>
+             )}
           </RadialBarChart>
         </ChartContainer>
       </CardContent>
       <div className="flex flex-col gap-2 p-6 pt-0">
         <div className='text-center text-sm text-muted-foreground'>
-            <p>{formatCurrency(currentRevenue)} / {formatCurrency(convertedGoal)}</p>
+            {isGoalReached ? (
+                <p className='font-semibold text-primary'>{goalReward || 'Goal Reached!'}</p>
+            ) : (
+                <p>{formatCurrency(currentRevenue)} / {formatCurrency(convertedGoal)}</p>
+            )}
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -166,6 +195,32 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
                                         currency={form.watch('goalCurrency')}
                                         onCurrencyChange={(value) => form.setValue('goalCurrency', value)}
                                     />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="goalReward"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Goal Reward (Optional)</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="e.g. Team Pizza Party!" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="goalRewardEmoji"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Reward Emoji (Optional)</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="🍕" {...field} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>

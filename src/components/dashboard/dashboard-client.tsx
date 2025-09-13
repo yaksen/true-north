@@ -99,6 +99,8 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
             currentRevenue={globalSummary.totalRevenue} 
             goal={settings?.revenueGoal} 
             goalCurrency={settings?.goalCurrency}
+            goalReward={settings?.goalReward}
+            goalRewardEmoji={settings?.goalRewardEmoji}
             currency={globalSummary.currency} 
         />
         <SummaryCards summary={globalSummary} />
