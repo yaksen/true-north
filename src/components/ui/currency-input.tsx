@@ -12,6 +12,7 @@ interface CurrencyInputProps extends React.InputHTMLAttributes<HTMLInputElement>
   onValueChange: (value: number) => void;
   currency: Currency;
   onCurrencyChange: (currency: Currency) => void;
+  readOnlyCurrency?: boolean;
 }
 
 export function CurrencyInput({
@@ -19,6 +20,7 @@ export function CurrencyInput({
   onValueChange,
   currency,
   onCurrencyChange,
+  readOnlyCurrency,
   ...props
 }: CurrencyInputProps) {
   return (
@@ -31,7 +33,7 @@ export function CurrencyInput({
         {...props}
       />
       <div className="absolute inset-y-0 right-0 flex items-center">
-        <Select value={currency} onValueChange={(val) => onCurrencyChange(val as Currency)} disabled={props.readOnly}>
+        <Select value={currency} onValueChange={(val) => onCurrencyChange(val as Currency)} disabled={props.readOnly || readOnlyCurrency}>
           <SelectTrigger className="w-[80px] h-full rounded-l-none border-l bg-muted/50">
             <SelectValue />
           </SelectTrigger>

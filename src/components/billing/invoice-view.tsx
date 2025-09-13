@@ -1,10 +1,10 @@
 
 'use client';
 
-import type { Invoice, Project, Lead } from '@/lib/types';
+import type { Invoice, Project, Lead, Payment, InvoiceStatus } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { ArrowLeft, Download, Send, CheckCircle, FileX } from 'lucide-react';
+import { ArrowLeft, Download, Send, CheckCircle, FileX, PlusCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
@@ -19,6 +19,9 @@ import { logActivity } from '@/lib/activity-log';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import { useCurrency } from '@/context/CurrencyContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { useState } from 'react';
+import { PaymentForm } from './payment-form';
 
 interface InvoiceViewProps {
   invoice: Invoice;
@@ -31,6 +34,7 @@ export function InvoiceView({ invoice, project, lead }: InvoiceViewProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const { globalCurrency } = useCurrency();
+  const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
 
   // Mock conversion rates - replace with a real API call in a real app
   const MOCK_RATES: { [key: string]: number } = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
@@ -64,17 +68,31 @@ export function InvoiceView({ invoice, project, lead }: InvoiceViewProps) {
     const subtotalAfterDiscounts = subtotal - totalDiscount;
     const taxAmount = subtotalAfterDiscounts * (invoice.taxRate / 100);
     const total = subtotalAfterDiscounts + taxAmount;
+    
+    const totalPaid = (invoice.payments || []).reduce((acc, p) => acc + convert(p.amount, project.currency, displayCurrency), 0);
 
-    return { subtotal, totalDiscount, taxAmount, total };
+    return { subtotal, totalDiscount, taxAmount, total, totalPaid, balanceDue: total - totalPaid };
   })();
 
+  const getStatusBadgeVariant = (status: InvoiceStatus) => {
+    switch (status) {
+      case 'paid': return 'default';
+      case 'partial': return 'secondary';
+      case 'unpaid':
+      case 'sent':
+        return 'outline';
+      case 'void': return 'destructive';
+      default: return 'secondary';
+    }
+  }
 
-  const handleUpdateStatus = async (status: 'sent' | 'paid' | 'void') => {
+
+  const handleUpdateStatus = async (status: 'sent' | 'paid' | 'void' | 'unpaid') => {
     if (!user) return;
     try {
         const invoiceRef = doc(db, 'invoices', invoice.id);
         await updateDoc(invoiceRef, { status, updatedAt: serverTimestamp() });
-        await logActivity(invoice.projectId, 'invoice_updated' as any, { invoiceNumber: invoice.invoiceNumber, status }, user.uid);
+        await logActivity(invoice.projectId, 'invoice_updated', { invoiceNumber: invoice.invoiceNumber, status }, user.uid);
         toast({ title: 'Success', description: `Invoice marked as ${status}.` });
     } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not update invoice status.' });
@@ -136,6 +154,21 @@ export function InvoiceView({ invoice, project, lead }: InvoiceViewProps) {
     doc.text("Total:", 150, currentY);
     doc.text(formatCurrency(totals.total, displayCurrency), 190, currentY, { align: 'right' });
 
+    if (invoice.payments?.length > 0) {
+        currentY += 8;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text("Paid:", 150, currentY);
+        doc.text(`-${formatCurrency(totals.totalPaid, displayCurrency)}`, 190, currentY, { align: 'right' });
+
+        currentY += 8;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Balance Due:", 150, currentY);
+        doc.text(formatCurrency(totals.balanceDue, displayCurrency), 190, currentY, { align: 'right' });
+    }
+
+
     if (invoice.notes) {
         currentY += 15;
         doc.setFont('helvetica', 'normal');
@@ -157,7 +190,7 @@ export function InvoiceView({ invoice, project, lead }: InvoiceViewProps) {
             <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" onClick={generatePDF}><Download /> Download PDF</Button>
                 {invoice.status === 'draft' && <Button size="sm" onClick={() => handleUpdateStatus('sent')}><Send /> Mark as Sent</Button>}
-                {invoice.status === 'sent' && <Button size="sm" onClick={() => handleUpdateStatus('paid')}><CheckCircle /> Mark as Paid</Button>}
+                {invoice.status === 'sent' && <Button size="sm" onClick={() => handleUpdateStatus('unpaid')}><CheckCircle /> Mark as Unpaid</Button>}
                 {invoice.status !== 'void' && invoice.status !== 'paid' && <Button size="sm" variant="destructive" onClick={() => handleUpdateStatus('void')}><FileX /> Void Invoice</Button>}
             </div>
         </div>
@@ -183,7 +216,7 @@ export function InvoiceView({ invoice, project, lead }: InvoiceViewProps) {
                     <div className="text-right">
                         <p><span className="font-semibold">Issue Date:</span> {format(new Date(invoice.issueDate), "PPP")}</p>
                         <p><span className="font-semibold">Due Date:</span> {format(new Date(invoice.dueDate), "PPP")}</p>
-                        <Badge className='mt-2 capitalize' variant={invoice.status === 'paid' ? 'default' : 'secondary'}>{invoice.status}</Badge>
+                        <Badge className='mt-2 capitalize' variant={getStatusBadgeVariant(invoice.status)}>{invoice.status}</Badge>
                     </div>
                 </div>
             </CardHeader>
@@ -232,8 +265,18 @@ export function InvoiceView({ invoice, project, lead }: InvoiceViewProps) {
                             <span>Total</span>
                             <span>{formatCurrency(totals.total, displayCurrency)}</span>
                         </div>
+                        <div className="flex justify-between text-muted-foreground">
+                            <span>Paid</span>
+                            <span>-{formatCurrency(totals.totalPaid, displayCurrency)}</span>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between font-bold text-lg">
+                            <span>Balance Due</span>
+                            <span>{formatCurrency(totals.balanceDue, displayCurrency)}</span>
+                        </div>
                     </div>
                 </div>
+
                 {invoice.notes && (
                     <>
                         <Separator className='my-6' />
@@ -244,6 +287,45 @@ export function InvoiceView({ invoice, project, lead }: InvoiceViewProps) {
                     </>
                 )}
             </CardContent>
+            <CardFooter className='p-8 pt-0 flex-col items-start gap-4'>
+                <Separator className='mb-4' />
+                <div className='w-full'>
+                    <div className='flex justify-between items-center mb-4'>
+                        <h4 className="text-lg font-semibold">Payments</h4>
+                        <Dialog open={isPaymentFormOpen} onOpenChange={setIsPaymentFormOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="sm"><PlusCircle /> Add Payment</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader><DialogTitle>Add Payment</DialogTitle></DialogHeader>
+                                <PaymentForm invoice={invoice} project={project} closeForm={() => setIsPaymentFormOpen(false)} />
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                    {invoice.payments && invoice.payments.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Method</TableHead>
+                                    <TableHead className='text-right'>Amount</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {invoice.payments.map(p => (
+                                    <TableRow key={p.id}>
+                                        <TableCell>{format(new Date(p.date), "PPP")}</TableCell>
+                                        <TableCell className='capitalize'>{p.method}</TableCell>
+                                        <TableCell className='text-right'>{formatCurrency(p.amount, project.currency)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <p className='text-sm text-muted-foreground text-center py-4'>No payments recorded for this invoice.</p>
+                    )}
+                </div>
+            </CardFooter>
         </Card>
     </div>
   );

@@ -6,7 +6,8 @@ export type TaskStatus = 'Call' | 'Meeting' | 'Project';
 export type FinanceType = 'income' | 'expense';
 export type LeadStatus = 'new' | 'contacted' | 'qualified', 'lost', 'converted';
 export type DiscountType = 'percentage' | 'flat';
-export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void';
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void' | 'partial' | 'unpaid';
+export type PaymentMethod = 'cash' | 'bank transfer' | 'online' | 'other';
 export type ActivityRecordType = 
     | 'project_created'
     | 'project_updated'
@@ -37,7 +38,8 @@ export type ActivityRecordType =
     | 'invoice_deleted'
     | 'member_added'
     | 'member_invited'
-    | 'member_removed';
+    | 'member_removed'
+    | 'payment_added';
 
 
 export interface UserProfile {
@@ -172,6 +174,14 @@ export interface LineItem {
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
 }
 
+export interface Payment {
+    id: string;
+    amount: number;
+    date: Date;
+    method: PaymentMethod;
+    note?: string;
+}
+
 export interface Invoice {
     id: string;
     projectId: string;
@@ -183,6 +193,7 @@ export interface Invoice {
     lineItems: LineItem[];
     discounts: Discount[];
     taxRate: number; // Percentage
+    payments: Payment[];
     notes?: string;
     createdAt: Date;
     updatedAt: Date;

@@ -34,7 +34,7 @@ const ActionsCell: React.FC<{ invoice: Invoice, dependencies: DataDependencies }
         if (!user) return;
         try {
             await deleteDoc(doc(db, 'invoices', invoice.id));
-            await logActivity(invoice.projectId, 'invoice_deleted' as any, { invoiceNumber: invoice.invoiceNumber }, user.uid);
+            await logActivity(invoice.projectId, 'invoice_deleted', { invoiceNumber: invoice.invoiceNumber }, user.uid);
             toast({ title: 'Success', description: 'Invoice deleted.' });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not delete invoice.' });
@@ -153,9 +153,18 @@ export const getInvoiceColumns = (dependencies: DataDependencies): ColumnDef<Inv
         header: "Status",
         cell: ({ row }) => {
           const status = row.getValue("status") as InvoiceStatus;
-          const variant: "default" | "secondary" | "destructive" = 
-            status === 'paid' ? 'default' : status === 'sent' ? 'secondary' : 'destructive';
-          return <Badge variant={variant} className="capitalize">{status}</Badge>
+          const getStatusBadgeVariant = (status: InvoiceStatus) => {
+            switch (status) {
+              case 'paid': return 'default';
+              case 'partial': return 'secondary';
+              case 'unpaid':
+              case 'sent':
+                return 'outline';
+              case 'void': return 'destructive';
+              default: return 'secondary';
+            }
+          }
+          return <Badge variant={getStatusBadgeVariant(status)} className="capitalize">{status}</Badge>
         }
     },
     {

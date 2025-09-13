@@ -29,7 +29,7 @@ const formSchema = z.object({
   projectId: z.string().nonempty('Project is required.'),
   leadId: z.string().nonempty('Client is required.'),
   invoiceNumber: z.string().nonempty('Invoice number is required.'),
-  status: z.enum(['draft', 'sent', 'paid', 'void']),
+  status: z.enum(['draft', 'sent', 'paid', 'void', 'partial', 'unpaid']),
   issueDate: z.date(),
   dueDate: z.date(),
   lineItems: z.array(z.object({
@@ -119,15 +119,16 @@ export function InvoiceForm({ invoice, projects, leads, closeForm }: InvoiceForm
       if (invoice) {
         const invoiceRef = doc(db, 'invoices', invoice.id);
         await updateDoc(invoiceRef, { ...values, updatedAt: serverTimestamp() });
-        await logActivity(values.projectId, 'invoice_updated' as any, { invoiceNumber: values.invoiceNumber }, user.uid);
+        await logActivity(values.projectId, 'invoice_updated', { invoiceNumber: values.invoiceNumber }, user.uid);
         toast({ title: 'Success', description: 'Invoice updated successfully.' });
       } else {
         await addDoc(collection(db, 'invoices'), {
           ...values,
+          payments: [], // Initialize with empty payments array
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
-        await logActivity(values.projectId, 'invoice_created' as any, { invoiceNumber: values.invoiceNumber }, user.uid);
+        await logActivity(values.projectId, 'invoice_created', { invoiceNumber: values.invoiceNumber }, user.uid);
         toast({ title: 'Success', description: 'Invoice created successfully.' });
       }
       closeForm();
@@ -155,7 +156,7 @@ export function InvoiceForm({ invoice, projects, leads, closeForm }: InvoiceForm
         {/* Invoice Details */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <FormField control={form.control} name="invoiceNumber" render={({ field }) => (<FormItem><FormLabel>Invoice #</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Status</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{['draft', 'sent', 'paid', 'void'].map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Status</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{['draft', 'sent', 'paid', 'void', 'partial', 'unpaid'].map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="issueDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Issue Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="dueDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Due Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
         </div>
