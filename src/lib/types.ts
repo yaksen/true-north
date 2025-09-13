@@ -90,8 +90,7 @@ export interface Finance {
     leadId?: string;
     invoiceId?: string;
     type: FinanceType;
-    amount: number;
-    paidPrice?: number;
+    amount: number; // This will now represent the amount of the transaction (e.g., a single payment)
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     description: string;
     date: Date;

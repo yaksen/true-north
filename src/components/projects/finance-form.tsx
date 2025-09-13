@@ -29,7 +29,7 @@ const financeTypes = ['income', 'expense'] as const;
 const formSchema = z.object({
   projectId: z.string().nonempty({ message: 'Project is required.' }),
   type: z.enum(financeTypes, { required_error: 'Type is required.' }),
-  amount: z.coerce.number().positive({ message: 'Amount must be positive.' }),
+  amount: z.coerce.number().min(0),
   paidPrice: z.coerce.number().min(0).optional(),
   currency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
   description: z.string().min(2, { message: 'Description must be at least 2 characters.' }),
@@ -56,17 +56,19 @@ export function FinanceForm({ finance, project, projects, packages, services, le
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  
+  const [totalValue, setTotalValue] = useState(finance?.amount || 0);
 
   const form = useForm<FinanceFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: finance ? {
         ...finance,
-        // Firestore timestamps can be objects or Dates. Ensure they are Dates.
         date: finance.date instanceof Date ? finance.date : new Date(finance.date),
+        paidPrice: finance.amount, // For editing, the paid price is the amount on the record
     } : {
       projectId: project?.id || '',
       type: 'income',
-      amount: 0,
+      amount: 0, // This is now the paid amount
       paidPrice: 0,
       description: '',
       date: new Date(),
@@ -86,10 +88,10 @@ export function FinanceForm({ finance, project, projects, packages, services, le
 
   useEffect(() => {
     if (selectedPackageId && packages) {
-      setSelectedServiceId(null); // Ensure only one is selected
+      setSelectedServiceId(null);
       const selectedPackage = packages.find(p => p.id === selectedPackageId);
       if (selectedPackage) {
-        form.setValue('amount', selectedPackage.price);
+        setTotalValue(selectedPackage.price);
         form.setValue('currency', selectedPackage.currency);
         form.setValue('description', `Purchased ${selectedPackage.sku || selectedPackage.name}`);
         form.setValue('category', 'Package Sale');
@@ -99,10 +101,10 @@ export function FinanceForm({ finance, project, projects, packages, services, le
 
   useEffect(() => {
     if (selectedServiceId && services) {
-        setSelectedPackageId(null); // Ensure only one is selected
+        setSelectedPackageId(null);
         const selectedService = services.find(s => s.id === selectedServiceId);
         if (selectedService) {
-            form.setValue('amount', selectedService.price);
+            setTotalValue(selectedService.price);
             form.setValue('currency', selectedService.currency);
             form.setValue('description', `Purchased ${selectedService.sku || selectedService.name}`);
             form.setValue('category', 'Service Sale');
@@ -121,40 +123,35 @@ export function FinanceForm({ finance, project, projects, packages, services, le
     try {
       if (finance) { // UPDATE existing finance record
         const financeRef = doc(db, 'finances', finance.id);
-        await updateDoc(financeRef, { ...values, updatedAt: serverTimestamp() });
+        const updatePayload = {
+            ...values,
+            amount: values.paidPrice, // `amount` on finance record is the paid amount
+            updatedAt: serverTimestamp()
+        };
+        delete (updatePayload as any).paidPrice; // Don't save paidPrice to DB
+
+        await updateDoc(financeRef, updatePayload);
         await logActivity(values.projectId, 'finance_updated', { description: values.description }, user.uid);
         toast({ title: 'Success', description: 'Record updated successfully.' });
       } else { // CREATE new finance record (and maybe invoice)
         const batch = writeBatch(db);
 
-        const financeData: any = {
-          ...values,
-          paidPrice: values.paidPrice || 0,
-          description: `Created on ${new Date().toLocaleString()}. ${values.description}`,
-          recordedByUid: user.uid,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        };
-        if (leadId) {
-            financeData.leadId = leadId;
-        }
-
-        const financeRef = doc(collection(db, 'finances'));
-        
         // If it's an income record for a specific lead, create an invoice
         if (leadId && values.type === 'income') {
             const invoiceRef = doc(collection(db, 'invoices'));
-            const initialPayment = values.paidPrice && values.paidPrice > 0 ? [{
+            const paidAmount = values.paidPrice || 0;
+
+            const initialPayment = paidAmount > 0 ? [{
               id: uuidv4(),
-              amount: values.paidPrice,
+              amount: paidAmount,
               date: values.date,
-              method: 'online' as const, // Default method
+              method: 'online' as const,
               note: 'Initial payment with finance record creation.',
             }] : [];
 
             let status: 'draft' | 'paid' | 'partial' | 'unpaid' = 'unpaid';
-            if (values.paidPrice && values.paidPrice > 0) {
-                status = values.paidPrice >= values.amount ? 'paid' : 'partial';
+            if (paidAmount > 0) {
+                status = paidAmount >= totalValue ? 'paid' : 'partial';
             }
 
             const invoiceData = {
@@ -169,7 +166,7 @@ export function FinanceForm({ finance, project, projects, packages, services, le
                     id: uuidv4(),
                     description: values.description,
                     quantity: 1,
-                    price: values.amount,
+                    price: totalValue, // The full value of the service/package
                     currency: values.currency,
                 }],
                 payments: initialPayment,
@@ -179,14 +176,47 @@ export function FinanceForm({ finance, project, projects, packages, services, le
                 updatedAt: serverTimestamp(),
             };
             batch.set(invoiceRef, invoiceData);
-            financeData.invoiceId = invoiceRef.id;
-        }
+            
+            // Create one finance record for the initial payment
+            if (paidAmount > 0) {
+                 const financeData = {
+                    projectId: values.projectId,
+                    leadId: leadId,
+                    invoiceId: invoiceRef.id,
+                    type: 'income' as const,
+                    amount: paidAmount, // The amount that was actually paid
+                    currency: values.currency,
+                    description: `Payment for Invoice ${invoiceData.invoiceNumber}`,
+                    date: values.date,
+                    category: values.category || 'Invoice Payment',
+                    recordedByUid: user.uid,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                };
+                const financeRef = doc(collection(db, 'finances'));
+                batch.set(financeRef, financeData);
+            }
+             await logActivity(values.projectId, 'invoice_created', { invoiceNumber: invoiceData.invoiceNumber }, user.uid);
+             if (paidAmount > 0) {
+                 await logActivity(values.projectId, 'finance_created', { description: `Payment for Invoice ${invoiceData.invoiceNumber}` }, user.uid);
+             }
+             toast({ title: 'Success', description: 'Invoice and payment record created.' });
 
-        batch.set(financeRef, financeData);
+        } else { // It's a general expense or income not tied to a lead invoice
+            const financeData = {
+                ...values,
+                amount: values.amount, // For simple finance, amount is amount
+                recordedByUid: user.uid,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+            delete (financeData as any).paidPrice;
+            const financeRef = doc(collection(db, 'finances'));
+            batch.set(financeRef, financeData);
+            await logActivity(values.projectId, 'finance_created', { description: values.description }, user.uid);
+            toast({ title: 'Success', description: 'Record created successfully.' });
+        }
         await batch.commit();
-        
-        await logActivity(values.projectId, 'finance_created', { description: values.description }, user.uid);
-        toast({ title: 'Success', description: 'Record created successfully.' });
       }
       closeForm();
     } catch (error) {
@@ -196,6 +226,8 @@ export function FinanceForm({ finance, project, projects, packages, services, le
         setIsSubmitting(false);
     }
   }
+
+  const isInvoiceFlow = leadId && form.watch('type') === 'income';
 
   return (
     <Form {...form}>
@@ -294,43 +326,58 @@ export function FinanceForm({ finance, project, projects, packages, services, le
                     </FormItem>
                 )}
             />
+             {isInvoiceFlow ? (
+                 <FormItem>
+                    <FormLabel>Total Value</FormLabel>
+                    <CurrencyInput
+                        value={totalValue}
+                        onValueChange={setTotalValue}
+                        currency={form.watch('currency')}
+                        onCurrencyChange={(value) => form.setValue('currency', value)}
+                    />
+                </FormItem>
+             ) : (
+                <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Amount</FormLabel>
+                            <CurrencyInput
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                currency={form.watch('currency')}
+                                onCurrencyChange={(value) => form.setValue('currency', value)}
+                            />
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+             )}
+        </div>
+
+        {isInvoiceFlow && (
             <FormField
                 control={form.control}
-                name="amount"
+                name="paidPrice"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Total Value</FormLabel>
+                        <FormLabel>Paid Amount</FormLabel>
                         <CurrencyInput
-                            value={field.value}
+                            value={field.value || 0}
                             onValueChange={field.onChange}
                             currency={form.watch('currency')}
                             onCurrencyChange={(value) => form.setValue('currency', value)}
+                            readOnlyCurrency
                         />
+                         <FormDescription>
+                            Amount paid at the time of creating this invoice.
+                        </FormDescription>
                         <FormMessage />
                     </FormItem>
                 )}
             />
-        </div>
-
-        <FormField
-            control={form.control}
-            name="paidPrice"
-            render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Paid Amount (Optional)</FormLabel>
-                    <CurrencyInput
-                        value={field.value || 0}
-                        onValueChange={field.onChange}
-                        currency={form.watch('currency')}
-                        onCurrencyChange={(value) => form.setValue('currency', value)}
-                    />
-                     <FormDescription>
-                        Amount paid at the time of creating this record.
-                    </FormDescription>
-                    <FormMessage />
-                </FormItem>
-            )}
-        />
+        )}
         
         <div className="grid grid-cols-2 gap-4">
              <FormField
@@ -350,7 +397,7 @@ export function FinanceForm({ finance, project, projects, packages, services, le
                                 )}
                                 >
                                 {field.value ? (
-                                    format(field.value, "PPP")
+                                    format(field.value instanceof Date ? field.value : new Date(field.value), "PPP")
                                 ) : (
                                     <span>Pick a date</span>
                                 )}
