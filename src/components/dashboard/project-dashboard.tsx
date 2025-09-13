@@ -39,7 +39,7 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
         try {
             const taskRef = doc(db, 'tasks', id);
             await updateDoc(taskRef, { starred });
-        } catch (error) {
+        } catch (error) => {
             console.error("Failed to update star status", error);
             // Optionally, show a toast notification
         }
@@ -63,10 +63,11 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
         const rootTasks: Task[] = [];
         
         for (const task of tasks) {
+            const taskWithSubRows = taskMap.get(task.id)!;
             if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
-                taskMap.get(task.parentTaskId)!.subRows.push(taskMap.get(task.id)!);
+                taskMap.get(task.parentTaskId)!.subRows.push(taskWithSubRows);
             } else {
-                rootTasks.push(taskMap.get(task.id)!);
+                rootTasks.push(taskWithSubRows);
             }
         }
         return rootTasks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
@@ -142,7 +143,7 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
             <DataTable 
                 columns={taskColumns} 
                 data={hierarchicalTasks} 
-                getSubRows={(row: Row<Task>) => (row.original as any).subRows}
+                getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
             />
         </div>
     )

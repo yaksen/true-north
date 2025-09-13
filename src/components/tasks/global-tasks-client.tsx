@@ -137,7 +137,7 @@ export function GlobalTasksClient({ projects, tasks }: GlobalTasksClientProps) {
                         <DataTable 
                             columns={taskColumns} 
                             data={projectTasks}
-                            getSubRows={(row: Row<Task>) => (row.original as any).subRows}
+                            getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
                             onDeleteSelected={handleDeleteSelected}
                         />
                     </AccordionContent>
