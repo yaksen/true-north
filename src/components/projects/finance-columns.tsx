@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Finance } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -16,6 +16,8 @@ import { FinanceForm } from "./finance-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { logActivity } from "@/lib/activity-log";
+import { Checkbox } from "../ui/checkbox";
+import { cn } from "@/lib/utils";
 
 const ActionsCell: React.FC<{ finance: Finance }> = ({ finance }) => {
     const { toast } = useToast();
@@ -80,7 +82,39 @@ const ActionsCell: React.FC<{ finance: Finance }> = ({ finance }) => {
     );
 };
 
-export const financeColumns: ColumnDef<Finance>[] = [
+export const financeColumns = (onStar: (id: string, starred: boolean) => void): ColumnDef<Finance>[] => [
+    {
+        id: 'select',
+        header: ({ table }) => (
+            <Checkbox
+                checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                aria-label="Select all"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={(value) => row.toggleSelected(!!value)}
+                aria-label="Select row"
+            />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+    },
+    {
+        id: 'star',
+        cell: ({ row }) => {
+            const finance = row.original;
+            return (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onStar(finance.id, !finance.starred)}>
+                    <Star className={cn("h-4 w-4", finance.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
+                </Button>
+            )
+        },
+        enableSorting: false,
+        enableHiding: false,
+    },
     {
       accessorKey: "date",
       header: ({ column }) => (

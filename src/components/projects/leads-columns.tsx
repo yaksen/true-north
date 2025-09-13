@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Lead, LeadStatus, Package, Service } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon, Edit, Trash2, Facebook, Instagram, CaseUpper } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon, Edit, Trash2, Facebook, Instagram, CaseUpper, Star } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -18,9 +18,10 @@ import { Checkbox } from "../ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { deleteDoc, doc } from "firebase/firestore";
+import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { logActivity } from "@/lib/activity-log";
+import { cn } from "@/lib/utils";
 
 
 const ActionsCell: React.FC<{ lead: Lead, project: {id: string, currency: string}, packages: Package[], services: Service[] }> = ({ lead, project, packages, services }) => {
@@ -152,7 +153,7 @@ const SocialsCell: React.FC<{ lead: Lead }> = ({ lead }) => {
 }
 
 
-export const getLeadsColumns = (project: {id: string, currency: string}, packages: Package[], services: Service[]): ColumnDef<Lead>[] => [
+export const getLeadsColumns = (project: {id: string, currency: string}, packages: Package[], services: Service[], onStar: (id: string, starred: boolean) => void): ColumnDef<Lead>[] => [
     {
         id: 'select',
         header: ({ table }) => (
@@ -172,6 +173,19 @@ export const getLeadsColumns = (project: {id: string, currency: string}, package
             aria-label="Select row"
             />
         ),
+        enableSorting: false,
+        enableHiding: false,
+    },
+    {
+        id: 'star',
+        cell: ({ row }) => {
+            const lead = row.original;
+            return (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onStar(lead.id, !lead.starred)}>
+                    <Star className={cn("h-4 w-4", lead.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
+                </Button>
+            )
+        },
         enableSorting: false,
         enableHiding: false,
     },

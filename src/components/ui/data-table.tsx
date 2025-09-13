@@ -17,7 +17,7 @@ import {
   Row,
   ExpandedState,
 } from '@tanstack/react-table';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import {
     DropdownMenu,
@@ -35,21 +35,24 @@ import {
 } from '@/components/ui/table';
 import { Button } from './button';
 import { Input } from './input';
-import { ChevronDown, FileDown } from 'lucide-react';
+import { ChevronDown, FileDown, Star, Trash2 } from 'lucide-react';
 import { ScrollArea } from './scroll-area';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './alert-dialog';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   toolbar?: React.ReactNode;
   getSubRows?: (row: Row<TData>) => TData[] | undefined;
+  onDeleteSelected?: (selectedIds: string[]) => Promise<void>;
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends {id: string, starred?: boolean} , TValue>({
   columns,
   data,
   toolbar,
   getSubRows,
+  onDeleteSelected,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -57,9 +60,17 @@ export function DataTable<TData, TValue>({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [globalFilter, setGlobalFilter] = useState('');
   const [expanded, setExpanded] = useState<ExpandedState>({});
+  const [showStarred, setShowStarred] = useState(false);
+
+  const filteredData = useMemo(() => {
+    if (showStarred) {
+        return data.filter(item => item.starred);
+    }
+    return data;
+  }, [data, showStarred]);
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -81,6 +92,12 @@ export function DataTable<TData, TValue>({
       globalFilter,
       expanded,
     },
+    meta: {
+      toggleStar: (rowId: string) => {
+        // This is a placeholder, actual implementation will be on the page
+        console.log("Toggling star for", rowId);
+      }
+    }
   });
 
   const handleExport = () => {
@@ -114,8 +131,17 @@ export function DataTable<TData, TValue>({
     link.click();
     document.body.removeChild(link);
   }
+  
+  const handleDelete = () => {
+    if (!onDeleteSelected) return;
+    const selectedIds = table.getFilteredSelectedRowModel().rows.map(row => row.original.id);
+    onDeleteSelected(selectedIds).then(() => {
+        table.resetRowSelection();
+    });
+  }
 
   const isExportDisabled = !table || table.getFilteredSelectedRowModel().rows.length === 0;
+  const isDeleteDisabled = isExportDisabled || !onDeleteSelected;
 
   if (!table) {
     return null; // or a loading indicator
@@ -123,8 +149,8 @@ export function DataTable<TData, TValue>({
 
   return (
     <>
-        <div className="flex items-center justify-between pb-6">
-            <div className='flex items-center gap-2'>
+        <div className="flex items-center justify-between pb-6 gap-2">
+            <div className='flex items-center gap-2 flex-wrap'>
                 <Input
                     placeholder="Search all columns..."
                     value={globalFilter ?? ''}
@@ -136,9 +162,34 @@ export function DataTable<TData, TValue>({
                 {toolbar}
             </div>
             <div className='flex items-center gap-2'>
+                <Button variant={showStarred ? "secondary" : "outline"} size="icon" onClick={() => setShowStarred(!showStarred)} className='h-9 w-9'>
+                    <Star className="h-4 w-4" />
+                </Button>
+                {onDeleteSelected && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm" disabled={isDeleteDisabled} className='h-9'>
+                                <Trash2 className='mr-2 h-4 w-4' />
+                                Delete ({table.getFilteredSelectedRowModel().rows.length})
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete the selected {table.getFilteredSelectedRowModel().rows.length} record(s). This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
                 <Button variant="outline" size="sm" onClick={handleExport} disabled={isExportDisabled} className='h-9'>
                     <FileDown className='mr-2 h-4 w-4' />
-                    Export Selected
+                    Export
                 </Button>
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -171,79 +222,81 @@ export function DataTable<TData, TValue>({
             </div>
         </div>
 
-        <ScrollArea className="h-[calc(100vh-32rem)] whitespace-nowrap">
-        <div className="rounded-xl border">
-          <Table>
-            <TableHeader className='bg-muted/50'>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && 'selected'}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="p-2 align-top">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
+        <ScrollArea className="whitespace-nowrap">
+          <div className="rounded-xl border">
+            <Table>
+              <TableHeader className='bg-muted/50'>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </TableHead>
+                      );
+                    })}
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && 'selected'}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} className="p-2 align-top">
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      No results.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </ScrollArea>
-        <div className="flex items-center justify-end space-x-2 pt-4">
+        <div className="flex items-center justify-between pt-4">
             <div className="flex-1 text-sm text-muted-foreground">
                 {table.getFilteredSelectedRowModel().rows.length} of{" "}
                 {table.getFilteredRowModel().rows.length} row(s) selected.
             </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+            <div className="flex items-center space-x-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                >
+                    Previous
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                >
+                    Next
+                </Button>
+            </div>
         </div>
     </>
   );

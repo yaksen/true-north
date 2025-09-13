@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Service, Category, Project } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
@@ -15,15 +15,17 @@ import { useState } from "react";
 import { ServiceForm } from "./service-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
+import { Checkbox } from "../ui/checkbox";
 
 interface ColumnDependencies {
     categories: Category[];
     project: Project;
+    onStar: (id: string, starred: boolean) => void;
 }
 
-const ActionsCell: React.FC<{ service: Service, dependencies: ColumnDependencies }> = ({ service, dependencies }) => {
+const ActionsCell: React.FC<{ service: Service, dependencies: Omit<ColumnDependencies, 'onStar'> }> = ({ service, dependencies }) => {
     const { toast } = useToast();
     const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -74,6 +76,38 @@ const ActionsCell: React.FC<{ service: Service, dependencies: ColumnDependencies
 };
 
 export const getServicesColumns = (dependencies: ColumnDependencies): ColumnDef<Service>[] => [
+    {
+        id: 'select',
+        header: ({ table }) => (
+            <Checkbox
+                checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                aria-label="Select all"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={(value) => row.toggleSelected(!!value)}
+                aria-label="Select row"
+            />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+    },
+    {
+        id: 'star',
+        cell: ({ row }) => {
+            const service = row.original;
+            return (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => dependencies.onStar(service.id, !service.starred)}>
+                    <Star className={cn("h-4 w-4", service.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
+                </Button>
+            )
+        },
+        enableSorting: false,
+        enableHiding: false,
+    },
     {
       accessorKey: "name",
       header: ({ column }) => (

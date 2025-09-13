@@ -13,6 +13,9 @@ import { TaskForm } from "./task-form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { getCoreRowModel, useReactTable, getExpandedRowModel, Row } from "@tanstack/react-table";
 import { Checkbox } from "../ui/checkbox";
+import { doc, writeBatch, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProjectTasksProps {
     project: Project;
@@ -23,11 +26,33 @@ interface ProjectTasksProps {
 const taskStatuses: TaskStatus[] = ['Call', 'Meeting', 'Project'];
 
 export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
+    const { toast } = useToast();
     const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
     const [hideCompleted, setHideCompleted] = useState(false);
 
-    const taskColumns = useMemo(() => getTaskColumns({ leads }), [leads]);
+    const handleStar = async (id: string, starred: boolean) => {
+        try {
+            await updateDoc(doc(db, 'tasks', id), { starred });
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
+        }
+    }
+
+    const handleDeleteSelected = async (ids: string[]) => {
+        const batch = writeBatch(db);
+        ids.forEach(id => {
+            batch.delete(doc(db, 'tasks', id));
+        });
+        try {
+            await batch.commit();
+            toast({ title: "Success", description: `${ids.length} task(s) deleted.`});
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Could not delete selected tasks."})
+        }
+    }
+    
+    const taskColumns = useMemo(() => getTaskColumns({ leads }, handleStar), [leads]);
 
     const filteredTasks = useMemo(() => {
         let filtered = tasks;
@@ -123,6 +148,7 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
                         data={hierarchicalTasks} 
                         toolbar={<Toolbar />} 
                         getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
+                        onDeleteSelected={handleDeleteSelected}
                     />
                 </CardContent>
             </Card>

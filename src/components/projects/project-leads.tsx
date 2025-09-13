@@ -11,6 +11,9 @@ import { getLeadsColumns } from "./leads-columns";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { LeadForm } from "./lead-form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { doc, writeBatch, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProjectLeadsProps {
     project: Project;
@@ -22,10 +25,32 @@ interface ProjectLeadsProps {
 const leadStatuses: LeadStatus[] = ['new', 'contacted', 'qualified', 'lost', 'converted'];
 
 export function ProjectLeads({ project, leads, packages, services }: ProjectLeadsProps) {
+    const { toast } = useToast();
     const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
     
-    const leadsColumns = useMemo(() => getLeadsColumns(project, packages, services), [project, packages, services]);
+    const handleStar = async (id: string, starred: boolean) => {
+        try {
+            await updateDoc(doc(db, 'leads', id), { starred });
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
+        }
+    }
+
+    const handleDeleteSelected = async (ids: string[]) => {
+        const batch = writeBatch(db);
+        ids.forEach(id => {
+            batch.delete(doc(db, 'leads', id));
+        });
+        try {
+            await batch.commit();
+            toast({ title: "Success", description: `${ids.length} lead(s) deleted.`});
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Could not delete selected leads."})
+        }
+    }
+    
+    const leadsColumns = useMemo(() => getLeadsColumns(project, packages, services, handleStar), [project, packages, services]);
 
     const filteredLeads = useMemo(() => {
         if (statusFilter === 'all') return leads;
@@ -76,7 +101,12 @@ export function ProjectLeads({ project, leads, packages, services }: ProjectLead
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <DataTable columns={leadsColumns} data={filteredLeads} toolbar={<Toolbar />} />
+                    <DataTable 
+                        columns={leadsColumns} 
+                        data={filteredLeads} 
+                        toolbar={<Toolbar />} 
+                        onDeleteSelected={handleDeleteSelected}
+                    />
                 </CardContent>
             </Card>
         </div>

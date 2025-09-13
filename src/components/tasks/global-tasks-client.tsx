@@ -11,10 +11,11 @@ import { PlusCircle, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/projects/task-form';
 import { Card, CardContent } from '../ui/card';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect } from 'react';
 import { Row } from '@tanstack/react-table';
+import { useToast } from '@/hooks/use-toast';
 
 interface GlobalTasksClientProps {
   projects: Project[];
@@ -22,11 +23,33 @@ interface GlobalTasksClientProps {
 }
 
 export function GlobalTasksClient({ projects, tasks }: GlobalTasksClientProps) {
+  const { toast } = useToast();
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
 
-  const taskColumns = useMemo(() => getTaskColumns({ leads }), [leads]);
+  const handleStar = async (id: string, starred: boolean) => {
+    try {
+        await updateDoc(doc(db, 'tasks', id), { starred });
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
+    }
+  }
+
+  const handleDeleteSelected = async (ids: string[]) => {
+      const batch = writeBatch(db);
+      ids.forEach(id => {
+          batch.delete(doc(db, 'tasks', id));
+      });
+      try {
+          await batch.commit();
+          toast({ title: "Success", description: `${ids.length} task(s) deleted.`});
+      } catch (error) {
+          toast({ variant: 'destructive', title: "Error", description: "Could not delete selected tasks."})
+      }
+  }
+
+  const taskColumns = useMemo(() => getTaskColumns({ leads }, handleStar), [leads]);
 
   useEffect(() => {
     setLoadingLeads(true);
@@ -115,6 +138,7 @@ export function GlobalTasksClient({ projects, tasks }: GlobalTasksClientProps) {
                             columns={taskColumns} 
                             data={projectTasks}
                             getSubRows={(row: Row<Task>) => (row.original as any).subRows}
+                            onDeleteSelected={handleDeleteSelected}
                         />
                     </AccordionContent>
                     </AccordionItem>

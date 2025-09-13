@@ -15,6 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { DateRange } from "react-day-picker";
 import { Calendar } from "../ui/calendar";
 import { format } from "date-fns";
+import { doc, writeBatch, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProjectFinanceProps {
     project: Project;
@@ -22,9 +25,33 @@ interface ProjectFinanceProps {
 }
 
 export function ProjectFinance({ project, finances }: ProjectFinanceProps) {
+    const { toast } = useToast();
     const [isFinanceFormOpen, setIsFinanceFormOpen] = useState(false);
     const [typeFilter, setTypeFilter] = useState<FinanceType | 'all'>('all');
     const [dateFilter, setDateFilter] = useState<DateRange | undefined>();
+
+    const handleStar = async (id: string, starred: boolean) => {
+        try {
+            await updateDoc(doc(db, 'finances', id), { starred });
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
+        }
+    }
+
+    const handleDeleteSelected = async (ids: string[]) => {
+        const batch = writeBatch(db);
+        ids.forEach(id => {
+            batch.delete(doc(db, 'finances', id));
+        });
+        try {
+            await batch.commit();
+            toast({ title: "Success", description: `${ids.length} record(s) deleted.`});
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Could not delete selected records."})
+        }
+    }
+
+    const columns = useMemo(() => financeColumns(handleStar), [handleStar]);
 
     const filteredFinances = useMemo(() => {
         return finances.filter(f => {
@@ -97,7 +124,12 @@ export function ProjectFinance({ project, finances }: ProjectFinanceProps) {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <DataTable columns={financeColumns} data={filteredFinances} toolbar={<Toolbar />} />
+                    <DataTable 
+                        columns={columns} 
+                        data={filteredFinances} 
+                        toolbar={<Toolbar />} 
+                        onDeleteSelected={handleDeleteSelected}
+                    />
                 </CardContent>
             </Card>
         </div>

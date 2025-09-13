@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Task, Lead } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, Edit, Trash2, PlusCircle, ChevronRight } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2, PlusCircle, ChevronRight, Star } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from "../ui/checkbox";
 import { useAuth } from "@/hooks/use-auth";
 import { logActivity } from "@/lib/activity-log";
+import { cn } from "@/lib/utils";
 
 interface ColumnDependencies {
     leads: Lead[];
@@ -86,7 +87,39 @@ const ActionsCell: React.FC<{ task: Task, leads: Lead[] }> = ({ task, leads }) =
 };
 
 
-export const getTaskColumns = (dependencies: ColumnDependencies): ColumnDef<Task>[] => [
+export const getTaskColumns = (dependencies: ColumnDependencies, onStar: (id: string, starred: boolean) => void): ColumnDef<Task>[] => [
+    {
+        id: 'select',
+        header: ({ table }) => (
+            <Checkbox
+                checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                aria-label="Select all"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={(value) => row.toggleSelected(!!value)}
+                aria-label="Select row"
+            />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+    },
+    {
+        id: 'star',
+        cell: ({ row }) => {
+            const task = row.original;
+            return (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onStar(task.id, !task.starred)}>
+                    <Star className={cn("h-4 w-4", task.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
+                </Button>
+            )
+        },
+        enableSorting: false,
+        enableHiding: false,
+    },
     {
         accessorKey: "completed",
         header: "Done",
@@ -173,4 +206,3 @@ export const getTaskColumns = (dependencies: ColumnDependencies): ColumnDef<Task
         cell: ({ row }) => <ActionsCell task={row.original} leads={dependencies.leads} />,
     },
   ];
-

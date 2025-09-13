@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { deleteDoc, doc } from 'firebase/firestore';
+import { deleteDoc, doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { logActivity } from '@/lib/activity-log';
 
@@ -44,13 +44,29 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
   const [packageCategoryFilter, setPackageCategoryFilter] = useState<string | 'all'>('all');
   const [packageServiceFilter, setPackageServiceFilter] = useState<string | 'all'>('all');
 
+  const handleStar = (collectionName: 'categories' | 'services' | 'packages') => async (id: string, starred: boolean) => {
+    try {
+        await updateDoc(doc(db, collectionName, id), { starred });
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
+    }
+  }
 
-  const categoryColumns = useMemo(() => getCategoriesColumns({ 
-    onEdit: () => {}, 
-    onDelete: () => {} 
-  }), []);
-  
-  const serviceColumns = useMemo(() => getServicesColumns({ categories, project }), [categories, project]);
+  const handleDeleteSelected = (collectionName: 'categories' | 'services') => async (ids: string[]) => {
+    const batch = writeBatch(db);
+    ids.forEach(id => {
+        batch.delete(doc(db, collectionName, id));
+    });
+    try {
+        await batch.commit();
+        toast({ title: "Success", description: `${ids.length} item(s) deleted.`});
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Error", description: `Could not delete selected items.`})
+    }
+  }
+
+  const categoryColumns = useMemo(() => getCategoriesColumns(handleStar('categories')), []);
+  const serviceColumns = useMemo(() => getServicesColumns({ categories, project, onStar: handleStar('services') }), [categories, project]);
 
   const filteredServices = useMemo(() => {
     if (serviceCategoryFilter === 'all') return services;
@@ -170,7 +186,7 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
             <CardDescription>Manage the categories for your services.</CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable columns={categoryColumns} data={categories} />
+            <DataTable columns={categoryColumns} data={categories} onDeleteSelected={handleDeleteSelected('categories')} />
           </CardContent>
         </Card>
       </TabsContent>
@@ -182,7 +198,7 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
             <CardDescription>Manage individual services offered in this project.</CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable columns={serviceColumns} data={filteredServices} toolbar={<ServiceToolbar />} />
+            <DataTable columns={serviceColumns} data={filteredServices} toolbar={<ServiceToolbar />} onDeleteSelected={handleDeleteSelected('services')} />
           </CardContent>
         </Card>
       </TabsContent>

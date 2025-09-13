@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import type { Invoice, Project, Lead } from '@/lib/types';
@@ -14,9 +14,11 @@ import { Loader2 } from 'lucide-react';
 import { DataTable } from '@/components/ui/data-table';
 import { getInvoiceColumns } from '@/components/billing/invoice-columns';
 import { InvoiceForm } from '@/components/billing/invoice-form';
+import { useToast } from '@/hooks/use-toast';
 
 export default function BillingPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -51,7 +53,28 @@ export default function BillingPage() {
     };
   }, [user]);
 
-  const invoiceColumns = useMemo(() => getInvoiceColumns({ projects, leads }), [projects, leads]);
+  const handleStar = async (id: string, starred: boolean) => {
+    try {
+        await updateDoc(doc(db, 'invoices', id), { starred });
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
+    }
+  }
+
+  const handleDeleteSelected = async (ids: string[]) => {
+      const batch = writeBatch(db);
+      ids.forEach(id => {
+          batch.delete(doc(db, 'invoices', id));
+      });
+      try {
+          await batch.commit();
+          toast({ title: "Success", description: `${ids.length} invoice(s) deleted.`});
+      } catch (error) {
+          toast({ variant: 'destructive', title: "Error", description: "Could not delete selected invoices."})
+      }
+  }
+
+  const invoiceColumns = useMemo(() => getInvoiceColumns({ projects, leads, onStar: handleStar }), [projects, leads]);
 
   return (
     <>
@@ -91,7 +114,7 @@ export default function BillingPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : invoices.length > 0 ? (
-            <DataTable columns={invoiceColumns} data={invoices} />
+            <DataTable columns={invoiceColumns} data={invoices} onDeleteSelected={handleDeleteSelected} />
           ) : (
             <div className="text-center text-muted-foreground py-12">
                 <ReceiptText className="mx-auto h-12 w-12" />

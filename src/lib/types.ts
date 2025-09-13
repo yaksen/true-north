@@ -65,6 +65,7 @@ export interface Project {
   type: ProjectType;
   emoji?: string;
   parentProjectId?: string;
+  starred?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -80,6 +81,7 @@ export interface Task {
     completed: boolean;
     dueDate?: Date;
     assigneeUid?: string;
+    starred?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -90,12 +92,13 @@ export interface Finance {
     leadId?: string;
     invoiceId?: string;
     type: FinanceType;
-    amount: number; // This will now represent the amount of the transaction (e.g., a single payment)
+    amount: number; // The amount of the transaction (e.g., a single payment or the initial paid amount)
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     description: string;
     date: Date;
     category?: string;
     recordedByUid: string;
+    starred?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -114,6 +117,7 @@ export interface Lead {
     socials?: SocialLink[];
     status: LeadStatus;
     notes?: string;
+    starred?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -124,6 +128,7 @@ export interface Category {
     name: string;
     notes?: string;
     sku?: string;
+    starred?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -138,6 +143,7 @@ export interface Service {
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     notes?: string;
     sku?: string;
+    starred?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -161,6 +167,7 @@ export interface Package {
     custom: boolean;
     discountPercentage: number;
     sku?: string;
+    starred?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -195,6 +202,7 @@ export interface Invoice {
     taxRate: number; // Percentage
     payments: Payment[];
     notes?: string;
+    starred?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

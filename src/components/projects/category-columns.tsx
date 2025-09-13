@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Category } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,8 @@ import { useState } from "react";
 import { CategoryForm } from "./category-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
+import { Checkbox } from "../ui/checkbox";
+import { cn } from "@/lib/utils";
 
 interface ActionsCellProps {
   category: Category;
@@ -82,12 +84,40 @@ const ActionsCell: React.FC<ActionsCellProps> = ({ category }) => {
     );
 };
 
-interface ColumnDependencies {
-    onEdit: (category: Category) => void;
-    onDelete: (categoryId: string) => void;
-}
 
-export const getCategoriesColumns = (deps: ColumnDependencies): ColumnDef<Category>[] => [
+export const getCategoriesColumns = (onStar: (id: string, starred: boolean) => void): ColumnDef<Category>[] => [
+    {
+        id: 'select',
+        header: ({ table }) => (
+            <Checkbox
+                checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                aria-label="Select all"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={(value) => row.toggleSelected(!!value)}
+                aria-label="Select row"
+            />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+    },
+    {
+        id: 'star',
+        cell: ({ row }) => {
+            const category = row.original;
+            return (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onStar(category.id, !category.starred)}>
+                    <Star className={cn("h-4 w-4", category.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
+                </Button>
+            )
+        },
+        enableSorting: false,
+        enableHiding: false,
+    },
     {
       accessorKey: "name",
       header: ({ column }) => (

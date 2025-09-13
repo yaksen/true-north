@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import type { Invoice, InvoiceStatus, Project, Lead } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, Eye, Trash2, Edit } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Eye, Trash2, Edit, Star } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -19,10 +19,12 @@ import { Checkbox } from "../ui/checkbox";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { InvoiceForm } from "./invoice-form";
+import { cn } from "@/lib/utils";
 
 interface DataDependencies {
     projects: Project[];
     leads: Lead[];
+    onStar: (id: string, starred: boolean) => void;
 }
 
 const ActionsCell: React.FC<{ invoice: Invoice, dependencies: DataDependencies }> = ({ invoice, dependencies }) => {
@@ -118,6 +120,19 @@ export const getInvoiceColumns = (dependencies: DataDependencies): ColumnDef<Inv
             aria-label="Select row"
             />
         ),
+        enableSorting: false,
+        enableHiding: false,
+    },
+    {
+        id: 'star',
+        cell: ({ row }) => {
+            const invoice = row.original;
+            return (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => dependencies.onStar(invoice.id, !invoice.starred)}>
+                    <Star className={cn("h-4 w-4", invoice.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
+                </Button>
+            )
+        },
         enableSorting: false,
         enableHiding: false,
     },
