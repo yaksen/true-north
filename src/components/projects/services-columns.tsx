@@ -84,6 +84,10 @@ export const getServicesColumns = (dependencies: ColumnDependencies): ColumnDef<
       cell: ({ row }) => <div className="font-medium pl-4">{row.getValue("name")}</div>,
     },
     {
+        accessorKey: "sku",
+        header: "SKU",
+    },
+    {
         accessorKey: "categoryId",
         header: "Category",
         cell: ({ row }) => {
@@ -118,4 +122,3 @@ export const getServicesColumns = (dependencies: ColumnDependencies): ColumnDef<
       cell: ({ row }) => <ActionsCell service={row.original} dependencies={dependencies} />,
     },
   ];
-

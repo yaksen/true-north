@@ -22,6 +22,7 @@ import { useCurrency } from '@/context/CurrencyContext';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  sku: z.string().optional(),
   categoryId: z.string({ required_error: 'Category is required.' }),
   finishTime: z.string().min(1, { message: 'Finish time is required.' }),
   price: z.coerce.number().min(0, { message: 'Price must be non-negative.' }),
@@ -52,6 +53,7 @@ export function ServiceForm({ service, project, categories, closeForm }: Service
     resolver: zodResolver(formSchema),
     defaultValues: service || {
       name: '',
+      sku: '',
       categoryId: '',
       finishTime: '1 Days',
       price: 0,
@@ -97,19 +99,34 @@ export function ServiceForm({ service, project, categories, closeForm }: Service
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Service Name</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. Basic Website Design" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Service Name</FormLabel>
+                <FormControl>
+                    <Input placeholder="e.g. Basic Website Design" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="sku"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>SKU (Optional)</FormLabel>
+                <FormControl>
+                    <Input placeholder="Unique Product Code" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
         <div className='grid grid-cols-2 gap-4'>
             <FormField
             control={form.control}

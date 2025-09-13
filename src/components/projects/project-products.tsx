@@ -244,7 +244,10 @@ export function ProjectProducts({ project, categories, services, packages }: Pro
                             <Card key={pkg.id}>
                                 <CardHeader>
                                     <div className='flex justify-between items-start'>
-                                        <CardTitle>{pkg.name}</CardTitle>
+                                        <div>
+                                            <CardTitle>{pkg.name}</CardTitle>
+                                            {pkg.sku && <CardDescription>SKU: {pkg.sku}</CardDescription>}
+                                        </div>
                                         <div className="flex items-center gap-1">
                                             <Button size="icon" variant="ghost" onClick={() => handleEditPackage(pkg)}><Edit className="h-4 w-4" /></Button>
                                             <AlertDialog>

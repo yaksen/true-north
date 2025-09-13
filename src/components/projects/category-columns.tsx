@@ -98,6 +98,10 @@ export const getCategoriesColumns = (deps: ColumnDependencies): ColumnDef<Catego
       cell: ({ row }) => <div className="font-medium pl-4">{row.getValue("name")}</div>,
     },
     {
+        accessorKey: "sku",
+        header: "SKU",
+    },
+    {
         accessorKey: "notes",
         header: "Notes",
         cell: ({ row }) => <div className="truncate max-w-xs">{row.getValue("notes")}</div>,

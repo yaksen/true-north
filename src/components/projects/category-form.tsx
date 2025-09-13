@@ -19,6 +19,7 @@ import { logActivity } from '@/lib/activity-log';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  sku: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -39,6 +40,7 @@ export function CategoryForm({ category, projectId, closeForm }: CategoryFormPro
     resolver: zodResolver(formSchema),
     defaultValues: category || {
       name: '',
+      sku: '',
       notes: '',
     },
   });
@@ -74,19 +76,34 @@ export function CategoryForm({ category, projectId, closeForm }: CategoryFormPro
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category Name</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. Web Development" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Category Name</FormLabel>
+                <FormControl>
+                    <Input placeholder="e.g. Web Development" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="sku"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>SKU (Optional)</FormLabel>
+                <FormControl>
+                    <Input placeholder="Unique Product Code" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
         <FormField
           control={form.control}
           name="notes"

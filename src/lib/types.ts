@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectStatus = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'Call' | 'Meeting' | 'Project';
@@ -126,6 +119,7 @@ export interface Category {
     projectId: string;
     name: string;
     notes?: string;
+    sku?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -139,6 +133,7 @@ export interface Service {
     price: number;
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     notes?: string;
+    sku?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -161,6 +156,7 @@ export interface Package {
     duration: string;
     custom: boolean;
     discountPercentage: number;
+    sku?: string;
     createdAt: Date;
     updatedAt: Date;
 }

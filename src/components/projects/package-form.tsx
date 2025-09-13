@@ -30,6 +30,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  sku: z.string().optional(),
   description: z.string().optional(),
   services: z.array(z.string()).min(1, 'At least one service must be selected.'),
   price: z.coerce.number().min(0),
@@ -66,6 +67,7 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
         services: pkg.services || [],
     } : {
       name: '',
+      sku: '',
       description: '',
       services: [],
       price: 0,
@@ -151,19 +153,34 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Package Name</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. E-Commerce Starter Kit" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Package Name</FormLabel>
+                <FormControl>
+                    <Input placeholder="e.g. E-Commerce Starter Kit" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="sku"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>SKU (Optional)</FormLabel>
+                <FormControl>
+                    <Input placeholder="Unique Product Code" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
         <FormField
           control={form.control}
           name="description"
@@ -340,4 +357,3 @@ export function PackageForm({ pkg, project, services, closeForm }: PackageFormPr
     </Form>
   );
 }
-
