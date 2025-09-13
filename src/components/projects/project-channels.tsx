@@ -8,7 +8,7 @@ import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
 import { DataTable } from "../ui/data-table";
 import { getChannelsColumns } from "./channel-columns";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { ChannelForm } from "./channel-form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
