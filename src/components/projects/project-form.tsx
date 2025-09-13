@@ -27,7 +27,7 @@ import { Switch } from '../ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { logActivity } from '@/lib/activity-log';
 
-const projectStatuses = ['Active', 'Passive', 'Fun', 'Sub'] as const;
+const projectTypes = ['Active', 'Passive', 'Fun', 'Sub'] as const;
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Project name must be at least 2 characters.' }),
@@ -35,7 +35,7 @@ const formSchema = z.object({
   emoji: z.string().optional(),
   currency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
   private: z.boolean().default(false),
-  status: z.enum(projectStatuses),
+  type: z.enum(projectTypes),
   parentProjectId: z.string().optional(),
 });
 
@@ -63,12 +63,12 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
       emoji: '💡',
       currency: 'USD',
       private: false,
-      status: 'Active',
+      type: 'Active',
       parentProjectId: '',
     },
   });
 
-  const status = form.watch('status');
+  const type = form.watch('type');
 
   async function onSubmit(values: ProjectFormValues) {
     if (!user) {
@@ -79,7 +79,7 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
 
     const dataToSubmit = {
         ...values,
-        parentProjectId: values.status === 'Sub' ? values.parentProjectId : '', // Clear parent if not a sub-project
+        parentProjectId: values.type === 'Sub' ? values.parentProjectId : '', // Clear parent if not a sub-project
     };
 
     try {
@@ -177,15 +177,15 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
             />
             <FormField
             control={form.control}
-            name="status"
+            name="type"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Status</FormLabel>
+                <FormLabel>Type</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
-                        {projectStatuses.map(status => (
-                            <SelectItem key={status} value={status}>{status}</SelectItem>
+                        {projectTypes.map(type => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
@@ -195,7 +195,7 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
             />
         </div>
         
-        {status === 'Sub' && (
+        {type === 'Sub' && (
              <FormField
                 control={form.control}
                 name="parentProjectId"

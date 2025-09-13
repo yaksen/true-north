@@ -1,9 +1,9 @@
 
 export type UserRole = 'admin' | 'manager' | 'member';
-export type ProjectStatus = 'Active' | 'Passive' | 'Fun' | 'Sub';
+export type ProjectType = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'Call' | 'Meeting' | 'Project';
 export type FinanceType = 'income' | 'expense';
-export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
+export type LeadStatus = 'new' | 'contacted' | 'qualified', 'lost', 'converted';
 export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void';
 export type ActivityRecordType = 
@@ -59,7 +59,7 @@ export interface Project {
   private: boolean;
   members: string[]; // List of user UIDs
   currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
-  status: ProjectStatus;
+  type: ProjectType;
   emoji?: string;
   parentProjectId?: string;
   createdAt: Date;

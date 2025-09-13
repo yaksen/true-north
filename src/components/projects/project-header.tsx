@@ -55,7 +55,7 @@ export function ProjectHeader({ project, allProjects }: ProjectHeaderProps) {
                 {project.name}
             </h1>
             <div className='flex items-center gap-2'>
-                <Badge variant="secondary" className="capitalize">{project.status}</Badge>
+                <Badge variant="secondary" className="capitalize">{project.type}</Badge>
                 {project.private && <Badge variant="outline"><Lock className='h-3 w-3 mr-1'/>Private</Badge>}
             </div>
         </div>
