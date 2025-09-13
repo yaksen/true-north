@@ -129,7 +129,7 @@ export default function ProjectDetailPage() {
 
         <Tabs defaultValue="dashboard" className="w-full">
             <div className='overflow-x-auto'>
-                <TabsList className="grid w-full grid-cols-8 min-w-max">
+                <TabsList className="min-w-max">
                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                     <TabsTrigger value="leads">Leads</TabsTrigger>
                     <TabsTrigger value="channels">Channels</TabsTrigger>

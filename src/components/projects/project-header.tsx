@@ -50,7 +50,7 @@ export function ProjectHeader({ project, allProjects }: ProjectHeaderProps) {
         </Dialog>
       </div>
       <div>
-        <div className='flex flex-wrap items-center gap-x-4 gap-y-2'>
+        <div className='flex flex-col md:flex-row md:items-center md:gap-x-4 gap-y-2'>
             <h1 className="text-3xl font-bold tracking-tight">
                 {project.name}
             </h1>
