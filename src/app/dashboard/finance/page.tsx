@@ -32,14 +32,18 @@ export default function GlobalFinancePage() {
       }
 
       const projectIds = projectsData.map(p => p.id);
+      // Firestore 'in' query is limited to 30 values. For more projects, batching would be needed.
       const financesQuery = query(collection(db, 'finances'), where('projectId', 'in', projectIds));
       
       const unsubscribeFinances = onSnapshot(financesQuery, (financesSnapshot) => {
-        const financesData = financesSnapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...doc.data(),
-            date: doc.data().date.toDate(), // Convert Firestore Timestamp to Date
-        } as Finance));
+        const financesData = financesSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return { 
+                id: doc.id, 
+                ...data,
+                date: data.date?.toDate ? data.date.toDate() : new Date(data.date), 
+            } as Finance
+        });
         setFinances(financesData);
         setLoading(false);
       });

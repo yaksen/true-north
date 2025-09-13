@@ -58,8 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const profile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt' | 'lastLogin'> = {
                 email: firebaseUser.email!,
                 role: 'member', // Default role for new signups
-                name: firebaseUser.displayName ?? firebaseUser.email,
-                photoURL: firebaseUser.photoURL,
+                name: firebaseUser.displayName ?? firebaseUser.email ?? undefined,
+                photoURL: firebaseUser.photoURL ?? undefined,
                 projects: [],
             };
             const newUserProfile = {

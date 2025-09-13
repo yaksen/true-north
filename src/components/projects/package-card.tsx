@@ -65,28 +65,17 @@ const DiscountCalculator: React.FC<DiscountCalculatorProps> = ({ pkg }) => {
         setDiscounts(discounts.filter(d => d.id !== id));
     };
 
-    let totalDiscountLKR = 0;
-    let totalDiscountUSD = 0;
-    let priceAfterDiscountsLKR = pkg.priceLKR;
-    let priceAfterDiscountsUSD = pkg.priceUSD;
+    let totalDiscount = 0;
+    let priceAfterDiscounts = pkg.price;
 
     discounts.forEach(discount => {
         if (discount.type === 'percentage') {
-            const discountAmountLKR = (priceAfterDiscountsLKR * discount.value) / 100;
-            const discountAmountUSD = (priceAfterDiscountsUSD * discount.value) / 100;
-            totalDiscountLKR += discountAmountLKR;
-            totalDiscountUSD += discountAmountUSD;
-            priceAfterDiscountsLKR -= discountAmountLKR;
-            priceAfterDiscountsUSD -= discountAmountUSD;
+            const discountAmount = (priceAfterDiscounts * discount.value) / 100;
+            totalDiscount += discountAmount;
+            priceAfterDiscounts -= discountAmount;
         } else if (discount.type === 'flat') {
-            totalDiscountLKR += discount.value;
-            priceAfterDiscountsLKR -= discount.value;
-            // Assuming a rough conversion for flat USD discount for demo purposes
-            const exchangeRate = pkg.priceLKR / pkg.priceUSD;
-            if (exchangeRate > 0) {
-                totalDiscountUSD += discount.value / exchangeRate;
-                priceAfterDiscountsUSD -= discount.value / exchangeRate;
-            }
+            totalDiscount += discount.value;
+            priceAfterDiscounts -= discount.value;
         }
     });
     
@@ -95,7 +84,7 @@ const DiscountCalculator: React.FC<DiscountCalculatorProps> = ({ pkg }) => {
             <div>
                 <p className='text-sm text-muted-foreground'>Original Price</p>
                 <p className='font-bold line-through'>
-                    {new Intl.NumberFormat("en-LK", { style: "currency", currency: "LKR" }).format(pkg.priceLKR)}
+                    {new Intl.NumberFormat("en-US", { style: "currency", currency: pkg.currency }).format(pkg.price)}
                 </p>
             </div>
             {discounts.length > 0 && (
@@ -126,7 +115,7 @@ const DiscountCalculator: React.FC<DiscountCalculatorProps> = ({ pkg }) => {
             <div className='border-t pt-4'>
                 <p className='text-sm text-muted-foreground'>Final Price</p>
                 <p className='text-2xl font-bold text-primary'>
-                    {new Intl.NumberFormat("en-LK", { style: "currency", currency: "LKR" }).format(priceAfterDiscountsLKR)}
+                    {new Intl.NumberFormat("en-US", { style: "currency", currency: pkg.currency }).format(priceAfterDiscounts)}
                 </p>
             </div>
         </div>
@@ -200,7 +189,7 @@ export function PackageCard({ pkg, project, allServices }: PackageCardProps) {
                 <div>
                     <p className='text-sm text-muted-foreground'>Price</p>
                     <p className='text-xl font-bold'>
-                        {new Intl.NumberFormat("en-LK", { style: "currency", currency: "LKR" }).format(pkg.priceLKR)}
+                        {new Intl.NumberFormat("en-US", { style: "currency", currency: pkg.currency }).format(pkg.price)}
                     </p>
                 </div>
                 <Popover>

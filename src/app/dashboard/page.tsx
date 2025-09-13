@@ -41,7 +41,7 @@ export default function DashboardPage() {
             return { 
                 id: doc.id, 
                 ...data,
-                date: data.date.toDate(), // Convert Firestore Timestamp to Date
+                date: data.date?.toDate ? data.date.toDate() : new Date(data.date),
             } as Finance;
         }));
     });
@@ -52,11 +52,13 @@ export default function DashboardPage() {
         }
     });
     
+    // This is a bit of a hack to wait for the initial data load
+    // A more robust solution might use state management or a different loading strategy
     Promise.all([
-        new Promise(resolve => onSnapshot(projectsQuery, () => resolve(true))),
-        new Promise(resolve => onSnapshot(tasksQuery, () => resolve(true))),
-        new Promise(resolve => onSnapshot(financesQuery, () => resolve(true))),
-        new Promise(resolve => onSnapshot(settingsRef, () => resolve(true))),
+        new Promise<void>(resolve => { const unsub = onSnapshot(projectsQuery, () => { resolve(); unsub(); }); }),
+        new Promise<void>(resolve => { const unsub = onSnapshot(tasksQuery, () => { resolve(); unsub(); }); }),
+        new Promise<void>(resolve => { const unsub = onSnapshot(financesQuery, () => { resolve(); unsub(); }); }),
+        new Promise<void>(resolve => { const unsub = onSnapshot(settingsRef, () => { resolve(); unsub(); }); }),
     ]).then(() => setLoading(false));
 
 

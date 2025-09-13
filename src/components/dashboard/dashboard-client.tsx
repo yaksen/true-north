@@ -46,10 +46,12 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
         const d = new Date();
         d.setMonth(d.getMonth() - i);
         const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        
         const monthFinances = projectFinances.filter(f => {
-            if (!f.date) return false;
-            return new Date(f.date).toISOString().startsWith(monthKey)
+            if (!f.date || !(f.date instanceof Date)) return false;
+            return f.date.toISOString().startsWith(monthKey);
         });
+
         const income = monthFinances.filter(f => f.type === 'income').reduce((s, f) => s + convert(f.amount, f.currency, displayCurrency), 0);
         const expense = monthFinances.filter(f => f.type === 'expense').reduce((s, f) => s + convert(f.amount, f.currency, displayCurrency), 0);
         return { name: d.toLocaleString('default', { month: 'short' }), pl: income - expense };

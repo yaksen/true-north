@@ -69,6 +69,7 @@ const recordDetails: Record<
   member_invited: { icon: UserPlus, message: (p) => `Invited ${p.email} to the project.` },
   member_added: { icon: UserPlus, message: (p) => `Added ${p.email} to the project.` },
   member_removed: { icon: UserX, message: (p) => `Removed ${p.email} from the project.` },
+  payment_added: { icon: CircleDollarSign, message: (p) => `Payment of ${p.amount} was added.` },
 };
 
 export function RecordsTimeline({ items }: RecordsTimelineProps) {

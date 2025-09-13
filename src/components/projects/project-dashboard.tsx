@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { TaskForm } from "./task-form";
 import { FinanceForm } from "./finance-form";
 import { Row } from "@tanstack/react-table";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 interface ProjectDashboardProps {
@@ -35,7 +35,16 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
         return () => unsubscribe();
     }, [project.id]);
 
-    const taskColumns = useMemo(() => getTaskColumns({ leads }), [leads]);
+    const handleStar = async (id: string, starred: boolean) => {
+        try {
+            const taskRef = doc(db, 'tasks', id);
+            await updateDoc(taskRef, { starred });
+        } catch (error) {
+            console.error("Failed to update star status", error);
+        }
+    };
+
+    const taskColumns = useMemo(() => getTaskColumns({ leads }, handleStar), [leads]);
 
     const totalIncome = finances.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
     const totalExpenses = finances.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);

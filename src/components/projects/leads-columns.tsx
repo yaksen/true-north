@@ -2,7 +2,7 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Lead, LeadStatus, Package, Service } from "@/lib/types";
+import { Lead, LeadStatus, Package, Service, Project } from "@/lib/types";
 import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon, Edit, Trash2, Facebook, Instagram, CaseUpper, Star } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -24,7 +24,7 @@ import { logActivity } from "@/lib/activity-log";
 import { cn } from "@/lib/utils";
 
 
-const ActionsCell: React.FC<{ lead: Lead, project: {id: string, currency: string}, packages: Package[], services: Service[] }> = ({ lead, project, packages, services }) => {
+const ActionsCell: React.FC<{ lead: Lead, project: Project, packages: Package[], services: Service[] }> = ({ lead, project, packages, services }) => {
     const { toast } = useToast();
     const { user } = useAuth();
     const [isFinanceOpen, setIsFinanceOpen] = useState(false);
@@ -153,7 +153,7 @@ const SocialsCell: React.FC<{ lead: Lead }> = ({ lead }) => {
 }
 
 
-export const getLeadsColumns = (project: {id: string, currency: string}, packages: Package[], services: Service[], onStar: (id: string, starred: boolean) => void): ColumnDef<Lead>[] => [
+export const getLeadsColumns = (project: Project, packages: Package[], services: Service[], onStar: (id: string, starred: boolean) => void): ColumnDef<Lead>[] => [
     {
         id: 'select',
         header: ({ table }) => (

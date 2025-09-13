@@ -61,10 +61,24 @@ export default function ProjectDetailPage() {
         setAllProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)))
     });
 
-    const createCollectionSubscription = <T,>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
+    const createCollectionSubscription = <T extends { date?: any, createdAt?: any, timestamp?: any }>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
         const q = query(collection(db, collectionName), where('projectId', '==', id));
         return onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+            const data = snapshot.docs.map(doc => {
+                const docData = doc.data();
+                if (docData.date && docData.date.toDate) docData.date = docData.date.toDate();
+                if (docData.createdAt && docData.createdAt.toDate) docData.createdAt = docData.createdAt.toDate();
+                if (docData.timestamp && docData.timestamp.toDate) docData.timestamp = docData.timestamp.toDate();
+                if (docData.issueDate && docData.issueDate.toDate) docData.issueDate = docData.issueDate.toDate();
+                if (docData.dueDate && docData.dueDate.toDate) docData.dueDate = docData.dueDate.toDate();
+                if (docData.payments) {
+                  docData.payments = docData.payments.map((p: any) => ({
+                    ...p,
+                    date: p.date.toDate ? p.date.toDate() : new Date(p.date)
+                  }));
+                }
+                return { id: doc.id, ...docData } as T;
+            });
             setter(data);
         });
     };

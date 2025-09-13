@@ -5,7 +5,7 @@ export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectType = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'Call' | 'Meeting' | 'Project';
 export type FinanceType = 'income' | 'expense';
-export type LeadStatus = 'new' | 'contacted' | 'qualified', 'lost', 'converted';
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void' | 'partial' | 'unpaid';
 export type PaymentMethod = 'cash' | 'bank transfer' | 'online' | 'other';
@@ -166,6 +166,7 @@ export interface Package {
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     duration: string;
     custom: boolean;
+    discounts?: Discount[];
     discountPercentage: number;
     sku?: string;
     starred?: boolean;
