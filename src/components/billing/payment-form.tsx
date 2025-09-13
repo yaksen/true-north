@@ -75,7 +75,11 @@ export function PaymentForm({ invoice, project, closeForm }: PaymentFormProps) {
         // --- 1. Update Invoice ---
         const updatedPayments = arrayUnion(newPayment);
         const totalPaid = (invoice.payments || []).reduce((sum, p) => sum + p.amount, 0) + newPayment.amount;
-        const invoiceTotal = invoice.lineItems.reduce((sum, item) => sum + (item.price * item.quantity), 0); // Simplified total for status check
+        
+        const invoiceTotal = invoice.lineItems.reduce((sum, item) => {
+            const itemTotal = item.price * item.quantity;
+            return sum + itemTotal;
+        }, 0);
 
         let newStatus: InvoiceStatus = 'partial';
         if (totalPaid >= invoiceTotal) {
@@ -101,8 +105,7 @@ export function PaymentForm({ invoice, project, closeForm }: PaymentFormProps) {
             
             const newPaidPrice = (financeData.paidPrice || 0) + values.amount;
 
-            const updateNote = `\n---
-Updated on ${new Date().toLocaleString()} – Payment of ${formatCurrency(values.amount, project.currency)} added (method: ${values.method}${values.note ? ', note: ' + values.note : ''}).`;
+            const updateNote = `\nUpdated on ${new Date().toLocaleString()} – Payment of ${formatCurrency(values.amount, project.currency)} added (method: ${values.method}${values.note ? ', note: ' + values.note : ''}).`;
             
             const newDescription = (financeData.description || '') + updateNote;
 

@@ -30,6 +30,7 @@ const formSchema = z.object({
   projectId: z.string().nonempty({ message: 'Project is required.' }),
   type: z.enum(financeTypes, { required_error: 'Type is required.' }),
   amount: z.coerce.number().positive({ message: 'Amount must be positive.' }),
+  paidPrice: z.coerce.number().min(0).optional(),
   currency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
   description: z.string().min(2, { message: 'Description must be at least 2 characters.' }),
   date: z.date({ required_error: 'A date is required.' }),
@@ -66,6 +67,7 @@ export function FinanceForm({ finance, project, projects, packages, services, le
       projectId: project?.id || '',
       type: 'income',
       amount: 0,
+      paidPrice: 0,
       description: '',
       date: new Date(),
       category: '',
@@ -127,6 +129,8 @@ export function FinanceForm({ finance, project, projects, packages, services, le
 
         const financeData: any = {
           ...values,
+          paidPrice: values.paidPrice || 0,
+          description: `Created on ${new Date().toLocaleString()}. ${values.description}`,
           recordedByUid: user.uid,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -140,12 +144,25 @@ export function FinanceForm({ finance, project, projects, packages, services, le
         // If it's an income record for a specific lead, create an invoice
         if (leadId && values.type === 'income') {
             const invoiceRef = doc(collection(db, 'invoices'));
+            const initialPayment = values.paidPrice && values.paidPrice > 0 ? [{
+              id: uuidv4(),
+              amount: values.paidPrice,
+              date: values.date,
+              method: 'online' as const, // Default method
+              note: 'Initial payment with finance record creation.',
+            }] : [];
+
+            let status: 'draft' | 'paid' | 'partial' | 'unpaid' = 'unpaid';
+            if (values.paidPrice && values.paidPrice > 0) {
+                status = values.paidPrice >= values.amount ? 'paid' : 'partial';
+            }
+
             const invoiceData = {
                 id: invoiceRef.id,
                 projectId: values.projectId,
                 leadId: leadId,
                 invoiceNumber: `INV-${Date.now()}`,
-                status: 'paid', // Assume paid since we are logging income
+                status: status,
                 issueDate: values.date,
                 dueDate: addDays(values.date, 30),
                 lineItems: [{
@@ -155,6 +172,7 @@ export function FinanceForm({ finance, project, projects, packages, services, le
                     price: values.amount,
                     currency: values.currency,
                 }],
+                payments: initialPayment,
                 discounts: [],
                 taxRate: 0,
                 createdAt: serverTimestamp(),
@@ -281,7 +299,7 @@ export function FinanceForm({ finance, project, projects, packages, services, le
                 name="amount"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Amount</FormLabel>
+                        <FormLabel>Total Value</FormLabel>
                         <CurrencyInput
                             value={field.value}
                             onValueChange={field.onChange}
@@ -293,6 +311,27 @@ export function FinanceForm({ finance, project, projects, packages, services, le
                 )}
             />
         </div>
+
+        <FormField
+            control={form.control}
+            name="paidPrice"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Paid Amount (Optional)</FormLabel>
+                    <CurrencyInput
+                        value={field.value || 0}
+                        onValueChange={field.onChange}
+                        currency={form.watch('currency')}
+                        onCurrencyChange={(value) => form.setValue('currency', value)}
+                    />
+                     <FormDescription>
+                        Amount paid at the time of creating this record.
+                    </FormDescription>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+        
         <div className="grid grid-cols-2 gap-4">
              <FormField
                 control={form.control}
@@ -359,5 +398,3 @@ export function FinanceForm({ finance, project, projects, packages, services, le
     </Form>
   );
 }
-
-    

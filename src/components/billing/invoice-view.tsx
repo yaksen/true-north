@@ -80,6 +80,7 @@ export function InvoiceView({ invoice, project, lead }: InvoiceViewProps) {
       case 'partial': return 'secondary';
       case 'unpaid':
       case 'sent':
+      case 'draft':
         return 'outline';
       case 'void': return 'destructive';
       default: return 'secondary';
@@ -294,7 +295,7 @@ export function InvoiceView({ invoice, project, lead }: InvoiceViewProps) {
                         <h4 className="text-lg font-semibold">Payments</h4>
                         <Dialog open={isPaymentFormOpen} onOpenChange={setIsPaymentFormOpen}>
                             <DialogTrigger asChild>
-                                <Button size="sm"><PlusCircle /> Add Payment</Button>
+                                <Button size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> Add Payment</Button>
                             </DialogTrigger>
                             <DialogContent>
                                 <DialogHeader><DialogTitle>Add Payment</DialogTitle></DialogHeader>
@@ -308,6 +309,7 @@ export function InvoiceView({ invoice, project, lead }: InvoiceViewProps) {
                                 <TableRow>
                                     <TableHead>Date</TableHead>
                                     <TableHead>Method</TableHead>
+                                    <TableHead>Note</TableHead>
                                     <TableHead className='text-right'>Amount</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -316,6 +318,7 @@ export function InvoiceView({ invoice, project, lead }: InvoiceViewProps) {
                                     <TableRow key={p.id}>
                                         <TableCell>{format(new Date(p.date), "PPP")}</TableCell>
                                         <TableCell className='capitalize'>{p.method}</TableCell>
+                                        <TableCell className='text-sm text-muted-foreground'>{p.note}</TableCell>
                                         <TableCell className='text-right'>{formatCurrency(p.amount, project.currency)}</TableCell>
                                     </TableRow>
                                 ))}
