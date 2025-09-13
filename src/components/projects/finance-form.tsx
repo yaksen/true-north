@@ -61,8 +61,8 @@ export function FinanceForm({ finance, project, projects, packages, services, le
     resolver: zodResolver(formSchema),
     defaultValues: finance ? {
         ...finance,
-        projectId: finance.projectId,
-        date: finance.date ? new Date(finance.date) : new Date(),
+        // Firestore timestamps can be objects or Dates. Ensure they are Dates.
+        date: finance.date instanceof Date ? finance.date : new Date(finance.date),
     } : {
       projectId: project?.id || '',
       type: 'income',
