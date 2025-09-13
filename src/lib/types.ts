@@ -7,6 +7,7 @@ export type ProjectType = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'Call' | 'Meeting' | 'Project';
 export type FinanceType = 'income' | 'expense';
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
+export type ChannelStatus = 'new' | 'active' | 'inactive' | 'closed';
 export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void' | 'partial' | 'unpaid';
 export type PaymentMethod = 'cash' | 'bank transfer' | 'online' | 'other';
@@ -23,6 +24,9 @@ export type ActivityRecordType =
     | 'lead_created'
     | 'lead_updated'
     | 'lead_deleted'
+    | 'channel_created'
+    | 'channel_updated'
+    | 'channel_deleted'
     | 'category_created'
     | 'category_updated'
     | 'category_deleted'
@@ -121,6 +125,19 @@ export interface Lead {
     phone?: string;
     socials?: SocialLink[];
     status: LeadStatus;
+    notes?: string;
+    starred?: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface Channel {
+    id: string;
+    projectId: string;
+    name: string;
+    platform: string;
+    url?: string;
+    status: ChannelStatus;
     notes?: string;
     starred?: boolean;
     createdAt: Date;
