@@ -66,7 +66,10 @@ export function PaymentForm({ invoice, project, closeForm }: PaymentFormProps) {
       
         const newPayment: Payment = {
             id: uuidv4(),
-            ...values,
+            date: values.date,
+            amount: values.amount,
+            method: values.method,
+            note: values.note,
         };
 
         // --- 1. Update Invoice ---

@@ -235,5 +235,3 @@ export interface CrmSettings {
     revenueGoal?: number;
     currency?: 'USD' | 'LKR' | 'EUR' | 'GBP';
 }
-
-    
