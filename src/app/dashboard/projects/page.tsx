@@ -103,7 +103,7 @@ export default function ProjectsPage() {
             
         const profitLoss = income - expense;
         
-        const completedTasks = projectTasks.filter(t => t.status === 'Done').length;
+        const completedTasks = projectTasks.filter(t => t.completed).length;
         const taskCompletionRate = projectTasks.length > 0 ? (completedTasks / projectTasks.length) * 100 : 0;
         
         return {

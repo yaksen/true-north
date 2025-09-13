@@ -24,7 +24,7 @@ import { logActivity } from '@/lib/activity-log';
 import { v4 as uuidv4 } from 'uuid';
 import { CurrencyInput } from '../ui/currency-input';
 
-const paymentMethods: PaymentMethod[] = ['cash', 'bank transfer', 'online', 'other'];
+const paymentMethods = ['cash', 'bank transfer', 'online', 'other'] as const;
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: 'Amount must be positive.' }),

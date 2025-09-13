@@ -39,7 +39,7 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
       const totalExpense = projectFinances.filter(f => f.type === 'expense').reduce((sum, f) => sum + convert(f.amount, f.currency, displayCurrency), 0);
       const profitLoss = totalIncome - totalExpense;
 
-      const completedTasks = projectTasks.filter(t => t.status === 'Done').length;
+      const completedTasks = projectTasks.filter(t => t.completed).length;
       const taskCompletionRate = projectTasks.length > 0 ? (completedTasks / projectTasks.length) * 100 : 0;
       
       const monthlyPL = Array(6).fill(0).map((_, i) => {
