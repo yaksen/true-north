@@ -163,7 +163,7 @@ export function PersonalExpenseCard({ expenses, wallet, categories }: { expenses
                     
                     <div className='mb-6'>
                         <h3 className='text-sm font-medium mb-2 text-center'>By Category</h3>
-                        <ExpenseCategoryChart data={chartData} currency={displayCurrency} />
+                        <ExpenseCategoryChart data={chartData} currency={displayCurrency} total={totalSpent} />
                     </div>
                 </div>
 

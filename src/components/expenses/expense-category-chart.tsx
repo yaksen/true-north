@@ -22,6 +22,7 @@ interface ChartData {
 interface ExpenseCategoryChartProps {
   data: Omit<ChartData, 'fill'>[];
   currency: string;
+  total: number;
 }
 
 const generateColor = (index: number) => {
@@ -35,7 +36,7 @@ const generateColor = (index: number) => {
   return colors[index % colors.length];
 };
 
-export function ExpenseCategoryChart({ data, currency }: ExpenseCategoryChartProps) {
+export function ExpenseCategoryChart({ data, currency, total }: ExpenseCategoryChartProps) {
     const chartData = useMemo(() => {
         return data.map((item, index) => ({
             ...item,
@@ -70,12 +71,18 @@ export function ExpenseCategoryChart({ data, currency }: ExpenseCategoryChartPro
             cursor={false}
             content={<ChartTooltipContent 
                 hideLabel 
-                formatter={(value, name) => (
-                    <div className='flex flex-col'>
-                        <span className='font-medium'>{name}</span>
-                        <span className='text-muted-foreground'>{formatCurrency(value as number, currency)}</span>
-                    </div>
-                )}
+                formatter={(value, name) => {
+                    const percentage = total > 0 ? (((value as number) / total) * 100).toFixed(1) : 0;
+                    return (
+                        <div className='flex flex-col gap-1'>
+                            <span className='font-medium'>{name}</span>
+                            <div className='flex justify-between items-center gap-4'>
+                                <span className='text-muted-foreground'>{formatCurrency(value as number, currency)}</span>
+                                <span className='font-bold text-primary'>{percentage}%</span>
+                            </div>
+                        </div>
+                    )
+                }}
             />}
         />
         <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={60} strokeWidth={5}>
