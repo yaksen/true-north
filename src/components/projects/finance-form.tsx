@@ -46,10 +46,11 @@ interface FinanceFormProps {
   packages?: Package[];
   services?: Service[];
   leadId?: string;
+  channelId?: string;
   closeForm: () => void;
 }
 
-export function FinanceForm({ finance, project, projects, packages, services, leadId, closeForm }: FinanceFormProps) {
+export function FinanceForm({ finance, project, projects, packages, services, leadId, channelId, closeForm }: FinanceFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { globalCurrency } = useCurrency();
@@ -202,15 +203,19 @@ export function FinanceForm({ finance, project, projects, packages, services, le
              }
              toast({ title: 'Success', description: 'Invoice and payment record created.' });
 
-        } else { // It's a general expense or income not tied to a lead invoice
-            const financeData = {
+        } else { // It's a general expense or income
+            const financeData: any = {
                 ...values,
-                amount: values.amount, // For simple finance, amount is amount
+                amount: values.amount,
                 recordedByUid: user.uid,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
-            delete (financeData as any).paidPrice;
+            delete financeData.paidPrice;
+
+            if (leadId) financeData.leadId = leadId;
+            if (channelId) financeData.channelId = channelId;
+
             const financeRef = doc(collection(db, 'finances'));
             batch.set(financeRef, financeData);
             await logActivity(values.projectId, 'finance_created', { description: values.description }, user.uid);

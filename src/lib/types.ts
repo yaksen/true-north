@@ -80,6 +80,7 @@ export interface Finance {
     id: string;
     projectId: string;
     leadId?: string;
+    channelId?: string;
     invoiceId?: string;
     type: FinanceType;
     amount: number; // The amount paid

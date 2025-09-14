@@ -3,9 +3,9 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Channel, ChannelStatus, Project } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
@@ -18,12 +18,14 @@ import { logActivity } from "@/lib/activity-log";
 import { cn } from "@/lib/utils";
 import { ChannelForm } from "./channel-form";
 import { Checkbox } from "../ui/checkbox";
+import { FinanceForm } from "./finance-form";
 
 
 const ActionsCell: React.FC<{ channel: Channel, project: Project }> = ({ channel, project }) => {
     const { toast } = useToast();
     const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isFinanceOpen, setIsFinanceOpen] = useState(false);
 
     const handleDelete = async () => {
         if (!user) return;
@@ -69,6 +71,10 @@ const ActionsCell: React.FC<{ channel: Channel, project: Project }> = ({ channel
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
+                    <DropdownMenuSeparator />
+                     <DropdownMenuItem onClick={() => setIsFinanceOpen(true)}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Log Finance
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
 
@@ -78,6 +84,15 @@ const ActionsCell: React.FC<{ channel: Channel, project: Project }> = ({ channel
                         <DialogTitle>Edit Channel</DialogTitle>
                     </DialogHeader>
                     <ChannelForm channel={channel} projectId={project.id} closeForm={() => setIsEditOpen(false)} />
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isFinanceOpen} onOpenChange={setIsFinanceOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Log Finance for {channel.name}</DialogTitle>
+                    </DialogHeader>
+                    <FinanceForm project={project} channelId={channel.id} closeForm={() => setIsFinanceOpen(false)} />
                 </DialogContent>
             </Dialog>
         </>
