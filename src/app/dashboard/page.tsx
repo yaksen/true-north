@@ -2,12 +2,12 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { CrmSettings, Project, Task, Finance } from '@/lib/types';
+import { CrmSettings, Project, Task, Finance, PersonalWallet, PersonalExpense, PersonalExpenseCategory } from '@/lib/types';
 import { collection, onSnapshot, query, where, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { DraggableDashboard } from '@/components/dashboard/draggable-dashboard';
+import { Dashboard } from '@/components/dashboard/dashboard';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -15,6 +15,9 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [finances, setFinances] = useState<Finance[]>([]);
   const [settings, setSettings] = useState<CrmSettings | null>(null);
+  const [wallet, setWallet] = useState<PersonalWallet | null>(null);
+  const [personalExpenses, setPersonalExpenses] = useState<PersonalExpense[]>([]);
+  const [expenseCategories, setExpenseCategories] = useState<PersonalExpenseCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,40 +29,24 @@ export default function DashboardPage() {
     const tasksQuery = query(collection(db, 'tasks')); // Consider adding a project filter here
     const financesQuery = query(collection(db, 'finances')); // Consider adding a project filter here
     const settingsRef = doc(db, 'settings', 'crm');
+    const walletQuery = query(collection(db, 'personalWallets'), where('userId', '==', user.uid));
+    const personalExpensesQuery = query(collection(db, 'personalExpenses'), where('userId', '==', user.uid));
+    const categoriesQuery = query(collection(db, 'personalExpenseCategories'), where('userId', '==', user.uid));
     
     const unsubs: (() => void)[] = [];
 
-    unsubs.push(onSnapshot(projectsQuery, (snapshot) => {
-      setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
-    }));
+    unsubs.push(onSnapshot(projectsQuery, (snapshot) => setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)))));
+    unsubs.push(onSnapshot(tasksQuery, (snapshot) => setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)))));
+    unsubs.push(onSnapshot(financesQuery, (snapshot) => setFinances(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date?.toDate() } as Finance)))));
+    unsubs.push(onSnapshot(settingsRef, (doc) => setSettings(doc.exists() ? doc.data() as CrmSettings : null)));
+    unsubs.push(onSnapshot(walletQuery, (snapshot) => setWallet(snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as PersonalWallet)));
+    unsubs.push(onSnapshot(personalExpensesQuery, (snapshot) => setPersonalExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date?.toDate() } as PersonalExpense)))));
+    unsubs.push(onSnapshot(categoriesQuery, (snapshot) => setExpenseCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PersonalExpenseCategory)))));
 
-    unsubs.push(onSnapshot(tasksQuery, (snapshot) => {
-        setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
-    }));
-    
-    unsubs.push(onSnapshot(financesQuery, (snapshot) => {
-        setFinances(snapshot.docs.map(doc => {
-            const data = doc.data();
-            return { 
-                id: doc.id, 
-                ...data,
-                date: data.date?.toDate ? data.date.toDate() : new Date(data.date),
-            } as Finance;
-        }));
-    }));
-    
-    unsubs.push(onSnapshot(settingsRef, (doc) => {
-        if (doc.exists()) {
-            setSettings(doc.data() as CrmSettings);
-        }
-    }));
-
-    // Initial data load promise
     const initialLoad = Promise.all([
         new Promise<void>(resolve => { const unsub = onSnapshot(projectsQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(tasksQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(financesQuery, () => { resolve(); unsub(); }); }),
-        new Promise<void>(resolve => { const unsub = onSnapshot(settingsRef, () => { resolve(); unsub(); }); }),
     ]);
 
     initialLoad.then(() => setLoading(false));
@@ -79,11 +66,14 @@ export default function DashboardPage() {
             <Loader2 className='h-8 w-8 animate-spin text-primary' />
         </div>
       ) : (
-        <DraggableDashboard 
+        <Dashboard 
             projects={projects}
             tasks={tasks}
             finances={finances}
             settings={settings}
+            wallet={wallet}
+            expenses={personalExpenses}
+            categories={expenseCategories}
         />
       )}
     </>

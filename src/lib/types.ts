@@ -329,21 +329,3 @@ export interface WalletTransaction {
     note?: string;
     timestamp: Date;
 }
-
-export interface LayoutItem {
-  i: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  static?: boolean;
-  minW?: number;
-  minH?: number;
-}
-
-export interface WidgetItem extends LayoutItem {
-  id: string;
-  type: string;
-}
-
-export type DashboardLayout = LayoutItem[];
