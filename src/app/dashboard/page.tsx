@@ -2,13 +2,15 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { CrmSettings, Project, Task, Finance, PersonalExpense, PersonalWallet } from '@/lib/types';
+import { CrmSettings, Project, Task, Finance, PersonalExpense, PersonalWallet, PersonalExpenseCategory } from '@/lib/types';
 import { collection, onSnapshot, query, where, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { CurrencyDebug } from '@/components/debug/CurrencyDebug';
-import { DraggableDashboard } from '@/components/dashboard/draggable-dashboard';
+import { DashboardClient } from '@/components/dashboard/dashboard-client';
+import { PersonalWalletCard } from '@/components/wallet/personal-wallet-card';
+import { PersonalExpenseCard } from '@/components/expenses/personal-expense-card';
 
 
 export default function DashboardPage() {
@@ -17,6 +19,7 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [finances, setFinances] = useState<Finance[]>([]);
   const [personalExpenses, setPersonalExpenses] = useState<PersonalExpense[]>([]);
+  const [personalExpenseCategories, setPersonalExpenseCategories] = useState<PersonalExpenseCategory[]>([]);
   const [wallet, setWallet] = useState<PersonalWallet | null>(null);
   const [settings, setSettings] = useState<CrmSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,6 +32,7 @@ export default function DashboardPage() {
     const tasksQuery = query(collection(db, 'tasks'));
     const financesQuery = query(collection(db, 'finances'));
     const personalExpensesQuery = query(collection(db, 'personalExpenses'), where('userId', '==', user.uid));
+    const personalExpenseCategoriesQuery = query(collection(db, 'personalExpenseCategories'), where('userId', '==', user.uid));
     const walletQuery = query(collection(db, 'personalWallets'), where('userId', '==', user.uid));
     const settingsRef = doc(db, 'settings', 'crm');
 
@@ -63,6 +67,10 @@ export default function DashboardPage() {
         }));
     });
 
+    const unsubscribePersonalExpenseCategories = onSnapshot(personalExpenseCategoriesQuery, (snapshot) => {
+      setPersonalExpenseCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PersonalExpenseCategory)));
+    });
+
     const unsubscribeWallet = onSnapshot(walletQuery, (snapshot) => {
         if (!snapshot.empty) {
             const doc = snapshot.docs[0];
@@ -84,6 +92,7 @@ export default function DashboardPage() {
         new Promise<void>(resolve => { const unsub = onSnapshot(tasksQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(financesQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(personalExpensesQuery, () => { resolve(); unsub(); }); }),
+        new Promise<void>(resolve => { const unsub = onSnapshot(personalExpenseCategoriesQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(walletQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(settingsRef, () => { resolve(); unsub(); }); }),
     ]).then(() => setLoading(false));
@@ -94,6 +103,7 @@ export default function DashboardPage() {
       unsubscribeTasks();
       unsubscribeFinances();
       unsubscribePersonalExpenses();
+      unsubscribePersonalExpenseCategories();
       unsubscribeWallet();
       unsubscribeSettings();
     };
@@ -110,14 +120,23 @@ export default function DashboardPage() {
             <Loader2 className='h-8 w-8 animate-spin text-primary' />
         </div>
       ) : (
-        <DraggableDashboard 
-            projects={projects}
-            tasks={tasks}
-            finances={finances}
-            settings={settings}
-            personalExpenses={personalExpenses}
-            wallet={wallet}
-        />
+        <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
+            {/* Main column */}
+            <div className="lg:col-span-2">
+                <DashboardClient 
+                    projects={projects}
+                    tasks={tasks}
+                    finances={finances}
+                    settings={settings}
+                />
+            </div>
+
+            {/* Right column */}
+            <div className="space-y-6 lg:space-y-8">
+               <PersonalWalletCard wallet={wallet} projects={projects} />
+               <PersonalExpenseCard expenses={personalExpenses} wallet={wallet} categories={personalExpenseCategories} />
+            </div>
+        </div>
       )}
     </>
   );

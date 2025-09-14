@@ -94,7 +94,7 @@ export function PersonalExpenseCard({ expenses, wallet, categories }: { expenses
 
 
     return (
-        <Card className='flex flex-col h-full'>
+        <Card>
             <CardHeader>
                 <div className='flex justify-between items-center'>
                     <div>
@@ -123,7 +123,7 @@ export function PersonalExpenseCard({ expenses, wallet, categories }: { expenses
                      </div>
                 </div>
             </CardHeader>
-            <CardContent className='flex-1 flex flex-col justify-between'>
+            <CardContent>
                 <div>
                     <div className='flex gap-2 mb-4'>
                         <Select value={dateFilterPreset} onValueChange={(v) => setDateFilterPreset(v as DateFilterPreset)}>

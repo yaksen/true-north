@@ -56,7 +56,7 @@ export function PersonalWalletCard({ wallet, projects }: PersonalWalletCardProps
     
     if (!wallet) {
         return (
-            <Card className='h-full'>
+            <Card>
                 <CardHeader>
                     <CardTitle>Personal Wallet</CardTitle>
                     <CardDescription>Create a personal wallet to manage your funds.</CardDescription>
@@ -71,12 +71,12 @@ export function PersonalWalletCard({ wallet, projects }: PersonalWalletCardProps
     }
 
     return (
-        <Card className='h-full flex flex-col'>
+        <Card>
             <CardHeader>
                 <CardTitle>Personal Wallet</CardTitle>
                 <CardDescription>Your current balance.</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1">
+            <CardContent>
                 <p className='text-4xl font-bold'>{formatCurrency(wallet.balance, displayCurrency)}</p>
             </CardContent>
             <CardFooter className='flex-col gap-2 items-stretch'>
