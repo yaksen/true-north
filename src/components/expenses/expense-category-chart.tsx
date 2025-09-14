@@ -16,6 +16,7 @@ interface ChartData {
   name: string;
   value: number;
   fill: string;
+  color?: string;
 }
 
 interface ExpenseCategoryChartProps {
@@ -38,7 +39,7 @@ export function ExpenseCategoryChart({ data, currency }: ExpenseCategoryChartPro
     const chartData = useMemo(() => {
         return data.map((item, index) => ({
             ...item,
-            fill: generateColor(index),
+            fill: item.color || generateColor(index),
         }));
     }, [data]);
     

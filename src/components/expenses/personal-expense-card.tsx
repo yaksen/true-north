@@ -62,20 +62,30 @@ export function PersonalExpenseCard({ expenses, wallet, categories }: { expenses
 
     const { totalSpent, categoryTotals } = useMemo(() => {
         let total = 0;
-        const categoryTotals: { [key: string]: number } = {};
+        const categoryTotals: { [key: string]: { value: number, color?: string } } = {};
 
         for (const expense of filteredExpenses) {
             const convertedAmount = convert(expense.amount, expense.currency, displayCurrency);
             total += convertedAmount;
-            const categoryName = categories.find(c => c.id === expense.categoryId)?.name || expense.category || 'Uncategorized';
-            categoryTotals[categoryName] = (categoryTotals[categoryName] || 0) + convertedAmount;
+            
+            const category = categories.find(c => c.id === expense.categoryId);
+            const categoryName = category?.name || 'Uncategorized';
+            
+            if (!categoryTotals[categoryName]) {
+                categoryTotals[categoryName] = { value: 0, color: category?.color };
+            }
+            categoryTotals[categoryName].value += convertedAmount;
         }
 
         return { totalSpent: total, categoryTotals };
     }, [filteredExpenses, displayCurrency, categories]);
 
     const chartData = useMemo(() => {
-        return Object.entries(categoryTotals).map(([name, value]) => ({ name, value, fill: '' }));
+        return Object.entries(categoryTotals).map(([name, data]) => ({ 
+            name, 
+            value: data.value, 
+            color: data.color 
+        }));
     }, [categoryTotals]);
 
     const recentExpenses = useMemo(() => {
