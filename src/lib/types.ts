@@ -7,7 +7,7 @@ export type ProjectType = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'Call' | 'Meeting' | 'Project';
 export type FinanceType = 'income' | 'expense';
 export type LeadStatus = 'new' | 'contacted', 'qualified', 'lost', 'converted';
-export type ChannelStatus = 'new' | 'active' | 'inactive' | 'closed';
+export type ChannelStatus = 'new' | 'active' | 'inactive', 'closed';
 export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void' | 'partial' | 'unpaid';
 export type PaymentMethod = 'cash' | 'bank transfer' | 'online' | 'other';
@@ -115,7 +115,7 @@ export interface PersonalExpense {
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     date: Date;
     note?: string;
-    paidFromWallet?: boolean;
+    paidFromWallet: boolean;
     createdAt: Date;
 }
 

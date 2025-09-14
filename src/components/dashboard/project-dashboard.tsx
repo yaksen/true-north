@@ -39,7 +39,7 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
         try {
             const taskRef = doc(db, 'tasks', id);
             await updateDoc(taskRef, { starred });
-        } catch (error) => {
+        } catch (error) {
             console.error("Failed to update star status", error);
             // Optionally, show a toast notification
         }
