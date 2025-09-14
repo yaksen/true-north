@@ -18,9 +18,6 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [finances, setFinances] = useState<Finance[]>([]);
-  const [personalExpenses, setPersonalExpenses] = useState<PersonalExpense[]>([]);
-  const [personalExpenseCategories, setPersonalExpenseCategories] = useState<PersonalExpenseCategory[]>([]);
-  const [wallet, setWallet] = useState<PersonalWallet | null>(null);
   const [settings, setSettings] = useState<CrmSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,9 +28,6 @@ export default function DashboardPage() {
     const projectsQuery = query(collection(db, `projects`), where('members', 'array-contains', user.uid));
     const tasksQuery = query(collection(db, 'tasks'));
     const financesQuery = query(collection(db, 'finances'));
-    const personalExpensesQuery = query(collection(db, 'personalExpenses'), where('userId', '==', user.uid));
-    const personalExpenseCategoriesQuery = query(collection(db, 'personalExpenseCategories'), where('userId', '==', user.uid));
-    const walletQuery = query(collection(db, 'personalWallets'), where('userId', '==', user.uid));
     const settingsRef = doc(db, 'settings', 'crm');
 
     const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
@@ -54,31 +48,6 @@ export default function DashboardPage() {
             } as Finance;
         }));
     });
-
-    const unsubscribePersonalExpenses = onSnapshot(personalExpensesQuery, (snapshot) => {
-        setPersonalExpenses(snapshot.docs.map(doc => {
-            const data = doc.data();
-            return { 
-                id: doc.id, 
-                ...data,
-                date: data.date?.toDate ? data.date.toDate() : new Date(data.date),
-                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
-            } as PersonalExpense;
-        }));
-    });
-
-    const unsubscribePersonalExpenseCategories = onSnapshot(personalExpenseCategoriesQuery, (snapshot) => {
-      setPersonalExpenseCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PersonalExpenseCategory)));
-    });
-
-    const unsubscribeWallet = onSnapshot(walletQuery, (snapshot) => {
-        if (!snapshot.empty) {
-            const doc = snapshot.docs[0];
-            setWallet({ id: doc.id, ...doc.data() } as PersonalWallet);
-        } else {
-            setWallet(null);
-        }
-    });
     
     const unsubscribeSettings = onSnapshot(settingsRef, (doc) => {
         if (doc.exists()) {
@@ -91,9 +60,6 @@ export default function DashboardPage() {
         new Promise<void>(resolve => { const unsub = onSnapshot(projectsQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(tasksQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(financesQuery, () => { resolve(); unsub(); }); }),
-        new Promise<void>(resolve => { const unsub = onSnapshot(personalExpensesQuery, () => { resolve(); unsub(); }); }),
-        new Promise<void>(resolve => { const unsub = onSnapshot(personalExpenseCategoriesQuery, () => { resolve(); unsub(); }); }),
-        new Promise<void>(resolve => { const unsub = onSnapshot(walletQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(settingsRef, () => { resolve(); unsub(); }); }),
     ]).then(() => setLoading(false));
 
@@ -102,9 +68,6 @@ export default function DashboardPage() {
       unsubscribeProjects();
       unsubscribeTasks();
       unsubscribeFinances();
-      unsubscribePersonalExpenses();
-      unsubscribePersonalExpenseCategories();
-      unsubscribeWallet();
       unsubscribeSettings();
     };
   }, [user]);
