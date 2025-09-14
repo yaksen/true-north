@@ -72,14 +72,8 @@ export default function WalletPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <PersonalWalletCard wallet={wallet} projects={projects} />
-        </div>
-        <div className="lg:col-span-2">
-          <WalletTransactions transactions={transactions} wallet={wallet} />
-        </div>
-      </div>
+        <PersonalWalletCard wallet={wallet} projects={projects} />
+        <WalletTransactions transactions={transactions} wallet={wallet} />
     </div>
   );
 }
