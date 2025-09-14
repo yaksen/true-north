@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -19,7 +20,8 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc, onDisconnect, ref } from 'firebase/firestore';
+import { getDatabase, ref as dbRef, set, onValue } from 'firebase/database';
 import type { UserProfile } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -48,6 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       if (firebaseUser) {
         const userRef = doc(db, 'users', firebaseUser.uid);
+        const presenceRef = doc(db, 'presence', firebaseUser.uid);
+
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
@@ -78,6 +82,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
             setUser({ ...firebaseUser, profile: newUserProfile });
         }
+        
+        // Firestore presence management
+        await setDoc(presenceRef, { online: true, lastSeen: serverTimestamp() });
+        const realTimeDb = getDatabase();
+        const connectedRef = dbRef(realTimeDb, '.info/connected');
+
+        onValue(connectedRef, async (snap) => {
+            if (snap.val() === true) {
+                await setDoc(presenceRef, { online: true, lastSeen: serverTimestamp()}, { merge: true });
+
+                // onDisconnect is a Realtime Database feature, but we can use it to trigger a Firestore write
+                // This part requires careful setup with RTDB to trigger Firestore updates.
+                // A simpler, pure-Firestore way is to rely on client-side logic to update on window close/beforeunload.
+                window.addEventListener('beforeunload', () => {
+                    setDoc(presenceRef, { online: false, lastSeen: serverTimestamp() }, { merge: true });
+                });
+            }
+        });
+
+
       } else {
         setUser(null);
       }
@@ -137,7 +161,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return signInWithPopup(auth, provider);
   };
 
-  const signOut = (): Promise<void> => {
+  const signOut = async (): Promise<void> => {
+    if (user) {
+        const presenceRef = doc(db, 'presence', user.uid);
+        await setDoc(presenceRef, { online: false, lastSeen: serverTimestamp() }, { merge: true });
+    }
     return firebaseSignOut(auth);
   };
 

@@ -6,52 +6,20 @@ export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectType = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'Call' | 'Meeting' | 'Project';
 export type FinanceType = 'income' | 'expense';
-export type LeadStatus = 'new' | 'contacted' | 'qualified', 'lost', 'converted';
+export type LeadStatus = 'new' | 'contacted', 'qualified', 'lost', 'converted';
 export type ChannelStatus = 'new' | 'active' | 'inactive' | 'closed';
 export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void' | 'partial' | 'unpaid';
 export type PaymentMethod = 'cash' | 'bank transfer' | 'online' | 'other';
 export type WalletTransactionType = 'add' | 'expense';
-
-export type ActivityRecordType = 
-    | 'project_created'
-    | 'project_updated'
-    | 'project_deleted'
-    | 'task_created'
-    | 'task_updated'
-    | 'task_deleted'
-    | 'finance_created'
-    | 'finance_updated'
-    | 'finance_deleted'
-    | 'lead_created'
-    | 'lead_updated'
-    | 'lead_deleted'
-    | 'channel_created'
-    | 'channel_updated'
-    | 'channel_deleted'
-    | 'category_created'
-    | 'category_updated'
-    | 'category_deleted'
-    | 'service_created'
-    | 'service_updated'
-    | 'service_deleted'
-    | 'product_created'
-    | 'product_updated'
-    | 'product_deleted'
-    | 'package_created'
-    | 'package_updated'
-    | 'package_deleted'
-    | 'note_added'
-    | 'report_uploaded'
-    | 'report_deleted'
-    | 'invoice_created'
-    | 'invoice_updated'
-    | 'invoice_deleted'
-    | 'member_added'
-    | 'member_invited'
-    | 'member_removed'
-    | 'payment_added';
-
+export type NotificationType =
+  | 'message'
+  | 'mention'
+  | 'invoice'
+  | 'task_assigned'
+  | 'payment_received'
+  | 'project_invite';
+export type ChatType = 'direct' | 'project';
 
 export interface UserProfile {
     id: string;
@@ -63,6 +31,11 @@ export interface UserProfile {
     projects: string[]; // List of project IDs the user is a member of
     createdAt: Date;
     updatedAt: Date;
+}
+
+export interface Presence {
+    online: boolean;
+    lastSeen: Date;
 }
 
 export interface Project {
@@ -266,7 +239,7 @@ export interface Invoice {
 export interface ActivityRecord {
     id: string;
     projectId: string;
-    type: ActivityRecordType;
+    type: string;
     payload: Record<string, any>;
     actorUid: string;
     timestamp: Date;
@@ -320,4 +293,42 @@ export interface WalletTransaction {
     expenseId?: string; // For 'expense' type
     note?: string;
     timestamp: Date;
+}
+
+// Chat & Notification types
+export interface Chat {
+    id: string;
+    type: ChatType;
+    projectId?: string;
+    members: string[];
+    lastMessage: {
+        text: string;
+        senderId: string;
+        timestamp: Date;
+    };
+    updatedAt: Date;
+    createdAt: Date;
+    // For UI purposes
+    title?: string;
+    photoURL?: string;
+}
+
+export interface Message {
+    id: string;
+    chatId: string;
+    senderId: string;
+    text: string;
+    createdAt: Date;
+    readBy: { [userId: string]: Date };
+}
+
+export interface Notification {
+    id: string;
+    userId: string;
+    type: NotificationType;
+    title: string;
+    body: string;
+    link?: string;
+    isRead: boolean;
+    createdAt: Date;
 }
