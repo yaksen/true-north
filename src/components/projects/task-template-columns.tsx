@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { TaskTemplate, Project } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Copy } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Copy, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -54,6 +54,29 @@ const ActionsCell: React.FC<ActionsCellProps> = ({ template, project }) => {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not duplicate template.' });
         }
     };
+
+    const handleCreateTaskNow = async () => {
+        if (!user) return;
+        try {
+            const newTaskRef = doc(collection(db, 'tasks'));
+            await addDoc(collection(db, 'tasks'), {
+                projectId: project.id,
+                title: template.title,
+                description: template.description || '',
+                status: 'Project',
+                completed: false,
+                assigneeUid: template.assigneeUids[0] || user.uid,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                isGenerated: false, // Manually added, not auto-generated
+                templateId: template.id,
+                slot: template.slot,
+            });
+            toast({ title: 'Success', description: 'Task created from template.' });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not create task.' });
+        }
+    };
     
     return (
         <>
@@ -66,6 +89,7 @@ const ActionsCell: React.FC<ActionsCellProps> = ({ template, project }) => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={handleCreateTaskNow}><PlusCircle className="mr-2 h-4 w-4" /> Create Task Now</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setIsEditOpen(true)}><Edit className="mr-2 h-4 w-4"/> Edit</DropdownMenuItem>
                     <DropdownMenuItem onClick={handleDuplicate}><Copy className="mr-2 h-4 w-4"/> Duplicate</DropdownMenuItem>
                     <AlertDialog>

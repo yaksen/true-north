@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from "react";
-import { Project, Task, TaskTemplate } from "@/lib/types";
+import { Project, Task, TaskTemplate, UserProfile } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle, Zap } from "lucide-react";
@@ -14,6 +14,8 @@ import { collection, where, query, getDocs, writeBatch, addDoc, serverTimestamp 
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { useEffect } from "react";
 
 interface ProjectTemplatesProps {
     project: Project;
@@ -26,8 +28,32 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
     const { toast } = useToast();
     const [isTemplateFormOpen, setIsTemplateFormOpen] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [slotFilter, setSlotFilter] = useState<'all' | 'morning' | 'midday' | 'night'>('all');
+    const [dayFilter, setDayFilter] = useState<'all' | string>('all');
+    const [assigneeFilter, setAssigneeFilter] = useState<'all' | string>('all');
+    const [memberProfiles, setMemberProfiles] = useState<UserProfile[]>([]);
     
+    useEffect(() => {
+        const fetchMembers = async () => {
+          if (project.members.length === 0) return;
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('id', 'in', project.members));
+          const snapshot = await getDocs(q);
+          setMemberProfiles(snapshot.docs.map(doc => doc.data() as UserProfile));
+        };
+        fetchMembers();
+    }, [project.members]);
+
     const templateColumns = useMemo(() => getTaskTemplatesColumns(project), [project]);
+    
+    const filteredTemplates = useMemo(() => {
+        return templates.filter(template => {
+            const slotMatch = slotFilter === 'all' || template.slot === slotFilter;
+            const dayMatch = dayFilter === 'all' || template.daysOfWeek.includes(Number(dayFilter));
+            const assigneeMatch = assigneeFilter === 'all' || template.assigneeUids.includes(assigneeFilter);
+            return slotMatch && dayMatch && assigneeMatch;
+        });
+    }, [templates, slotFilter, dayFilter, assigneeFilter]);
 
     const handleGenerateTodaysTasks = async () => {
         if (!user) return;
@@ -90,6 +116,47 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
             setIsGenerating(false);
         }
     };
+    
+    const Toolbar = () => (
+        <div className="flex items-center gap-2">
+            <Select value={slotFilter} onValueChange={(value) => setSlotFilter(value as any)}>
+                <SelectTrigger className="w-36 h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Slots</SelectItem>
+                    <SelectItem value="morning">Morning</SelectItem>
+                    <SelectItem value="midday">Midday</SelectItem>
+                    <SelectItem value="night">Night</SelectItem>
+                </SelectContent>
+            </Select>
+            <Select value={dayFilter} onValueChange={(value) => setDayFilter(value)}>
+                <SelectTrigger className="w-36 h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Days</SelectItem>
+                    <SelectItem value="1">Monday</SelectItem>
+                    <SelectItem value="2">Tuesday</SelectItem>
+                    <SelectItem value="3">Wednesday</SelectItem>
+                    <SelectItem value="4">Thursday</SelectItem>
+                    <SelectItem value="5">Friday</SelectItem>
+                    <SelectItem value="6">Saturday</SelectItem>
+                    <SelectItem value="0">Sunday</SelectItem>
+                </SelectContent>
+            </Select>
+            <Select value={assigneeFilter} onValueChange={(value) => setAssigneeFilter(value as any)}>
+                <SelectTrigger className="w-48 h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Assignees</SelectItem>
+                    {memberProfiles.map(member => (
+                        <SelectItem key={member.id} value={member.id}>{member.name || member.email}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            {(slotFilter !== 'all' || dayFilter !== 'all' || assigneeFilter !== 'all') && (
+                 <Button variant="ghost" size="sm" onClick={() => { setSlotFilter('all'); setDayFilter('all'); setAssigneeFilter('all'); }}>
+                    Clear Filters
+                </Button>
+            )}
+        </div>
+    );
 
     return (
         <div className="grid gap-6 mt-4">
@@ -120,7 +187,7 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <DataTable columns={templateColumns} data={templates} />
+                    <DataTable columns={templateColumns} data={filteredTemplates} toolbar={<Toolbar />} />
                 </CardContent>
             </Card>
         </div>
