@@ -93,11 +93,23 @@ export interface Finance {
     updatedAt: Date;
 }
 
+export interface PersonalExpenseCategory {
+    id: string;
+    userId: string;
+    name: string;
+    emoji: string;
+    color?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+
 export interface PersonalExpense {
     id: string;
     userId: string;
     title: string;
-    category: string;
+    category: string; // Deprecated, use categoryId instead
+    categoryId?: string;
     amount: number;
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     date: Date;

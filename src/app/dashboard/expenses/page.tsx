@@ -5,13 +5,14 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import { PersonalExpense, PersonalWallet } from '@/lib/types';
+import { PersonalExpense, PersonalWallet, PersonalExpenseCategory } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { PersonalExpenseCard } from '@/components/expenses/personal-expense-card';
 
 export default function PersonalExpensesPage() {
   const { user } = useAuth();
   const [personalExpenses, setPersonalExpenses] = useState<PersonalExpense[]>([]);
+  const [categories, setCategories] = useState<PersonalExpenseCategory[]>([]);
   const [wallet, setWallet] = useState<PersonalWallet | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,6 +21,7 @@ export default function PersonalExpensesPage() {
 
     setLoading(true);
     const personalExpensesQuery = query(collection(db, 'personalExpenses'), where('userId', '==', user.uid));
+    const categoriesQuery = query(collection(db, 'personalExpenseCategories'), where('userId', '==', user.uid));
     const walletQuery = query(collection(db, 'personalWallets'), where('userId', '==', user.uid));
     
     const unsubscribePersonalExpenses = onSnapshot(personalExpensesQuery, (snapshot) => {
@@ -34,6 +36,10 @@ export default function PersonalExpensesPage() {
         }));
         setLoading(false);
     });
+    
+    const unsubscribeCategories = onSnapshot(categoriesQuery, (snapshot) => {
+        setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PersonalExpenseCategory)));
+    });
 
     const unsubscribeWallet = onSnapshot(walletQuery, (snapshot) => {
         if (!snapshot.empty) {
@@ -46,6 +52,7 @@ export default function PersonalExpensesPage() {
     
     return () => {
       unsubscribePersonalExpenses();
+      unsubscribeCategories();
       unsubscribeWallet();
     };
   }, [user]);
@@ -61,7 +68,7 @@ export default function PersonalExpensesPage() {
         </div>
       ) : (
         <div className='mt-6'>
-           <PersonalExpenseCard expenses={personalExpenses} wallet={wallet} />
+           <PersonalExpenseCard expenses={personalExpenses} wallet={wallet} categories={categories} />
         </div>
       )}
     </>

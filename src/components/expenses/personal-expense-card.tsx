@@ -2,13 +2,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { PersonalExpense, PersonalWallet } from '@/lib/types';
+import type { PersonalExpense, PersonalWallet, PersonalExpenseCategory } from '@/lib/types';
 import { useCurrency } from '@/context/CurrencyContext';
 import { formatCurrency } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { PlusCircle, SlidersHorizontal } from 'lucide-react';
+import { PlusCircle, SlidersHorizontal, Settings } from 'lucide-react';
 import { ExpenseForm } from './expense-form';
 import { ExpenseCategoryChart } from './expense-category-chart';
 import { RecentExpensesList } from './recent-expenses-list';
@@ -17,6 +17,7 @@ import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { ExpenseCategoryManager } from './expense-category-manager';
 
 type DateFilterPreset = 'this-month' | 'last-month' | 'custom';
 
@@ -29,10 +30,11 @@ const convert = (amount: number, from: string, to: string) => {
     return (amount / fromRate) * toRate;
 };
 
-export function PersonalExpenseCard({ expenses, wallet }: { expenses: PersonalExpense[], wallet: PersonalWallet | null }) {
+export function PersonalExpenseCard({ expenses, wallet, categories }: { expenses: PersonalExpense[], wallet: PersonalWallet | null, categories: PersonalExpenseCategory[] }) {
     const { globalCurrency } = useCurrency();
     const displayCurrency = globalCurrency || 'USD';
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
     
     const [dateFilterPreset, setDateFilterPreset] = useState<DateFilterPreset>('this-month');
     const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
@@ -65,11 +67,12 @@ export function PersonalExpenseCard({ expenses, wallet }: { expenses: PersonalEx
         for (const expense of filteredExpenses) {
             const convertedAmount = convert(expense.amount, expense.currency, displayCurrency);
             total += convertedAmount;
-            categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + convertedAmount;
+            const categoryName = categories.find(c => c.id === expense.categoryId)?.name || expense.category || 'Uncategorized';
+            categoryTotals[categoryName] = (categoryTotals[categoryName] || 0) + convertedAmount;
         }
 
         return { totalSpent: total, categoryTotals };
-    }, [filteredExpenses, displayCurrency]);
+    }, [filteredExpenses, displayCurrency, categories]);
 
     const chartData = useMemo(() => {
         return Object.entries(categoryTotals).map(([name, value]) => ({ name, value, fill: '' }));
@@ -88,15 +91,26 @@ export function PersonalExpenseCard({ expenses, wallet }: { expenses: PersonalEx
                         <CardTitle>Personal Expenses</CardTitle>
                         <CardDescription>Your personal spending tracker.</CardDescription>
                     </div>
-                     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="sm" variant="outline"><PlusCircle className='mr-2' /> Add</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader><DialogTitle>Add Personal Expense</DialogTitle></DialogHeader>
-                            <ExpenseForm wallet={wallet} closeForm={() => setIsFormOpen(false)} />
-                        </DialogContent>
-                    </Dialog>
+                     <div className='flex gap-2'>
+                        <Dialog open={isCategoryManagerOpen} onOpenChange={setIsCategoryManagerOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="sm" variant="outline"><Settings className='mr-2 h-4 w-4' /> Categories</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader><DialogTitle>Manage Expense Categories</DialogTitle></DialogHeader>
+                                <ExpenseCategoryManager categories={categories} />
+                            </DialogContent>
+                        </Dialog>
+                         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="sm" ><PlusCircle className='mr-2' /> Add</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader><DialogTitle>Add Personal Expense</DialogTitle></DialogHeader>
+                                <ExpenseForm wallet={wallet} categories={categories} closeForm={() => setIsFormOpen(false)} />
+                            </DialogContent>
+                        </Dialog>
+                     </div>
                 </div>
             </CardHeader>
             <CardContent className='flex-1 flex flex-col justify-between'>
@@ -145,7 +159,7 @@ export function PersonalExpenseCard({ expenses, wallet }: { expenses: PersonalEx
 
                 <div>
                     <h3 className='text-sm font-medium mb-2'>Recent Expenses</h3>
-                    <RecentExpensesList expenses={recentExpenses} currency={displayCurrency} />
+                    <RecentExpensesList expenses={recentExpenses} categories={categories} currency={displayCurrency} />
                 </div>
             </CardContent>
         </Card>

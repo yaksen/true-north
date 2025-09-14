@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { PersonalExpense, PersonalWallet } from '@/lib/types';
+import type { PersonalExpense, PersonalWallet, PersonalExpenseCategory } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, writeBatch, updateDoc, increment } from 'firebase/firestore';
@@ -25,21 +25,9 @@ import { CurrencyInput } from '../ui/currency-input';
 import { Switch } from '../ui/switch';
 import { v4 as uuidv4 } from 'uuid';
 
-const expenseCategories = ['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Other'] as const;
-
-// Mock conversion rates - replace with a real API call in a real app
-const MOCK_RATES: { [key: string]: number } = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
-
-const convert = (amount: number, from: string, to: string) => {
-    const fromRate = MOCK_RATES[from] || 1;
-    const toRate = MOCK_RATES[to] || 1;
-    return (amount / fromRate) * toRate;
-};
-
-
 const formSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters.'),
-  category: z.string().nonempty("Category is required."),
+  categoryId: z.string().nonempty("Category is required."),
   amount: z.coerce.number().positive('Amount must be positive.'),
   currency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
   date: z.date(),
@@ -51,10 +39,21 @@ type ExpenseFormValues = z.infer<typeof formSchema>;
 
 interface ExpenseFormProps {
   wallet: PersonalWallet | null;
+  categories: PersonalExpenseCategory[];
   closeForm: () => void;
 }
 
-export function ExpenseForm({ wallet, closeForm }: ExpenseFormProps) {
+// Mock conversion rates - replace with a real API call in a real app
+const MOCK_RATES: { [key: string]: number } = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
+
+const convert = (amount: number, from: string, to: string) => {
+    const fromRate = MOCK_RATES[from] || 1;
+    const toRate = MOCK_RATES[to] || 1;
+    return (amount / fromRate) * toRate;
+};
+
+
+export function ExpenseForm({ wallet, categories, closeForm }: ExpenseFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { globalCurrency } = useCurrency();
@@ -64,7 +63,7 @@ export function ExpenseForm({ wallet, closeForm }: ExpenseFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
-      category: 'Food',
+      categoryId: '',
       amount: 0,
       currency: (globalCurrency as 'LKR' | 'USD' | 'EUR' | 'GBP') || 'USD',
       date: new Date(),
@@ -186,20 +185,20 @@ export function ExpenseForm({ wallet, closeForm }: ExpenseFormProps) {
           />
           <FormField
             control={form.control}
-            name="category"
+            name="categoryId"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select a category..." />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {expenseCategories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <span className='mr-2'>{cat.emoji}</span> {cat.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -1,12 +1,13 @@
 
 'use client';
 
-import { PersonalExpense } from '@/lib/types';
+import { PersonalExpense, PersonalExpenseCategory } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 
 interface RecentExpensesListProps {
   expenses: PersonalExpense[];
+  categories: PersonalExpenseCategory[];
   currency: string;
 }
 
@@ -19,27 +20,31 @@ const convert = (amount: number, from: string, to: string) => {
     return (amount / fromRate) * toRate;
 };
 
-export function RecentExpensesList({ expenses, currency }: RecentExpensesListProps) {
+export function RecentExpensesList({ expenses, categories, currency }: RecentExpensesListProps) {
   if (expenses.length === 0) {
     return <p className="text-sm text-muted-foreground text-center py-4">No recent expenses to show.</p>;
   }
 
   return (
     <div className="space-y-3">
-      {expenses.map((expense) => (
-        <div key={expense.id} className="flex items-center">
-          <div className="flex-1 space-y-1">
-            <p className="text-sm font-medium leading-none">{expense.title}</p>
-            <p className="text-xs text-muted-foreground">{format(new Date(expense.date), 'PPP')}</p>
-          </div>
-          <div className="font-medium text-right">
-            <div>{formatCurrency(convert(expense.amount, expense.currency, currency), currency)}</div>
-            {expense.currency !== currency && (
-                <div className='text-xs text-muted-foreground'>{formatCurrency(expense.amount, expense.currency)}</div>
-            )}
-          </div>
-        </div>
-      ))}
+      {expenses.map((expense) => {
+        const category = categories.find(c => c.id === expense.categoryId);
+        return (
+            <div key={expense.id} className="flex items-center">
+              <div className='mr-3 text-xl'>{category?.emoji || '-'}</div>
+              <div className="flex-1 space-y-1">
+                <p className="text-sm font-medium leading-none">{expense.title}</p>
+                <p className="text-xs text-muted-foreground">{format(new Date(expense.date), 'PPP')}</p>
+              </div>
+              <div className="font-medium text-right">
+                <div>{formatCurrency(convert(expense.amount, expense.currency, currency), currency)}</div>
+                {expense.currency !== currency && (
+                    <div className='text-xs text-muted-foreground'>{formatCurrency(expense.amount, expense.currency)}</div>
+                )}
+              </div>
+            </div>
+        )
+      })}
     </div>
   );
 }
