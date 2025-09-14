@@ -44,7 +44,6 @@ const ActionsCell: React.FC<ActionsCellProps> = ({ template, project }) => {
             await addDoc(collection(db, 'taskTemplates'), {
                 ...templateData,
                 title: `${template.title} (Copy)`,
-                active: false, // Duplicates are inactive by default
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
@@ -105,7 +104,7 @@ export const getTaskTemplatesColumns = (project: Project): ColumnDef<TaskTemplat
           Title <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-       cell: ({ row }) => <div className="font-medium">{row.original.title}</div>,
+       cell: ({ row }) => <div className="font-medium p-2">{row.original.title}</div>,
     },
     {
       accessorKey: "slot",
@@ -116,22 +115,6 @@ export const getTaskTemplatesColumns = (project: Project): ColumnDef<TaskTemplat
       accessorKey: "daysOfWeek",
       header: "Schedule",
       cell: ({ row }) => <DaysOfWeekCell days={row.original.daysOfWeek} />,
-    },
-    {
-        accessorKey: "active",
-        header: "Active",
-        cell: ({ row }) => {
-            const template = row.original;
-            const { toast } = useToast();
-            const handleToggle = async (active: boolean) => {
-                try {
-                    await updateDoc(doc(db, 'taskTemplates', template.id), { active });
-                } catch {
-                    toast({ variant: 'destructive', title: 'Error', description: 'Failed to update status.' });
-                }
-            };
-            return <Switch checked={template.active} onCheckedChange={handleToggle} />;
-        }
     },
     {
         id: "actions",

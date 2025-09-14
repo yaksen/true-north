@@ -35,7 +35,6 @@ const formSchema = z.object({
   slot: z.enum(slots),
   daysOfWeek: z.array(z.number()).min(1, 'At least one day must be selected.'),
   assigneeUids: z.array(z.string()).min(1, 'At least one assignee is required.'),
-  active: z.boolean().default(true),
 });
 
 type TaskTemplateFormValues = z.infer<typeof formSchema>;
@@ -73,7 +72,6 @@ export function TaskTemplateForm({ template, projectId, members, closeForm }: Ta
       slot: 'morning',
       daysOfWeek: [1, 2, 3, 4, 5],
       assigneeUids: [],
-      active: true,
     },
   });
 
@@ -149,17 +147,6 @@ export function TaskTemplateForm({ template, projectId, members, closeForm }: Ta
             )}
         />
         
-         <FormField
-            control={form.control}
-            name="active"
-            render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                    <div className="space-y-0.5"><FormLabel>Active</FormLabel></div>
-                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                </FormItem>
-            )}
-        />
-
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
           <Button type="submit" disabled={isSubmitting}>
