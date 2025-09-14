@@ -8,22 +8,34 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { PersonalExpense } from '@/lib/types';
+import type { PersonalExpense, PersonalWallet } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, doc, serverTimestamp, writeBatch, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useCurrency } from '@/context/CurrencyContext';
 import { CurrencyInput } from '../ui/currency-input';
+import { Switch } from '../ui/switch';
+import { v4 as uuidv4 } from 'uuid';
 
 const expenseCategories = ['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Other'] as const;
+
+// Mock conversion rates - replace with a real API call in a real app
+const MOCK_RATES: { [key: string]: number } = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
+
+const convert = (amount: number, from: string, to: string) => {
+    const fromRate = MOCK_RATES[from] || 1;
+    const toRate = MOCK_RATES[to] || 1;
+    return (amount / fromRate) * toRate;
+};
+
 
 const formSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters.'),
@@ -32,15 +44,17 @@ const formSchema = z.object({
   currency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
   date: z.date(),
   note: z.string().optional(),
+  paidFromWallet: z.boolean().default(false),
 });
 
 type ExpenseFormValues = z.infer<typeof formSchema>;
 
 interface ExpenseFormProps {
+  wallet: PersonalWallet | null;
   closeForm: () => void;
 }
 
-export function ExpenseForm({ closeForm }: ExpenseFormProps) {
+export function ExpenseForm({ wallet, closeForm }: ExpenseFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { globalCurrency } = useCurrency();
@@ -55,34 +69,91 @@ export function ExpenseForm({ closeForm }: ExpenseFormProps) {
       currency: (globalCurrency as 'LKR' | 'USD' | 'EUR' | 'GBP') || 'USD',
       date: new Date(),
       note: '',
+      paidFromWallet: false,
     },
   });
+
+  const watchPaidFromWallet = form.watch('paidFromWallet');
+  const watchAmount = form.watch('amount');
+  const watchCurrency = form.watch('currency');
 
   async function onSubmit(values: ExpenseFormValues) {
     if (!user) {
       toast({ variant: 'destructive', title: 'Not Authenticated' });
       return;
     }
+
+    const expenseAmountInWalletCurrency = convert(values.amount, values.currency, wallet?.currency || 'USD');
+
+    if (values.paidFromWallet && (!wallet || wallet.balance < expenseAmountInWalletCurrency)) {
+        toast({ variant: 'destructive', title: 'Insufficient Funds', description: 'Your wallet balance is too low for this transaction.' });
+        return;
+    }
+    
     setIsSubmitting(true);
+    const batch = writeBatch(db);
+
     try {
-      await addDoc(collection(db, 'personalExpenses'), {
-        ...values,
-        userId: user.uid,
-        createdAt: serverTimestamp(),
-      });
-      toast({ title: 'Success', description: 'Expense added successfully.' });
-      closeForm();
+        const newExpenseRef = doc(collection(db, 'personalExpenses'));
+        batch.set(newExpenseRef, {
+            ...values,
+            userId: user.uid,
+            createdAt: serverTimestamp(),
+        });
+
+        if (values.paidFromWallet && wallet) {
+            const walletRef = doc(db, 'personalWallets', wallet.id);
+            batch.update(walletRef, {
+                balance: increment(-expenseAmountInWalletCurrency),
+                updatedAt: serverTimestamp(),
+            });
+
+            const transactionRef = doc(collection(db, 'walletTransactions'));
+            batch.set(transactionRef, {
+                walletId: wallet.id,
+                amount: expenseAmountInWalletCurrency,
+                type: 'expense',
+                expenseId: newExpenseRef.id,
+                note: `Paid for: ${values.title}`,
+                timestamp: serverTimestamp(),
+            });
+        }
+      
+        await batch.commit();
+        toast({ title: 'Success', description: 'Expense added successfully.' });
+        closeForm();
     } catch (error) {
-      console.error('Error adding personal expense:', error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not add expense.' });
+        console.error('Error adding personal expense:', error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not add expense.' });
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {wallet && (
+            <FormField
+                control={form.control}
+                name="paidFromWallet"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                            <FormLabel>Pay from Personal Wallet</FormLabel>
+                            <FormMessage />
+                        </div>
+                        <FormControl>
+                            <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                disabled={!wallet || wallet.balance <= 0}
+                            />
+                        </FormControl>
+                    </FormItem>
+                )}
+            />
+        )}
         <FormField
           control={form.control}
           name="title"

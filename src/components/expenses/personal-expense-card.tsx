@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { PersonalExpense } from '@/lib/types';
+import type { PersonalExpense, PersonalWallet } from '@/lib/types';
 import { useCurrency } from '@/context/CurrencyContext';
 import { formatCurrency } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +29,7 @@ const convert = (amount: number, from: string, to: string) => {
     return (amount / fromRate) * toRate;
 };
 
-export function PersonalExpenseCard({ expenses }: { expenses: PersonalExpense[] }) {
+export function PersonalExpenseCard({ expenses, wallet }: { expenses: PersonalExpense[], wallet: PersonalWallet | null }) {
     const { globalCurrency } = useCurrency();
     const displayCurrency = globalCurrency || 'USD';
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -94,7 +94,7 @@ export function PersonalExpenseCard({ expenses }: { expenses: PersonalExpense[] 
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader><DialogTitle>Add Personal Expense</DialogTitle></DialogHeader>
-                            <ExpenseForm closeForm={() => setIsFormOpen(false)} />
+                            <ExpenseForm wallet={wallet} closeForm={() => setIsFormOpen(false)} />
                         </DialogContent>
                     </Dialog>
                 </div>

@@ -5,13 +5,14 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import { PersonalExpense } from '@/lib/types';
+import { PersonalExpense, PersonalWallet } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { PersonalExpenseCard } from '@/components/expenses/personal-expense-card';
 
 export default function PersonalExpensesPage() {
   const { user } = useAuth();
   const [personalExpenses, setPersonalExpenses] = useState<PersonalExpense[]>([]);
+  const [wallet, setWallet] = useState<PersonalWallet | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,6 +20,7 @@ export default function PersonalExpensesPage() {
 
     setLoading(true);
     const personalExpensesQuery = query(collection(db, 'personalExpenses'), where('userId', '==', user.uid));
+    const walletQuery = query(collection(db, 'personalWallets'), where('userId', '==', user.uid));
     
     const unsubscribePersonalExpenses = onSnapshot(personalExpensesQuery, (snapshot) => {
         setPersonalExpenses(snapshot.docs.map(doc => {
@@ -32,9 +34,19 @@ export default function PersonalExpensesPage() {
         }));
         setLoading(false);
     });
+
+    const unsubscribeWallet = onSnapshot(walletQuery, (snapshot) => {
+        if (!snapshot.empty) {
+            const doc = snapshot.docs[0];
+            setWallet({ id: doc.id, ...doc.data() } as PersonalWallet);
+        } else {
+            setWallet(null);
+        }
+    });
     
     return () => {
       unsubscribePersonalExpenses();
+      unsubscribeWallet();
     };
   }, [user]);
 
@@ -49,7 +61,7 @@ export default function PersonalExpensesPage() {
         </div>
       ) : (
         <div className='mt-6'>
-           <PersonalExpenseCard expenses={personalExpenses} />
+           <PersonalExpenseCard expenses={personalExpenses} wallet={wallet} />
         </div>
       )}
     </>

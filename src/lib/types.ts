@@ -1,6 +1,5 @@
 
 
-
 import { CurrencyCode } from "@/context/CurrencyContext";
 
 export type UserRole = 'admin' | 'manager' | 'member';
@@ -12,6 +11,8 @@ export type ChannelStatus = 'new' | 'active' | 'inactive' | 'closed';
 export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void' | 'partial' | 'unpaid';
 export type PaymentMethod = 'cash' | 'bank transfer' | 'online' | 'other';
+export type WalletTransactionType = 'add' | 'expense';
+
 export type ActivityRecordType = 
     | 'project_created'
     | 'project_updated'
@@ -122,6 +123,7 @@ export interface PersonalExpense {
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     date: Date;
     note?: string;
+    paidFromWallet: boolean;
     createdAt: Date;
 }
 
@@ -297,4 +299,25 @@ export interface CrmSettings {
     goalReward?: string;
     goalRewardEmoji?: string;
     currency?: 'USD' | 'LKR' | 'EUR' | 'GBP';
+}
+
+
+export interface PersonalWallet {
+    id: string;
+    userId: string;
+    balance: number;
+    currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface WalletTransaction {
+    id: string;
+    walletId: string;
+    amount: number; // Always positive
+    type: WalletTransactionType;
+    sourceProjectId?: string; // For 'add' type
+    expenseId?: string; // For 'expense' type
+    note?: string;
+    timestamp: Date;
 }

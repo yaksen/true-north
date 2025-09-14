@@ -2,7 +2,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { CrmSettings, Project, Task, Finance, PersonalExpense } from '@/lib/types';
+import { CrmSettings, Project, Task, Finance, PersonalExpense, PersonalWallet } from '@/lib/types';
 import { collection, onSnapshot, query, where, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
@@ -10,6 +10,7 @@ import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Loader2 } from 'lucide-react';
 import { CurrencyDebug } from '@/components/debug/CurrencyDebug';
 import { PersonalExpenseCard } from '@/components/expenses/personal-expense-card';
+import { PersonalWalletCard } from '@/components/wallet/personal-wallet-card';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [finances, setFinances] = useState<Finance[]>([]);
   const [personalExpenses, setPersonalExpenses] = useState<PersonalExpense[]>([]);
+  const [wallet, setWallet] = useState<PersonalWallet | null>(null);
   const [settings, setSettings] = useState<CrmSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,6 +30,7 @@ export default function DashboardPage() {
     const tasksQuery = query(collection(db, 'tasks'));
     const financesQuery = query(collection(db, 'finances'));
     const personalExpensesQuery = query(collection(db, 'personalExpenses'), where('userId', '==', user.uid));
+    const walletQuery = query(collection(db, 'personalWallets'), where('userId', '==', user.uid));
     const settingsRef = doc(db, 'settings', 'crm');
 
     const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
@@ -60,6 +63,15 @@ export default function DashboardPage() {
             } as PersonalExpense;
         }));
     });
+
+    const unsubscribeWallet = onSnapshot(walletQuery, (snapshot) => {
+        if (!snapshot.empty) {
+            const doc = snapshot.docs[0];
+            setWallet({ id: doc.id, ...doc.data() } as PersonalWallet);
+        } else {
+            setWallet(null);
+        }
+    });
     
     const unsubscribeSettings = onSnapshot(settingsRef, (doc) => {
         if (doc.exists()) {
@@ -73,6 +85,7 @@ export default function DashboardPage() {
         new Promise<void>(resolve => { const unsub = onSnapshot(tasksQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(financesQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(personalExpensesQuery, () => { resolve(); unsub(); }); }),
+        new Promise<void>(resolve => { const unsub = onSnapshot(walletQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(settingsRef, () => { resolve(); unsub(); }); }),
     ]).then(() => setLoading(false));
 
@@ -82,6 +95,7 @@ export default function DashboardPage() {
       unsubscribeTasks();
       unsubscribeFinances();
       unsubscribePersonalExpenses();
+      unsubscribeWallet();
       unsubscribeSettings();
     };
   }, [user]);
@@ -101,8 +115,9 @@ export default function DashboardPage() {
             <div className='xl:col-span-2'>
                  <DashboardClient projects={projects} tasks={tasks} finances={finances} settings={settings} />
             </div>
-            <div className='xl:col-span-1'>
-                <PersonalExpenseCard expenses={personalExpenses} />
+            <div className='xl:col-span-1 space-y-6'>
+                <PersonalWalletCard wallet={wallet} projects={projects} />
+                <PersonalExpenseCard expenses={personalExpenses} wallet={wallet} />
             </div>
         </div>
       )}
