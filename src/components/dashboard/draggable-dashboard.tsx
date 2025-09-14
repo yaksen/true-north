@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -7,13 +6,11 @@ import RGL, { WidthProvider } from 'react-grid-layout';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import type { DashboardLayout, WidgetItem, Project, Task, Finance, PersonalExpense, PersonalWallet, CrmSettings, PersonalExpenseCategory } from '@/lib/types';
+import type { WidgetItem, Project, Task, Finance, CrmSettings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Loader2, Layout, Lock, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { PersonalWalletCard } from '../wallet/personal-wallet-card';
-import { PersonalExpenseCard } from '../expenses/personal-expense-card';
 import { DashboardClient } from './dashboard-client';
 
 const GridLayout = WidthProvider(RGL);
@@ -23,15 +20,10 @@ interface DraggableDashboardProps {
     tasks: Task[];
     finances: Finance[];
     settings: CrmSettings | null;
-    personalExpenses: PersonalExpense[];
-    wallet: PersonalWallet | null;
-    personalExpenseCategories: PersonalExpenseCategory[];
 }
 
 const defaultLayout: WidgetItem[] = [
-    { id: 'mainDashboard', i: 'mainDashboard', x: 0, y: 0, w: 8, h: 10, minW: 6, minH: 8, type: 'dashboardClient' },
-    { id: 'wallet', i: 'wallet', x: 8, y: 0, w: 4, h: 5, minW: 3, minH: 5, type: 'personalWallet' },
-    { id: 'expenses', i: 'expenses', x: 8, y: 5, w: 4, h: 5, minW: 3, minH: 5, type: 'personalExpenses' },
+    { id: 'mainDashboard', i: 'mainDashboard', x: 0, y: 0, w: 12, h: 10, minW: 8, minH: 8, type: 'dashboardClient' },
 ];
 
 export function DraggableDashboard(props: DraggableDashboardProps) {
@@ -47,7 +39,11 @@ export function DraggableDashboard(props: DraggableDashboardProps) {
         
         getDoc(layoutDocRef).then(docSnap => {
             if (docSnap.exists()) {
-                setLayout(docSnap.data().widgets);
+                const data = docSnap.data();
+                // Filter out old/removed widgets
+                const currentWidgetTypes = defaultLayout.map(l => l.type);
+                const filteredWidgets = data.widgets.filter((w: WidgetItem) => currentWidgetTypes.includes(w.type));
+                setLayout(filteredWidgets);
             } else {
                 setLayout(defaultLayout);
                 // Save the default layout for the user
@@ -102,10 +98,6 @@ export function DraggableDashboard(props: DraggableDashboardProps) {
         switch (widget.type) {
             case 'dashboardClient':
                 return <DashboardClient projects={props.projects} tasks={props.tasks} finances={props.finances} settings={props.settings} />;
-            case 'personalWallet':
-                return <PersonalWalletCard wallet={props.wallet} projects={props.projects} />;
-            case 'personalExpenses':
-                return <PersonalExpenseCard expenses={props.personalExpenses} wallet={props.wallet} categories={props.personalExpenseCategories} />;
             default:
                 return <div>Unknown widget type</div>;
         }
@@ -149,7 +141,7 @@ export function DraggableDashboard(props: DraggableDashboardProps) {
                          {isEditMode && <div className="drag-handle cursor-move w-full h-6 bg-muted/50 flex items-center justify-center">
                             <div className="w-8 h-1 bg-primary/50 rounded-full" />
                          </div>}
-                         <div className={cn("p-0 h-full w-full", isEditMode && "p-2")}>
+                         <div className={cn("p-2 h-full w-full")}>
                            {renderWidget(widget)}
                          </div>
                     </div>
