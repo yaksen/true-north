@@ -137,7 +137,7 @@ export const getChannelsColumns = (project: Project, onStar: (id: string, starre
       cell: ({ row }) => {
         const channel = row.original;
         return (
-            <div>
+            <div className="pl-4">
                 <p className="font-medium">{channel.name}</p>
                 <p className="text-xs text-muted-foreground">{channel.url}</p>
             </div>

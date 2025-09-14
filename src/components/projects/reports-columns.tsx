@@ -91,7 +91,7 @@ export const reportsColumns: ColumnDef<Report>[] = [
           File Name <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => <div className="pl-4 font-medium">{row.getValue("name")}</div>,
+      cell: ({ row }) => <div className="font-medium pl-4">{row.getValue("name")}</div>,
     },
     {
       accessorKey: "sizeBytes",
