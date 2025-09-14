@@ -2,9 +2,9 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { Chat, UserProfile } from '@/lib/types';
 import { ChatSidebar } from './chat-sidebar';
 import { ChatWindow } from './chat-window';
@@ -15,14 +15,20 @@ export function ChatLayout() {
     const [chats, setChats] = useState<Chat[]>([]);
     const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
     const [activeChatId, setActiveChatId] = useState<string | null>(null);
+    const allUsersRef = useRef<UserProfile[]>([]);
+
 
     useEffect(() => {
         if (!user) return;
 
-        // Fetch all users for chat creation and info
-        const usersUnsub = onSnapshot(collection(db, 'users'), (snapshot) => {
-            setAllUsers(snapshot.docs.map(doc => doc.data() as UserProfile));
-        });
+        // Fetch all users once and store in ref to avoid re-running chat listener
+        const fetchAllUsers = async () => {
+             const usersSnapshot = await getDocs(collection(db, 'users'));
+             const usersData = usersSnapshot.docs.map(doc => doc.data() as UserProfile);
+             allUsersRef.current = usersData;
+             setAllUsers(usersData);
+        }
+        fetchAllUsers();
 
         // Fetch user's chats
         const chatsQuery = query(
@@ -36,10 +42,9 @@ export function ChatLayout() {
                 const chatData = doc.data() as Omit<Chat, 'id'>;
                 const chatId = doc.id;
                 
-                // For direct chats, dynamically set title and photoURL of the other user
                 if (chatData.type === 'direct') {
                     const otherMemberId = chatData.members.find(uid => uid !== user.uid);
-                    const otherUser = allUsers.find(u => u.id === otherMemberId);
+                    const otherUser = allUsersRef.current.find(u => u.id === otherMemberId);
                     return {
                         id: chatId,
                         ...chatData,
@@ -48,7 +53,6 @@ export function ChatLayout() {
                     }
                 }
 
-                // For project chats, we could fetch project details if needed
                 return { id: chatId, ...chatData, title: chatData.projectId || 'Project Chat' };
 
             }) as Chat[];
@@ -56,10 +60,9 @@ export function ChatLayout() {
         });
 
         return () => {
-            usersUnsub();
             chatsUnsub();
         };
-    }, [user, allUsers]); // Rerun when allUsers is populated
+    }, [user]);
 
     const activeChat = chats.find(c => c.id === activeChatId) || null;
 
