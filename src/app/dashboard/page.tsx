@@ -8,10 +8,7 @@ import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { CurrencyDebug } from '@/components/debug/CurrencyDebug';
-import { DashboardClient } from '@/components/dashboard/dashboard-client';
-import { PersonalWalletCard } from '@/components/wallet/personal-wallet-card';
-import { PersonalExpenseCard } from '@/components/expenses/personal-expense-card';
-
+import { DraggableDashboard } from '@/components/dashboard/draggable-dashboard';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -19,26 +16,35 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [finances, setFinances] = useState<Finance[]>([]);
   const [settings, setSettings] = useState<CrmSettings | null>(null);
+  const [personalExpenses, setPersonalExpenses] = useState<PersonalExpense[]>([]);
+  const [personalWallet, setPersonalWallet] = useState<PersonalWallet | null>(null);
+  const [personalExpenseCategories, setPersonalExpenseCategories] = useState<PersonalExpenseCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
 
     setLoading(true);
-    const projectsQuery = query(collection(db, `projects`), where('members', 'array-contains', user.uid));
-    const tasksQuery = query(collection(db, 'tasks'));
-    const financesQuery = query(collection(db, 'finances'));
+
+    const projectsQuery = query(collection(db, 'projects'), where('members', 'array-contains', user.uid));
+    const tasksQuery = query(collection(db, 'tasks')); // Consider adding a project filter here
+    const financesQuery = query(collection(db, 'finances')); // Consider adding a project filter here
     const settingsRef = doc(db, 'settings', 'crm');
+    const expensesQuery = query(collection(db, 'personalExpenses'), where('userId', '==', user.uid));
+    const walletRef = doc(db, 'personalWallets', user.uid);
+    const categoriesQuery = query(collection(db, 'personalExpenseCategories'), where('userId', '==', user.uid));
 
-    const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
+    const unsubs: (() => void)[] = [];
+
+    unsubs.push(onSnapshot(projectsQuery, (snapshot) => {
       setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
-    });
+    }));
 
-    const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
+    unsubs.push(onSnapshot(tasksQuery, (snapshot) => {
         setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
-    });
+    }));
     
-    const unsubscribeFinances = onSnapshot(financesQuery, (snapshot) => {
+    unsubs.push(onSnapshot(financesQuery, (snapshot) => {
         setFinances(snapshot.docs.map(doc => {
             const data = doc.data();
             return { 
@@ -47,28 +53,47 @@ export default function DashboardPage() {
                 date: data.date?.toDate ? data.date.toDate() : new Date(data.date),
             } as Finance;
         }));
-    });
+    }));
     
-    const unsubscribeSettings = onSnapshot(settingsRef, (doc) => {
+    unsubs.push(onSnapshot(settingsRef, (doc) => {
         if (doc.exists()) {
             setSettings(doc.data() as CrmSettings);
         }
-    });
-    
-    // This is a bit of a hack to wait for the initial data load
-    Promise.all([
+    }));
+
+    unsubs.push(onSnapshot(expensesQuery, (snapshot) => {
+      setPersonalExpenses(snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data(),
+        date: doc.data().date.toDate(),
+      } as PersonalExpense)));
+    }));
+
+    unsubs.push(onSnapshot(walletRef, (doc) => {
+      if (doc.exists()) {
+        setPersonalWallet({ id: doc.id, ...doc.data() } as PersonalWallet);
+      }
+    }));
+
+     unsubs.push(onSnapshot(categoriesQuery, (snapshot) => {
+      setPersonalExpenseCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PersonalExpenseCategory)));
+    }));
+
+    // Initial data load promise
+    const initialLoad = Promise.all([
         new Promise<void>(resolve => { const unsub = onSnapshot(projectsQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(tasksQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(financesQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(settingsRef, () => { resolve(); unsub(); }); }),
-    ]).then(() => setLoading(false));
+        new Promise<void>(resolve => { const unsub = onSnapshot(expensesQuery, () => { resolve(); unsub(); }); }),
+        new Promise<void>(resolve => { const unsub = onSnapshot(walletRef, () => { resolve(); unsub(); }); }),
+        new Promise<void>(resolve => { const unsub = onSnapshot(categoriesQuery, () => { resolve(); unsub(); }); }),
+    ]);
 
+    initialLoad.then(() => setLoading(false));
 
     return () => {
-      unsubscribeProjects();
-      unsubscribeTasks();
-      unsubscribeFinances();
-      unsubscribeSettings();
+      unsubs.forEach(unsub => unsub());
     };
   }, [user]);
 
@@ -79,18 +104,19 @@ export default function DashboardPage() {
         <CurrencyDebug />
       </div>
       {loading ? (
-        <div className="flex flex-1 items-center justify-center rounded-lg mt-4">
+        <div className="flex flex-1 items-center justify-center rounded-lg mt-4 h-96">
             <Loader2 className='h-8 w-8 animate-spin text-primary' />
         </div>
       ) : (
-        <div className="mt-4 space-y-6">
-            <DashboardClient
-              projects={projects}
-              tasks={tasks}
-              finances={finances}
-              settings={settings}
-            />
-        </div>
+        <DraggableDashboard 
+            projects={projects}
+            tasks={tasks}
+            finances={finances}
+            settings={settings}
+            personalExpenses={personalExpenses}
+            wallet={personalWallet}
+            personalExpenseCategories={personalExpenseCategories}
+        />
       )}
     </>
   );

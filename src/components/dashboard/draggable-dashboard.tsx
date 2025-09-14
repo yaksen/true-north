@@ -7,7 +7,7 @@ import RGL, { WidthProvider } from 'react-grid-layout';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import type { DashboardLayout, WidgetItem, Project, Task, Finance, PersonalExpense, PersonalWallet, CrmSettings } from '@/lib/types';
+import type { DashboardLayout, WidgetItem, Project, Task, Finance, PersonalExpense, PersonalWallet, CrmSettings, PersonalExpenseCategory } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Loader2, Layout, Lock, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -25,12 +25,13 @@ interface DraggableDashboardProps {
     settings: CrmSettings | null;
     personalExpenses: PersonalExpense[];
     wallet: PersonalWallet | null;
+    personalExpenseCategories: PersonalExpenseCategory[];
 }
 
 const defaultLayout: WidgetItem[] = [
-    { i: 'mainDashboard', x: 0, y: 0, w: 8, h: 10, minW: 6, minH: 8, type: 'dashboardClient' },
-    { i: 'wallet', x: 8, y: 0, w: 4, h: 5, minW: 3, minH: 5, type: 'personalWallet' },
-    { i: 'expenses', x: 8, y: 5, w: 4, h: 5, minW: 3, minH: 5, type: 'personalExpenses' },
+    { id: 'mainDashboard', i: 'mainDashboard', x: 0, y: 0, w: 8, h: 10, minW: 6, minH: 8, type: 'dashboardClient' },
+    { id: 'wallet', i: 'wallet', x: 8, y: 0, w: 4, h: 5, minW: 3, minH: 5, type: 'personalWallet' },
+    { id: 'expenses', i: 'expenses', x: 8, y: 5, w: 4, h: 5, minW: 3, minH: 5, type: 'personalExpenses' },
 ];
 
 export function DraggableDashboard(props: DraggableDashboardProps) {
@@ -104,7 +105,7 @@ export function DraggableDashboard(props: DraggableDashboardProps) {
             case 'personalWallet':
                 return <PersonalWalletCard wallet={props.wallet} projects={props.projects} />;
             case 'personalExpenses':
-                return <PersonalExpenseCard expenses={props.personalExpenses} wallet={props.wallet} />;
+                return <PersonalExpenseCard expenses={props.personalExpenses} wallet={props.wallet} categories={props.personalExpenseCategories} />;
             default:
                 return <div>Unknown widget type</div>;
         }

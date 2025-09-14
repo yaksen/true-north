@@ -6,8 +6,8 @@ export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectType = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'Call' | 'Meeting' | 'Project';
 export type FinanceType = 'income' | 'expense';
-export type LeadStatus = 'new' | 'contacted', 'qualified', 'lost', 'converted';
-export type ChannelStatus = 'new' | 'active' | 'inactive', 'closed';
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
+export type ChannelStatus = 'new' | 'active' | 'inactive' | 'closed';
 export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void' | 'partial' | 'unpaid';
 export type PaymentMethod = 'cash' | 'bank transfer' | 'online' | 'other';
@@ -261,6 +261,7 @@ export type ActivityRecordType =
   | 'task_created' | 'task_updated' | 'task_deleted'
   | 'finance_created' | 'finance_updated' | 'finance_deleted'
   | 'lead_created' | 'lead_updated' | 'lead_deleted'
+  | 'channel_created' | 'channel_updated' | 'channel_deleted'
   | 'category_created' | 'category_updated' | 'category_deleted'
   | 'service_created' | 'service_updated' | 'service_deleted'
   | 'package_created' | 'package_updated' | 'package_deleted'
@@ -328,3 +329,21 @@ export interface WalletTransaction {
     note?: string;
     timestamp: Date;
 }
+
+export interface LayoutItem {
+  i: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  static?: boolean;
+  minW?: number;
+  minH?: number;
+}
+
+export interface WidgetItem extends LayoutItem {
+  id: string;
+  type: string;
+}
+
+export type DashboardLayout = LayoutItem[];
