@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -16,8 +16,10 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useState } from 'react';
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface ChatSidebarProps {
   chats: Chat[];
@@ -43,6 +45,8 @@ function CreateChatDialog({ users, onChatCreated }: { users: UserProfile[], onCh
         if (!user || !selectedUserId) return;
 
         const members = [user.uid, selectedUserId].sort();
+        
+        // A more robust way to create a deterministic ID
         const chatId = members.join('_');
         
         // Check if chat already exists
@@ -50,7 +54,10 @@ function CreateChatDialog({ users, onChatCreated }: { users: UserProfile[], onCh
         const existingChats = await getDocs(q);
         
         if (existingChats.empty) {
-            await addDoc(collection(db, 'chats'), {
+            // Note: We are not setting the document ID here, Firestore will auto-generate it.
+            // A deterministic ID (like `chatId`) would require using setDoc on a doc ref.
+            // For now, we'll let Firestore generate it to avoid conflicts with existing logic.
+            const newChatRef = await addDoc(collection(db, 'chats'), {
                 type: 'direct',
                 members: members,
                 createdAt: serverTimestamp(),
@@ -61,7 +68,7 @@ function CreateChatDialog({ users, onChatCreated }: { users: UserProfile[], onCh
                     timestamp: serverTimestamp()
                 }
             });
-            onChatCreated(chatId);
+            onChatCreated(newChatRef.id);
         } else {
             onChatCreated(existingChats.docs[0].id);
         }
@@ -112,6 +119,18 @@ function CreateChatDialog({ users, onChatCreated }: { users: UserProfile[], onCh
 
 export function ChatSidebar({ chats, activeChatId, onSelectChat, allUsers }: ChatSidebarProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
+
+  const handleDeleteChat = async (e: React.MouseEvent, chatId: string) => {
+    e.stopPropagation(); // Prevent chat selection when clicking delete
+    try {
+        await deleteDoc(doc(db, 'chats', chatId));
+        toast({ title: 'Chat Deleted', description: 'The conversation has been removed.'});
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not delete chat.'});
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -125,7 +144,7 @@ export function ChatSidebar({ chats, activeChatId, onSelectChat, allUsers }: Cha
           <div
             key={chat.id}
             className={cn(
-              'p-4 flex items-center gap-3 cursor-pointer border-b',
+              'group p-4 flex items-center gap-3 cursor-pointer border-b relative',
               activeChatId === chat.id ? 'bg-muted' : 'hover:bg-muted/50'
             )}
             onClick={() => onSelectChat(chat.id)}
@@ -146,6 +165,30 @@ export function ChatSidebar({ chats, activeChatId, onSelectChat, allUsers }: Cha
                 {chat.lastMessage?.text}
               </p>
             </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7 absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()} // Prevent triggering parent onClick
+                >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete this chat. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={(e) => handleDeleteChat(e, chat.id)}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         ))}
       </div>
