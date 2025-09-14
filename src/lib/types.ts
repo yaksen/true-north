@@ -20,6 +20,7 @@ export type NotificationType =
   | 'payment_received'
   | 'project_invite';
 export type ChatType = 'direct' | 'project';
+export type TaskTemplateSlot = 'morning' | 'midday' | 'night';
 
 export interface UserProfile {
     id: string;
@@ -52,6 +53,7 @@ export interface Project {
   starred?: boolean;
   createdAt: Date;
   updatedAt: Date;
+  timezone?: string;
 }
 
 export interface Task {
@@ -66,6 +68,22 @@ export interface Task {
     dueDate?: Date;
     assigneeUid?: string;
     starred?: boolean;
+    templateId?: string; // ID of the template this task was generated from
+    isGenerated?: boolean; // True if created by the auto-generation system
+    slot?: TaskTemplateSlot; // The slot this task belongs to
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface TaskTemplate {
+    id: string;
+    projectId: string;
+    title: string;
+    description?: string;
+    slot: TaskTemplateSlot;
+    assigneeUids: string[];
+    daysOfWeek: number[]; // 0 for Sunday, 1 for Monday, etc.
+    active: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

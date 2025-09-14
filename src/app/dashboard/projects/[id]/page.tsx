@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Invoice, Product, Channel } from '@/lib/types';
+import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Invoice, Product, Channel, TaskTemplate } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,6 +16,7 @@ import { ProjectChannels } from '@/components/projects/project-channels';
 import { ProjectProducts } from '@/components/projects/project-products';
 import { ProjectFinance } from '@/components/projects/project-finance';
 import { ProjectTasks } from '@/components/projects/project-tasks';
+import { ProjectTemplates } from '@/components/projects/project-templates';
 import { ProjectRecords } from '@/components/projects/project-records';
 import { ProjectSettings } from '@/components/projects/project-settings';
 import { ProjectBilling } from '@/components/projects/project-billing';
@@ -29,6 +30,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskTemplates, setTaskTemplates] = useState<TaskTemplate[]>([]);
   const [finances, setFinances] = useState<Finance[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -87,6 +89,7 @@ export default function ProjectDetailPage() {
     };
 
     const unsubscribeTasks = createCollectionSubscription<Task>('tasks', setTasks);
+    const unsubscribeTaskTemplates = createCollectionSubscription<TaskTemplate>('taskTemplates', setTaskTemplates);
     const unsubscribeFinances = createCollectionSubscription<Finance>('finances', setFinances);
     const unsubscribeLeads = createCollectionSubscription<Lead>('leads', setLeads);
     const unsubscribeChannels = createCollectionSubscription<Channel>('channels', setChannels);
@@ -102,6 +105,7 @@ export default function ProjectDetailPage() {
         unsubscribeProject();
         unsubscribeAllProjects();
         unsubscribeTasks();
+        unsubscribeTaskTemplates();
         unsubscribeFinances();
         unsubscribeLeads();
         unsubscribeChannels();
@@ -137,6 +141,7 @@ export default function ProjectDetailPage() {
                     <TabsTrigger value="billing">Billing</TabsTrigger>
                     <TabsTrigger value="finance">Finance</TabsTrigger>
                     <TabsTrigger value="tasks">Tasks</TabsTrigger>
+                    <TabsTrigger value="templates">Templates</TabsTrigger>
                     <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
             </div>
@@ -166,6 +171,9 @@ export default function ProjectDetailPage() {
             </TabsContent>
              <TabsContent value="tasks">
                 <ProjectTasks project={project} tasks={tasks} leads={leads} />
+            </TabsContent>
+            <TabsContent value="templates">
+                <ProjectTemplates project={project} templates={taskTemplates} tasks={tasks} />
             </TabsContent>
             <TabsContent value="records">
                 <ProjectRecords project={project} records={records} notes={notes} />
