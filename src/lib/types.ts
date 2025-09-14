@@ -72,6 +72,7 @@ export interface TaskTemplate {
     slot: TaskTemplateSlot;
     assigneeUids: string[];
     daysOfWeek: number[]; // 0 for Sunday, 1 for Monday, etc.
+    starred?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

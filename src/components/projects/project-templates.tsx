@@ -10,10 +10,11 @@ import { DataTable } from "../ui/data-table";
 import { getTaskTemplatesColumns } from "./task-template-columns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { TaskTemplateForm } from "./task-template-form";
-import { collection, where, query, getDocs } from "firebase/firestore";
+import { collection, where, query, getDocs, doc, writeBatch, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProjectTemplatesProps {
     project: Project;
@@ -22,6 +23,7 @@ interface ProjectTemplatesProps {
 }
 
 export function ProjectTemplates({ project, templates, tasks }: ProjectTemplatesProps) {
+    const { toast } = useToast();
     const [isTemplateFormOpen, setIsTemplateFormOpen] = useState(false);
     const [slotFilter, setSlotFilter] = useState<'all' | 'morning' | 'midday' | 'night'>('all');
     const [dayFilter, setDayFilter] = useState<'all' | string>('all');
@@ -39,7 +41,28 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
         fetchMembers();
     }, [project.members]);
 
-    const templateColumns = useMemo(() => getTaskTemplatesColumns(project), [project]);
+    const handleStar = async (id: string, starred: boolean) => {
+        try {
+            await updateDoc(doc(db, 'taskTemplates', id), { starred });
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
+        }
+    }
+
+    const handleDeleteSelected = async (ids: string[]) => {
+        const batch = writeBatch(db);
+        ids.forEach(id => {
+            batch.delete(doc(db, 'taskTemplates', id));
+        });
+        try {
+            await batch.commit();
+            toast({ title: "Success", description: `${ids.length} template(s) deleted.`});
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Could not delete selected templates."})
+        }
+    }
+
+    const templateColumns = useMemo(() => getTaskTemplatesColumns(project, handleStar), [project]);
     
     const filteredTemplates = useMemo(() => {
         return templates.filter(template => {
@@ -120,6 +143,7 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
                         columns={templateColumns} 
                         data={filteredTemplates} 
                         toolbar={<Toolbar />}
+                        onDeleteSelected={handleDeleteSelected}
                     />
                 </CardContent>
             </Card>

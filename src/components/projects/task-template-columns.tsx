@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { TaskTemplate, Project } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Copy } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Copy, Star } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -16,6 +16,8 @@ import { TaskTemplateForm } from "./task-template-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { Switch } from "../ui/switch";
+import { Checkbox } from "../ui/checkbox";
+import { cn } from "@/lib/utils";
 
 interface ActionsCellProps {
   template: TaskTemplate;
@@ -96,7 +98,39 @@ const DaysOfWeekCell: React.FC<{ days: number[] }> = ({ days }) => {
     );
 };
 
-export const getTaskTemplatesColumns = (project: Project): ColumnDef<TaskTemplate>[] => [
+export const getTaskTemplatesColumns = (project: Project, onStar: (id: string, starred: boolean) => void): ColumnDef<TaskTemplate>[] => [
+    {
+        id: 'select',
+        header: ({ table }) => (
+            <Checkbox
+                checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                aria-label="Select all"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={(value) => row.toggleSelected(!!value)}
+                aria-label="Select row"
+            />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+    },
+    {
+        id: 'star',
+        cell: ({ row }) => {
+            const template = row.original;
+            return (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onStar(template.id, !template.starred)}>
+                    <Star className={cn("h-4 w-4", template.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
+                </Button>
+            )
+        },
+        enableSorting: false,
+        enableHiding: false,
+    },
     {
       accessorKey: "title",
       header: ({ column }) => (
