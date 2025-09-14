@@ -6,11 +6,10 @@ import { CrmSettings, Project, Task, Finance, PersonalExpense, PersonalWallet } 
 import { collection, onSnapshot, query, where, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
-import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Loader2 } from 'lucide-react';
 import { CurrencyDebug } from '@/components/debug/CurrencyDebug';
-import { PersonalExpenseCard } from '@/components/expenses/personal-expense-card';
-import { PersonalWalletCard } from '@/components/wallet/personal-wallet-card';
+import { DraggableDashboard } from '@/components/dashboard/draggable-dashboard';
+
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -111,15 +110,14 @@ export default function DashboardPage() {
             <Loader2 className='h-8 w-8 animate-spin text-primary' />
         </div>
       ) : (
-        <div className='grid grid-cols-1 xl:grid-cols-3 gap-6'>
-            <div className='xl:col-span-2'>
-                 <DashboardClient projects={projects} tasks={tasks} finances={finances} settings={settings} />
-            </div>
-            <div className='xl:col-span-1 space-y-6'>
-                <PersonalWalletCard wallet={wallet} projects={projects} />
-                <PersonalExpenseCard expenses={personalExpenses} wallet={wallet} />
-            </div>
-        </div>
+        <DraggableDashboard 
+            projects={projects}
+            tasks={tasks}
+            finances={finances}
+            settings={settings}
+            personalExpenses={personalExpenses}
+            wallet={wallet}
+        />
       )}
     </>
   );

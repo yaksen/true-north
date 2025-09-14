@@ -346,3 +346,26 @@ export interface Notification {
     isRead: boolean;
     createdAt: Date;
 }
+
+// Draggable Dashboard Types
+export type WidgetType = 'dashboardClient' | 'personalWallet' | 'personalExpenses';
+
+export interface WidgetItem {
+  i: string; // Unique ID
+  x: number; // Grid X position
+  y: number; // Grid Y position
+  w: number; // Width
+  h: number; // Height
+  minW?: number;
+  minH?: number;
+  type: WidgetType;
+  // Any widget-specific config can go here
+  config?: Record<string, any>; 
+}
+
+export interface DashboardLayout {
+    id: string; // Typically the user's UID
+    widgets: WidgetItem[];
+    updatedAt?: Date;
+    version?: number;
+}
