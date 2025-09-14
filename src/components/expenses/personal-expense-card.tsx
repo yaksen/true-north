@@ -169,7 +169,12 @@ export function PersonalExpenseCard({ expenses, wallet, categories }: { expenses
 
                 <div>
                     <h3 className='text-sm font-medium mb-2'>Recent Expenses</h3>
-                    <RecentExpensesList expenses={recentExpenses} categories={categories} currency={displayCurrency} />
+                    <RecentExpensesList 
+                        expenses={recentExpenses} 
+                        categories={categories} 
+                        currency={displayCurrency}
+                        totalSpent={totalSpent}
+                    />
                 </div>
             </CardContent>
         </Card>
