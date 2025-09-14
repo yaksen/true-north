@@ -233,5 +233,3 @@ export const getInvoiceColumns = (dependencies: DataDependencies): ColumnDef<Inv
       cell: ({ row }) => <ActionsCell invoice={row.original} dependencies={dependencies} />,
     },
 ];
-
-    
