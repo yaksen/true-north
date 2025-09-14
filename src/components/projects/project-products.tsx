@@ -26,6 +26,7 @@ import { db } from '@/lib/firebase';
 import { logActivity } from '@/lib/activity-log';
 import { ProductForm } from './product-form';
 import { getProductsColumns } from './product-columns';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 interface ProjectProductsProps {
   project: Project;
@@ -189,31 +190,41 @@ export function ProjectProducts({ project, categories, services, products, packa
           <TabsTrigger value="packages">Packages</TabsTrigger>
         </TabsList>
         <div className="flex gap-2">
-            <Dialog open={isCategoryFormOpen} onOpenChange={setIsCategoryFormOpen}>
-                <DialogTrigger asChild><Button size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> New Category</Button></DialogTrigger>
-                <DialogContent><DialogHeader><DialogTitle>Create New Category</DialogTitle></DialogHeader><CategoryForm projectId={project.id} closeForm={() => setIsCategoryFormOpen(false)} /></DialogContent>
-            </Dialog>
-            <Dialog open={isServiceFormOpen} onOpenChange={setIsServiceFormOpen}>
-                <DialogTrigger asChild><Button size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> New Service</Button></DialogTrigger>
-                <DialogContent><DialogHeader><DialogTitle>Create New Service</DialogTitle></DialogHeader><ServiceForm project={project} categories={categories} closeForm={() => setIsServiceFormOpen(false)} /></DialogContent>
-            </Dialog>
-             <Dialog open={isProductFormOpen} onOpenChange={setIsProductFormOpen}>
-                <DialogTrigger asChild><Button size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> New Product</Button></DialogTrigger>
-                <DialogContent><DialogHeader><DialogTitle>Create New Product</DialogTitle></DialogHeader><ProductForm project={project} categories={categories} closeForm={() => setIsProductFormOpen(false)} /></DialogContent>
-            </Dialog>
-            <Dialog open={isPackageFormOpen} onOpenChange={setIsPackageFormOpen}>
-                <DialogTrigger asChild><Button size="sm" onClick={handleCreateNewPackage}><PlusCircle className="mr-2 h-4 w-4" /> New Package</Button></DialogTrigger>
-                <DialogContent className='max-w-3xl'>
-                    <DialogHeader><DialogTitle>{editingPackage ? "Edit" : "Create"} Package</DialogTitle></DialogHeader>
-                    <PackageForm 
-                        project={project} 
-                        services={services} 
-                        products={products}
-                        pkg={editingPackage}
-                        closeForm={() => setIsPackageFormOpen(false)} 
-                    />
-                </DialogContent>
-            </Dialog>
+            <TooltipProvider>
+                <Dialog open={isCategoryFormOpen} onOpenChange={setIsCategoryFormOpen}>
+                    <Tooltip><TooltipTrigger asChild>
+                        <DialogTrigger asChild><Button size="icon" variant="outline"><PlusCircle /></Button></DialogTrigger>
+                    </TooltipTrigger><TooltipContent><p>New Category</p></TooltipContent></Tooltip>
+                    <DialogContent><DialogHeader><DialogTitle>Create New Category</DialogTitle></DialogHeader><CategoryForm projectId={project.id} closeForm={() => setIsCategoryFormOpen(false)} /></DialogContent>
+                </Dialog>
+                <Dialog open={isServiceFormOpen} onOpenChange={setIsServiceFormOpen}>
+                    <Tooltip><TooltipTrigger asChild>
+                        <DialogTrigger asChild><Button size="icon" variant="outline"><PlusCircle /></Button></DialogTrigger>
+                    </TooltipTrigger><TooltipContent><p>New Service</p></TooltipContent></Tooltip>
+                    <DialogContent><DialogHeader><DialogTitle>Create New Service</DialogTitle></DialogHeader><ServiceForm project={project} categories={categories} closeForm={() => setIsServiceFormOpen(false)} /></DialogContent>
+                </Dialog>
+                <Dialog open={isProductFormOpen} onOpenChange={setIsProductFormOpen}>
+                    <Tooltip><TooltipTrigger asChild>
+                        <DialogTrigger asChild><Button size="icon" variant="outline"><PlusCircle /></Button></DialogTrigger>
+                    </TooltipTrigger><TooltipContent><p>New Product</p></TooltipContent></Tooltip>
+                    <DialogContent><DialogHeader><DialogTitle>Create New Product</DialogTitle></DialogHeader><ProductForm project={project} categories={categories} closeForm={() => setIsProductFormOpen(false)} /></DialogContent>
+                </Dialog>
+                <Dialog open={isPackageFormOpen} onOpenChange={setIsPackageFormOpen}>
+                    <Tooltip><TooltipTrigger asChild>
+                        <DialogTrigger asChild><Button size="icon"><PlusCircle /></Button></DialogTrigger>
+                    </TooltipTrigger><TooltipContent><p>New Package</p></TooltipContent></Tooltip>
+                    <DialogContent className='max-w-3xl'>
+                        <DialogHeader><DialogTitle>{editingPackage ? "Edit" : "Create"} Package</DialogTitle></DialogHeader>
+                        <PackageForm 
+                            project={project} 
+                            services={services} 
+                            products={products}
+                            pkg={editingPackage}
+                            closeForm={() => setIsPackageFormOpen(false)} 
+                        />
+                    </DialogContent>
+                </Dialog>
+            </TooltipProvider>
         </div>
       </div>
       
