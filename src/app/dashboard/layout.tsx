@@ -144,7 +144,7 @@ export default function DashboardLayout({
           <UserNav />
         </header>
         <main className="flex flex-1 flex-col bg-background">
-          <div className="flex-1 space-y-6 p-4 md:p-6 lg:p-8">
+          <div className="flex-1 animate-fade-in-up space-y-6 p-4 md:p-6 lg:p-8">
             {children}
           </div>
         </main>
