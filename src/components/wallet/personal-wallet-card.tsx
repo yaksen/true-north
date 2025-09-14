@@ -10,10 +10,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/context/CurrencyContext';
 import { PersonalWallet, Project } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
-import { Wallet, PlusCircle } from 'lucide-react';
+import { Wallet, PlusCircle, ArrowUpRight } from 'lucide-react';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { WalletFundingForm } from './wallet-funding-form';
+import { WalletWithdrawalForm } from './wallet-withdrawal-form';
 import Link from 'next/link';
 
 interface PersonalWalletCardProps {
@@ -27,6 +28,7 @@ export function PersonalWalletCard({ wallet, projects }: PersonalWalletCardProps
     const { globalCurrency } = useCurrency();
     const [isCreatingWallet, setIsCreatingWallet] = useState(false);
     const [isFundingFormOpen, setIsFundingFormOpen] = useState(false);
+    const [isWithdrawalFormOpen, setIsWithdrawalFormOpen] = useState(false);
 
     const displayCurrency = wallet?.currency || globalCurrency || 'USD';
 
@@ -78,15 +80,28 @@ export function PersonalWalletCard({ wallet, projects }: PersonalWalletCardProps
                 <p className='text-4xl font-bold'>{formatCurrency(wallet.balance, displayCurrency)}</p>
             </CardContent>
             <CardFooter className='flex-col gap-2 items-stretch'>
-                 <Dialog open={isFundingFormOpen} onOpenChange={setIsFundingFormOpen}>
-                    <DialogTrigger asChild>
-                        <Button><PlusCircle className='mr-2'/> Add Funds</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader><DialogTitle>Add Funds to Wallet</DialogTitle></DialogHeader>
-                        <WalletFundingForm wallet={wallet} projects={projects} closeForm={() => setIsFundingFormOpen(false)} />
-                    </DialogContent>
-                </Dialog>
+                 <div className='grid grid-cols-2 gap-2'>
+                    <Dialog open={isFundingFormOpen} onOpenChange={setIsFundingFormOpen}>
+                        <DialogTrigger asChild>
+                            <Button><PlusCircle className='mr-2'/> Add Funds</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader><DialogTitle>Add Funds to Wallet</DialogTitle></DialogHeader>
+                            <WalletFundingForm wallet={wallet} projects={projects} closeForm={() => setIsFundingFormOpen(false)} />
+                        </DialogContent>
+                    </Dialog>
+                    <Dialog open={isWithdrawalFormOpen} onOpenChange={setIsWithdrawalFormOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="secondary" disabled={wallet.balance <= 0}>
+                                <ArrowUpRight className='mr-2' /> Remove Funds
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader><DialogTitle>Remove Funds from Wallet</DialogTitle></DialogHeader>
+                            <WalletWithdrawalForm wallet={wallet} projects={projects} closeForm={() => setIsWithdrawalFormOpen(false)} />
+                        </DialogContent>
+                    </Dialog>
+                 </div>
                 <Button asChild variant="outline">
                     <Link href="/dashboard/wallet">View Transactions</Link>
                 </Button>

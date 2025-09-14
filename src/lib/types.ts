@@ -80,6 +80,10 @@ export interface TaskTemplate {
     slot: TaskTemplateSlot;
     assigneeUids: string[];
     daysOfWeek: number[]; // 0 for Sunday, 1 for Monday, etc.
+    active: boolean;
+    isGenerated?: boolean;
+    templateId?: string;
+    generatedForDate?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -250,10 +254,23 @@ export interface Invoice {
 }
 
 
+export type ActivityRecordType = 
+  | 'project_created' | 'project_updated' | 'project_deleted'
+  | 'task_created' | 'task_updated' | 'task_deleted'
+  | 'finance_created' | 'finance_updated' | 'finance_deleted'
+  | 'lead_created' | 'lead_updated' | 'lead_deleted'
+  | 'category_created' | 'category_updated' | 'category_deleted'
+  | 'service_created' | 'service_updated' | 'service_deleted'
+  | 'package_created' | 'package_updated' | 'package_deleted'
+  | 'note_added' | 'report_uploaded' | 'report_deleted'
+  | 'invoice_created' | 'invoice_updated' | 'invoice_deleted'
+  | 'member_invited' | 'member_added' | 'member_removed'
+  | 'payment_added';
+
 export interface ActivityRecord {
     id: string;
     projectId: string;
-    type: string;
+    type: ActivityRecordType;
     payload: Record<string, any>;
     actorUid: string;
     timestamp: Date;
@@ -304,7 +321,8 @@ export interface WalletTransaction {
     amount: number; // Always positive
     type: WalletTransactionType;
     sourceProjectId?: string; // For 'add' type
-    expenseId?: string; // For 'expense' type
+    destinationProjectId?: string; // For 'expense' type when sent to a project
+    expenseId?: string; // For 'expense' type when paying for a personal expense
     note?: string;
     timestamp: Date;
 }
@@ -318,10 +336,10 @@ export interface Chat {
     lastMessage: {
         text: string;
         senderId: string;
-        timestamp: Date;
+        timestamp: any;
     };
-    updatedAt: Date;
-    createdAt: Date;
+    updatedAt: any;
+    createdAt: any;
     // For UI purposes
     title?: string;
     photoURL?: string;
@@ -332,7 +350,7 @@ export interface Message {
     chatId: string;
     senderId: string;
     text: string;
-    createdAt: Date;
+    createdAt: any;
     readBy: { [userId: string]: Date };
 }
 
@@ -341,10 +359,10 @@ export interface Notification {
     userId: string;
     type: NotificationType;
     title: string;
-    body: string;
+body: string;
     link?: string;
     isRead: boolean;
-    createdAt: Date;
+    createdAt: any;
 }
 
 // Draggable Dashboard Types
