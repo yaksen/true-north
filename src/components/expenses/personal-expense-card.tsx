@@ -174,6 +174,7 @@ export function PersonalExpenseCard({ expenses, wallet, categories }: { expenses
                         categories={categories} 
                         currency={displayCurrency}
                         totalSpent={totalSpent}
+                        wallet={wallet}
                     />
                 </div>
             </CardContent>
