@@ -68,9 +68,6 @@ export interface Task {
     dueDate?: Date;
     assigneeUid?: string;
     starred?: boolean;
-    templateId?: string; // ID of the template this task was generated from
-    isGenerated?: boolean; // True if created by the auto-generation system
-    slot?: TaskTemplateSlot; // The slot this task belongs to
     createdAt: Date;
     updatedAt: Date;
 }

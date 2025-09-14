@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from './button';
 import { Input } from './input';
-import { ChevronDown, FileDown, Star, Trash2, Zap } from 'lucide-react';
+import { ChevronDown, FileDown, Star, Trash2 } from 'lucide-react';
 import { ScrollArea } from './scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './alert-dialog';
 
@@ -45,7 +45,6 @@ interface DataTableProps<TData, TValue> {
   toolbar?: React.ReactNode;
   getSubRows?: (row: Row<TData>) => TData[] | undefined;
   onDeleteSelected?: (selectedIds: string[]) => Promise<void>;
-  onGenerateSelected?: (selectedData: TData[]) => Promise<void>;
 }
 
 export function DataTable<TData extends {id: string, starred?: boolean} , TValue>({
@@ -54,7 +53,6 @@ export function DataTable<TData extends {id: string, starred?: boolean} , TValue
   toolbar,
   getSubRows,
   onDeleteSelected,
-  onGenerateSelected,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -141,14 +139,6 @@ export function DataTable<TData extends {id: string, starred?: boolean} , TValue
         table.resetRowSelection();
     });
   }
-  
-  const handleGenerate = () => {
-    if (!onGenerateSelected) return;
-    const selectedData = table.getFilteredSelectedRowModel().rows.map(row => row.original);
-    onGenerateSelected(selectedData).then(() => {
-        table.resetRowSelection();
-    });
-  }
 
   const isRowSelected = table.getFilteredSelectedRowModel().rows.length > 0;
 
@@ -174,12 +164,6 @@ export function DataTable<TData extends {id: string, starred?: boolean} , TValue
                 <Button variant={showStarred ? "secondary" : "outline"} size="icon" onClick={() => setShowStarred(!showStarred)} className='h-9 w-9'>
                     <Star className="h-4 w-4" />
                 </Button>
-                {onGenerateSelected && (
-                    <Button variant="secondary" size="sm" disabled={!isRowSelected} onClick={handleGenerate} className='h-9'>
-                        <Zap className='mr-2 h-4 w-4' />
-                        Generate ({table.getFilteredSelectedRowModel().rows.length})
-                    </Button>
-                )}
                 {onDeleteSelected && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>

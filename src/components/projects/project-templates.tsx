@@ -5,15 +5,13 @@ import { useMemo, useState } from "react";
 import { Project, Task, TaskTemplate, UserProfile } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
-import { PlusCircle, Zap } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { DataTable } from "../ui/data-table";
 import { getTaskTemplatesColumns } from "./task-template-columns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { TaskTemplateForm } from "./task-template-form";
-import { collection, where, query, getDocs, writeBatch, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, where, query, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { useEffect } from "react";
 
@@ -24,10 +22,7 @@ interface ProjectTemplatesProps {
 }
 
 export function ProjectTemplates({ project, templates, tasks }: ProjectTemplatesProps) {
-    const { user } = useAuth();
-    const { toast } = useToast();
     const [isTemplateFormOpen, setIsTemplateFormOpen] = useState(false);
-    const [isGenerating, setIsGenerating] = useState(false);
     const [slotFilter, setSlotFilter] = useState<'all' | 'morning' | 'midday' | 'night'>('all');
     const [dayFilter, setDayFilter] = useState<'all' | string>('all');
     const [assigneeFilter, setAssigneeFilter] = useState<'all' | string>('all');
@@ -54,73 +49,6 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
             return slotMatch && dayMatch && assigneeMatch;
         });
     }, [templates, slotFilter, dayFilter, assigneeFilter]);
-
-    const handleGenerateTasks = async (templatesToGenerate: TaskTemplate[], forDate: Date = new Date()) => {
-        if (!user) return;
-        setIsGenerating(true);
-
-        const targetDate = new Date(forDate);
-        targetDate.setHours(0, 0, 0, 0);
-
-        try {
-            const generatedTasksQuery = query(
-                collection(db, 'tasks'),
-                where('projectId', '==', project.id),
-                where('isGenerated', '==', true),
-                where('generatedForDate', '==', targetDate)
-            );
-            const generatedTasksSnapshot = await getDocs(generatedTasksQuery);
-            const existingTemplateIds = new Set(generatedTasksSnapshot.docs.map(doc => doc.data().templateId));
-
-            const batch = writeBatch(db);
-            let tasksCreatedCount = 0;
-
-            templatesToGenerate.forEach(template => {
-                if (!existingTemplateIds.has(template.id)) {
-                    const newTaskRef = doc(collection(db, 'tasks'));
-                    batch.set(newTaskRef, {
-                        projectId: project.id,
-                        title: template.title,
-                        description: template.description || '',
-                        status: 'Project',
-                        completed: false,
-                        assigneeUid: template.assigneeUids[0] || user.uid,
-                        createdAt: serverTimestamp(),
-                        updatedAt: serverTimestamp(),
-                        isGenerated: true,
-                        templateId: template.id,
-                        generatedForDate: targetDate,
-                        slot: template.slot,
-                    });
-                    tasksCreatedCount++;
-                }
-            });
-
-            if (tasksCreatedCount > 0) {
-                await batch.commit();
-                toast({ title: "Success", description: `${tasksCreatedCount} task(s) generated.` });
-            } else {
-                toast({ title: "No new tasks", description: "Selected tasks have already been generated for the target date." });
-            }
-
-        } catch (error) {
-            console.error("Error generating tasks:", error);
-            toast({ variant: 'destructive', title: "Error", description: "Could not generate tasks." });
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-    
-    const handleGenerateTodaysTasks = () => {
-        const today = new Date();
-        const dayOfWeek = today.getDay();
-        const templatesForToday = templates.filter(t => t.active && t.daysOfWeek.includes(dayOfWeek));
-        handleGenerateTasks(templatesForToday, today);
-    };
-
-    const handleGenerateSelectedTasks = async (selectedTemplates: TaskTemplate[]) => {
-        await handleGenerateTasks(selectedTemplates, new Date());
-    }
 
     const Toolbar = () => (
         <div className="flex items-center gap-2">
@@ -173,10 +101,6 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
                             <CardDescription>Manage recurring tasks for &quot;{project.name}&quot;.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button size="sm" variant="outline" onClick={handleGenerateTodaysTasks} disabled={isGenerating}>
-                                <Zap className="mr-2 h-4 w-4" />
-                                {isGenerating ? "Generating..." : "Generate Today's Tasks"}
-                            </Button>
                             <Dialog open={isTemplateFormOpen} onOpenChange={setIsTemplateFormOpen}>
                                 <DialogTrigger asChild>
                                     <Button size="sm"><PlusCircle className="mr-2"/> New Template</Button>
@@ -196,7 +120,6 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
                         columns={templateColumns} 
                         data={filteredTemplates} 
                         toolbar={<Toolbar />}
-                        onGenerateSelected={handleGenerateSelectedTasks}
                     />
                 </CardContent>
             </Card>
