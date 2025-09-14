@@ -137,7 +137,7 @@ export default function ProjectDetailPage() {
                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                     <TabsTrigger value="leads">Leads</TabsTrigger>
                     <TabsTrigger value="channels">Channels</TabsTrigger>
-                    <TabsTrigger value="products">Products & Services</TabsTrigger>
+                    <TabsTrigger value="products">P&S</TabsTrigger>
                     <TabsTrigger value="billing">Billing</TabsTrigger>
                     <TabsTrigger value="finance">Finance</TabsTrigger>
                     <TabsTrigger value="tasks">Tasks</TabsTrigger>
