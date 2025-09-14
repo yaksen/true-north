@@ -114,7 +114,7 @@ export interface PersonalExpense {
     currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
     date: Date;
     note?: string;
-    paidFromWallet: boolean;
+    paidFromWallet?: boolean;
     createdAt: Date;
 }
 

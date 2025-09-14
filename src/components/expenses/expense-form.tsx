@@ -32,7 +32,7 @@ const formSchema = z.object({
   currency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
   date: z.date(),
   note: z.string().optional(),
-  paidFromWallet: z.boolean().default(false),
+  paidFromWallet: z.boolean().default(true), // Always true now
 });
 
 type ExpenseFormValues = z.infer<typeof formSchema>;
@@ -68,23 +68,24 @@ export function ExpenseForm({ wallet, categories, closeForm }: ExpenseFormProps)
       currency: (globalCurrency as 'LKR' | 'USD' | 'EUR' | 'GBP') || 'USD',
       date: new Date(),
       note: '',
-      paidFromWallet: false,
+      paidFromWallet: true,
     },
   });
-
-  const watchPaidFromWallet = form.watch('paidFromWallet');
-  const watchAmount = form.watch('amount');
-  const watchCurrency = form.watch('currency');
 
   async function onSubmit(values: ExpenseFormValues) {
     if (!user) {
       toast({ variant: 'destructive', title: 'Not Authenticated' });
       return;
     }
+    
+    if (!wallet) {
+        toast({ variant: 'destructive', title: 'No Wallet Found', description: 'A personal wallet is required to add expenses.' });
+        return;
+    }
 
-    const expenseAmountInWalletCurrency = convert(values.amount, values.currency, wallet?.currency || 'USD');
+    const expenseAmountInWalletCurrency = convert(values.amount, values.currency, wallet.currency);
 
-    if (values.paidFromWallet && (!wallet || wallet.balance < expenseAmountInWalletCurrency)) {
+    if (wallet.balance < expenseAmountInWalletCurrency) {
         toast({ variant: 'destructive', title: 'Insufficient Funds', description: 'Your wallet balance is too low for this transaction.' });
         return;
     }
@@ -97,29 +98,28 @@ export function ExpenseForm({ wallet, categories, closeForm }: ExpenseFormProps)
         batch.set(newExpenseRef, {
             ...values,
             userId: user.uid,
+            paidFromWallet: true, // Explicitly set to true
             createdAt: serverTimestamp(),
         });
 
-        if (values.paidFromWallet && wallet) {
-            const walletRef = doc(db, 'personalWallets', wallet.id);
-            batch.update(walletRef, {
-                balance: increment(-expenseAmountInWalletCurrency),
-                updatedAt: serverTimestamp(),
-            });
+        const walletRef = doc(db, 'personalWallets', wallet.id);
+        batch.update(walletRef, {
+            balance: increment(-expenseAmountInWalletCurrency),
+            updatedAt: serverTimestamp(),
+        });
 
-            const transactionRef = doc(collection(db, 'walletTransactions'));
-            batch.set(transactionRef, {
-                walletId: wallet.id,
-                amount: expenseAmountInWalletCurrency,
-                type: 'expense',
-                expenseId: newExpenseRef.id,
-                note: `Paid for: ${values.title}`,
-                timestamp: serverTimestamp(),
-            });
-        }
+        const transactionRef = doc(collection(db, 'walletTransactions'));
+        batch.set(transactionRef, {
+            walletId: wallet.id,
+            amount: expenseAmountInWalletCurrency,
+            type: 'expense',
+            expenseId: newExpenseRef.id,
+            note: `Paid for: ${values.title}`,
+            timestamp: serverTimestamp(),
+        });
       
         await batch.commit();
-        toast({ title: 'Success', description: 'Expense added successfully.' });
+        toast({ title: 'Success', description: 'Expense added and wallet updated.' });
         closeForm();
     } catch (error) {
         console.error('Error adding personal expense:', error);
@@ -132,27 +132,6 @@ export function ExpenseForm({ wallet, categories, closeForm }: ExpenseFormProps)
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {wallet && (
-            <FormField
-                control={form.control}
-                name="paidFromWallet"
-                render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                            <FormLabel>Pay from Personal Wallet</FormLabel>
-                            <FormMessage />
-                        </div>
-                        <FormControl>
-                            <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                disabled={!wallet || wallet.balance <= 0}
-                            />
-                        </FormControl>
-                    </FormItem>
-                )}
-            />
-        )}
         <FormField
           control={form.control}
           name="title"
@@ -251,7 +230,7 @@ export function ExpenseForm({ wallet, categories, closeForm }: ExpenseFormProps)
           <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || !wallet}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Add Expense
           </Button>
