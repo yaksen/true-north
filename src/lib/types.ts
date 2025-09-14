@@ -1,12 +1,13 @@
 
 
+
 import { CurrencyCode } from "@/context/CurrencyContext";
 
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectType = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'Call' | 'Meeting' | 'Project';
 export type FinanceType = 'income' | 'expense';
-export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
+export type LeadStatus = 'new' | 'contacted' | 'qualified', 'lost', 'converted';
 export type ChannelStatus = 'new' | 'active' | 'inactive' | 'closed';
 export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void' | 'partial' | 'unpaid';
@@ -111,6 +112,19 @@ export interface Finance {
     createdAt: Date;
     updatedAt: Date;
 }
+
+export interface PersonalExpense {
+    id: string;
+    userId: string;
+    title: string;
+    category: string;
+    amount: number;
+    currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
+    date: Date;
+    note?: string;
+    createdAt: Date;
+}
+
 
 export interface SocialLink {
     platform: string;

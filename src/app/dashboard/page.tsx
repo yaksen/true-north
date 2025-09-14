@@ -2,19 +2,21 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { CrmSettings, Project, Task, Finance } from '@/lib/types';
+import { CrmSettings, Project, Task, Finance, PersonalExpense } from '@/lib/types';
 import { collection, onSnapshot, query, where, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Loader2 } from 'lucide-react';
 import { CurrencyDebug } from '@/components/debug/CurrencyDebug';
+import { PersonalExpenseCard } from '@/components/expenses/personal-expense-card';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [finances, setFinances] = useState<Finance[]>([]);
+  const [personalExpenses, setPersonalExpenses] = useState<PersonalExpense[]>([]);
   const [settings, setSettings] = useState<CrmSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -25,6 +27,7 @@ export default function DashboardPage() {
     const projectsQuery = query(collection(db, `projects`), where('members', 'array-contains', user.uid));
     const tasksQuery = query(collection(db, 'tasks'));
     const financesQuery = query(collection(db, 'finances'));
+    const personalExpensesQuery = query(collection(db, 'personalExpenses'), where('userId', '==', user.uid));
     const settingsRef = doc(db, 'settings', 'crm');
 
     const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
@@ -45,6 +48,18 @@ export default function DashboardPage() {
             } as Finance;
         }));
     });
+
+    const unsubscribePersonalExpenses = onSnapshot(personalExpensesQuery, (snapshot) => {
+        setPersonalExpenses(snapshot.docs.map(doc => {
+            const data = doc.data();
+            return { 
+                id: doc.id, 
+                ...data,
+                date: data.date?.toDate ? data.date.toDate() : new Date(data.date),
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+            } as PersonalExpense;
+        }));
+    });
     
     const unsubscribeSettings = onSnapshot(settingsRef, (doc) => {
         if (doc.exists()) {
@@ -53,11 +68,11 @@ export default function DashboardPage() {
     });
     
     // This is a bit of a hack to wait for the initial data load
-    // A more robust solution might use state management or a different loading strategy
     Promise.all([
         new Promise<void>(resolve => { const unsub = onSnapshot(projectsQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(tasksQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(financesQuery, () => { resolve(); unsub(); }); }),
+        new Promise<void>(resolve => { const unsub = onSnapshot(personalExpensesQuery, () => { resolve(); unsub(); }); }),
         new Promise<void>(resolve => { const unsub = onSnapshot(settingsRef, () => { resolve(); unsub(); }); }),
     ]).then(() => setLoading(false));
 
@@ -66,6 +81,7 @@ export default function DashboardPage() {
       unsubscribeProjects();
       unsubscribeTasks();
       unsubscribeFinances();
+      unsubscribePersonalExpenses();
       unsubscribeSettings();
     };
   }, [user]);
@@ -81,7 +97,14 @@ export default function DashboardPage() {
             <Loader2 className='h-8 w-8 animate-spin text-primary' />
         </div>
       ) : (
-        <DashboardClient projects={projects} tasks={tasks} finances={finances} settings={settings} />
+        <div className='grid grid-cols-1 xl:grid-cols-3 gap-6'>
+            <div className='xl:col-span-2'>
+                 <DashboardClient projects={projects} tasks={tasks} finances={finances} settings={settings} />
+            </div>
+            <div className='xl:col-span-1'>
+                <PersonalExpenseCard expenses={personalExpenses} />
+            </div>
+        </div>
       )}
     </>
   );
