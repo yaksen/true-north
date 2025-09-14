@@ -80,10 +80,6 @@ export interface TaskTemplate {
     slot: TaskTemplateSlot;
     assigneeUids: string[];
     daysOfWeek: number[]; // 0 for Sunday, 1 for Monday, etc.
-    active: boolean;
-    isGenerated?: boolean;
-    templateId?: string;
-    generatedForDate?: string;
     createdAt: Date;
     updatedAt: Date;
 }

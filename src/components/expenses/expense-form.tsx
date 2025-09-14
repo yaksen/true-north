@@ -39,7 +39,7 @@ const convert = (amount: number, from: string, to: string) => {
 
 const formSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters.'),
-  category: z.enum(expenseCategories),
+  category: z.string().nonempty("Category is required."),
   amount: z.coerce.number().positive('Amount must be positive.'),
   currency: z.enum(['LKR', 'USD', 'EUR', 'GBP']),
   date: z.date(),
