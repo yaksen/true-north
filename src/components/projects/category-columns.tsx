@@ -125,7 +125,7 @@ export const getCategoriesColumns = (onStar: (id: string, starred: boolean) => v
           Name <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => <div className="font-medium pl-4">{row.getValue("name")}</div>,
+      cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
     },
     {
         accessorKey: "sku",

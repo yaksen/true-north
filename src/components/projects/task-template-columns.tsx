@@ -130,7 +130,7 @@ export const getTaskTemplatesColumns = (project: Project): ColumnDef<TaskTemplat
           Title <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-       cell: ({ row }) => <div className="pl-4 font-medium">{row.original.title}</div>,
+       cell: ({ row }) => <div className="font-medium">{row.original.title}</div>,
     },
     {
       accessorKey: "slot",

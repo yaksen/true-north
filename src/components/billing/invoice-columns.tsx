@@ -143,7 +143,7 @@ export const getInvoiceColumns = (dependencies: DataDependencies): ColumnDef<Inv
           Invoice # <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => <div className="pl-4 font-medium">{row.getValue("invoiceNumber")}</div>,
+      cell: ({ row }) => <div className="font-medium">{row.getValue("invoiceNumber")}</div>,
     },
     {
       accessorKey: "leadId",

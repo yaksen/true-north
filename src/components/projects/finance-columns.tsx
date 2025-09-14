@@ -124,7 +124,7 @@ export const financeColumns = (onStar: (id: string, starred: boolean) => void): 
       ),
       cell: ({ row }) => {
         const date = new Date(row.getValue("date"));
-        return <div className="pl-4">{date.toLocaleDateString()}</div>;
+        return <div>{date.toLocaleDateString()}</div>;
       }
     },
     {

@@ -161,7 +161,7 @@ export const getTaskColumns = (dependencies: ColumnDependencies, onStar: (id: st
         const task = row.original;
         const canExpand = row.getCanExpand();
         return (
-            <div className="flex items-center pl-2 font-medium" style={{ paddingLeft: `${row.depth * 2}rem` }}>
+            <div className="flex items-center font-medium" style={{ paddingLeft: `${row.depth * 2}rem` }}>
                 {canExpand && (
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={row.getToggleExpandedHandler()}>
                         <ChevronRight className={`h-4 w-4 transition-transform ${row.getIsExpanded() ? 'rotate-90' : ''}`} />

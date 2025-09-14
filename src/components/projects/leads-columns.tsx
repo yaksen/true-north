@@ -205,7 +205,7 @@ export const getLeadsColumns = (project: Project, packages: Package[], services:
       cell: ({ row }) => {
         const lead = row.original;
         return (
-            <div className="pl-2">
+            <div>
                 <p className="font-medium">{lead.name}</p>
                 <p className="text-xs text-muted-foreground">{lead.email}</p>
             </div>
