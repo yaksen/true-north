@@ -55,21 +55,19 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
         });
     }, [templates, slotFilter, dayFilter, assigneeFilter]);
 
-    const handleGenerateTodaysTasks = async () => {
+    const handleGenerateTasks = async (templatesToGenerate: TaskTemplate[], forDate: Date = new Date()) => {
         if (!user) return;
         setIsGenerating(true);
 
-        try {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Normalize to start of day in local time
-            const dayOfWeek = today.getDay();
+        const targetDate = new Date(forDate);
+        targetDate.setHours(0, 0, 0, 0);
 
-            // Fetch tasks already generated for today for this project to prevent duplicates
+        try {
             const generatedTasksQuery = query(
                 collection(db, 'tasks'),
                 where('projectId', '==', project.id),
                 where('isGenerated', '==', true),
-                where('generatedForDate', '==', today)
+                where('generatedForDate', '==', targetDate)
             );
             const generatedTasksSnapshot = await getDocs(generatedTasksQuery);
             const existingTemplateIds = new Set(generatedTasksSnapshot.docs.map(doc => doc.data().templateId));
@@ -77,12 +75,8 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
             const batch = writeBatch(db);
             let tasksCreatedCount = 0;
 
-            templates.forEach(template => {
-                if (
-                    template.active && 
-                    template.daysOfWeek.includes(dayOfWeek) && 
-                    !existingTemplateIds.has(template.id)
-                ) {
+            templatesToGenerate.forEach(template => {
+                if (!existingTemplateIds.has(template.id)) {
                     const newTaskRef = doc(collection(db, 'tasks'));
                     batch.set(newTaskRef, {
                         projectId: project.id,
@@ -95,18 +89,18 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
                         updatedAt: serverTimestamp(),
                         isGenerated: true,
                         templateId: template.id,
-                        generatedForDate: today,
+                        generatedForDate: targetDate,
                         slot: template.slot,
                     });
                     tasksCreatedCount++;
                 }
             });
-            
+
             if (tasksCreatedCount > 0) {
                 await batch.commit();
-                toast({ title: "Success", description: `${tasksCreatedCount} task(s) generated for today.` });
+                toast({ title: "Success", description: `${tasksCreatedCount} task(s) generated.` });
             } else {
-                toast({ title: "No new tasks", description: "All scheduled tasks for today have already been generated." });
+                toast({ title: "No new tasks", description: "Selected tasks have already been generated for the target date." });
             }
 
         } catch (error) {
@@ -117,6 +111,17 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
         }
     };
     
+    const handleGenerateTodaysTasks = () => {
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const templatesForToday = templates.filter(t => t.active && t.daysOfWeek.includes(dayOfWeek));
+        handleGenerateTasks(templatesForToday, today);
+    };
+
+    const handleGenerateSelectedTasks = async (selectedTemplates: TaskTemplate[]) => {
+        await handleGenerateTasks(selectedTemplates, new Date());
+    }
+
     const Toolbar = () => (
         <div className="flex items-center gap-2">
             <Select value={slotFilter} onValueChange={(value) => setSlotFilter(value as any)}>
@@ -187,7 +192,12 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <DataTable columns={templateColumns} data={filteredTemplates} toolbar={<Toolbar />} />
+                    <DataTable 
+                        columns={templateColumns} 
+                        data={filteredTemplates} 
+                        toolbar={<Toolbar />}
+                        onGenerateSelected={handleGenerateSelectedTasks}
+                    />
                 </CardContent>
             </Card>
         </div>
