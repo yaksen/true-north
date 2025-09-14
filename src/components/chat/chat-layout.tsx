@@ -8,7 +8,6 @@ import { useEffect, useState } from 'react';
 import type { Chat, UserProfile } from '@/lib/types';
 import { ChatSidebar } from './chat-sidebar';
 import { ChatWindow } from './chat-window';
-import { OnlineUsers } from './online-users';
 import { Card } from '../ui/card';
 
 export function ChatLayout() {
@@ -67,7 +66,7 @@ export function ChatLayout() {
     if (!user) return null;
 
     return (
-        <Card className="h-[calc(100vh-8rem)] w-full grid grid-cols-[300px_1fr_250px]">
+        <Card className="h-[calc(100vh-8rem)] w-full grid grid-cols-[300px_1fr]">
             <ChatSidebar
                 chats={chats}
                 activeChatId={activeChatId}
@@ -78,12 +77,10 @@ export function ChatLayout() {
             {activeChat ? (
                 <ChatWindow chat={activeChat} allUsers={allUsers} />
             ) : (
-                <div className="flex flex-col items-center justify-center h-full border-x">
+                <div className="flex flex-col items-center justify-center h-full border-l">
                     <p className="text-muted-foreground">Select a chat to start messaging</p>
                 </div>
             )}
-
-            <OnlineUsers />
         </Card>
     );
 }
