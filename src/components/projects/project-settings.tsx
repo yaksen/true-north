@@ -22,9 +22,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteDoc, doc, updateDoc, arrayUnion, getDocs, collection } from 'firebase/firestore';
+import { deleteDoc, doc, updateDoc, arrayUnion, getDocs, collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Combobox } from '../ui/combo-box';
+import { Input } from '../ui/input';
 
 interface ProjectSettingsProps {
   project: Project;
@@ -35,51 +35,48 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
-  const [selectedUser, setSelectedUser] = useState('');
+  const [emailToAdd, setEmailToAdd] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const usersSnapshot = await getDocs(collection(db, 'users'));
-        const users = usersSnapshot.docs.map(doc => doc.data() as UserProfile);
-        setAllUsers(users);
-      } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch users.' });
-      }
-    };
-    fetchUsers();
-  }, [toast]);
-
   const isOwner = user?.uid === project.ownerUid;
-
-  const nonMemberUsers = allUsers
-    .filter(u => !project.members.includes(u.id))
-    .map(u => ({ value: u.id, label: u.email }));
 
   async function handleAddMember() {
     if (!isOwner) {
       toast({ variant: 'destructive', title: 'Unauthorized', description: 'Only project owners can add members.' });
       return;
     }
-    if (!selectedUser) {
-        toast({ variant: 'destructive', title: 'No User Selected', description: 'Please select a user to add.' });
+    if (!emailToAdd) {
+        toast({ variant: 'destructive', title: 'No Email Entered', description: 'Please enter the email of the user to add.' });
         return;
     }
 
     setIsAdding(true);
     try {
-        const projectRef = doc(db, 'projects', project.id);
-        await updateDoc(projectRef, { members: arrayUnion(selectedUser) });
-        
-        const addedUser = allUsers.find(u => u.id === selectedUser);
-        if (addedUser) {
-            await logActivity(project.id, 'member_added' as any, { email: addedUser.email }, user.uid);
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where("email", "==", emailToAdd));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            toast({ variant: 'destructive', title: 'User Not Found', description: 'No user exists with that email address.' });
+            setIsAdding(false);
+            return;
         }
 
+        const userToAdd = querySnapshot.docs[0].data() as UserProfile;
+
+        if (project.members.includes(userToAdd.id)) {
+            toast({ variant: 'destructive', title: 'Already a Member', description: 'This user is already a member of the project.' });
+            setIsAdding(false);
+            return;
+        }
+
+        const projectRef = doc(db, 'projects', project.id);
+        await updateDoc(projectRef, { members: arrayUnion(userToAdd.id) });
+        
+        await logActivity(project.id, 'member_added' as any, { email: userToAdd.email }, user!.uid);
+
         toast({ title: 'Success', description: 'Member added to the project.' });
-        setSelectedUser('');
+        setEmailToAdd('');
     } catch (error) {
         console.error("Error adding member: ", error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not add member.' });
@@ -120,13 +117,12 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         {isOwner && (
           <CardFooter className="border-t pt-6">
             <div className="flex w-full items-center gap-2">
-                <Combobox
-                    items={nonMemberUsers}
-                    value={selectedUser}
-                    onChange={setSelectedUser}
-                    placeholder="Select user to add..."
-                    searchPlaceholder="Search users..."
-                    noResultsText="No users found."
+                <Input
+                    type="email"
+                    placeholder="Enter user's email to add..."
+                    value={emailToAdd}
+                    onChange={(e) => setEmailToAdd(e.target.value)}
+                    className="flex-1"
                 />
               <Button onClick={handleAddMember} disabled={isAdding}>
                 {isAdding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
