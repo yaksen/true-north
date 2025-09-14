@@ -85,7 +85,7 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
   }, [projectSummaries, projects.length, displayCurrency]);
 
   return (
-    <div className="flex-1 space-y-6">
+    <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
             <TopProjects summaries={projectSummaries} currency={displayCurrency} />
@@ -110,6 +110,6 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
               <ProjectCard key={summary.project.id} summary={summary} currency={displayCurrency} />
           ))}
       </div>
-    </div>
+    </>
   );
 }

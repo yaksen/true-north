@@ -121,21 +121,18 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
-            {/* Main column */}
-            <div className="lg:col-span-2">
-                <DashboardClient 
-                    projects={projects}
-                    tasks={tasks}
-                    finances={finances}
-                    settings={settings}
-                />
-            </div>
-
-            {/* Right column */}
-            <div className="space-y-6 lg:space-y-8">
-               <PersonalWalletCard wallet={wallet} projects={projects} />
-               <PersonalExpenseCard expenses={personalExpenses} wallet={wallet} categories={personalExpenseCategories} />
-            </div>
+          <div className="lg:col-span-2 space-y-6">
+            <DashboardClient
+              projects={projects}
+              tasks={tasks}
+              finances={finances}
+              settings={settings}
+            />
+          </div>
+          <div className="space-y-6 lg:space-y-8">
+            <PersonalWalletCard wallet={wallet} projects={projects} />
+            <PersonalExpenseCard expenses={personalExpenses} wallet={wallet} categories={personalExpenseCategories} />
+          </div>
         </div>
       )}
     </>
