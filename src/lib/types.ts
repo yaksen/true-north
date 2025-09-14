@@ -12,14 +12,6 @@ export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void' | 'partial' | 'unpaid';
 export type PaymentMethod = 'cash' | 'bank transfer' | 'online' | 'other';
 export type WalletTransactionType = 'add' | 'expense';
-export type NotificationType =
-  | 'message'
-  | 'mention'
-  | 'invoice'
-  | 'task_assigned'
-  | 'payment_received'
-  | 'project_invite';
-export type ChatType = 'direct' | 'project';
 export type TaskTemplateSlot = 'morning' | 'midday' | 'night';
 
 export interface UserProfile {
@@ -321,44 +313,6 @@ export interface WalletTransaction {
     expenseId?: string; // For 'expense' type when paying for a personal expense
     note?: string;
     timestamp: Date;
-}
-
-// Chat & Notification types
-export interface Chat {
-    id: string;
-    type: ChatType;
-    projectId?: string;
-    members: string[];
-    lastMessage: {
-        text: string;
-        senderId: string;
-        timestamp: any;
-    };
-    updatedAt: any;
-    createdAt: any;
-    // For UI purposes
-    title?: string;
-    photoURL?: string;
-}
-
-export interface Message {
-    id: string;
-    chatId: string;
-    senderId: string;
-    text: string;
-    createdAt: any;
-    readBy: { [userId: string]: Date };
-}
-
-export interface Notification {
-    id: string;
-    userId: string;
-    type: NotificationType;
-    title: string;
-body: string;
-    link?: string;
-    isRead: boolean;
-    createdAt: any;
 }
 
 // Draggable Dashboard Types

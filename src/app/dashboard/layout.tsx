@@ -4,7 +4,6 @@
 
 import Link from 'next/link';
 import {
-  Bell,
   Home,
   Package2,
   Users,
@@ -14,7 +13,6 @@ import {
   User,
   ReceiptText,
   Wallet,
-  MessageCircle, // Added for Chat
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +40,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { Loader2, Menu } from 'lucide-react';
-import { NotificationsPopover } from '@/components/notifications-popover';
 
 export default function DashboardLayout({
   children,
@@ -69,7 +66,6 @@ export default function DashboardLayout({
   const navItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard' },
     { href: '/dashboard/projects', icon: Briefcase, label: 'Projects' },
-    { href: '/dashboard/chat', icon: MessageCircle, label: 'Chat' },
     { href: '/dashboard/billing', icon: ReceiptText, label: 'Billing' },
     { href: '/dashboard/tasks', icon: ListChecks, label: 'Tasks' },
     { href: '/dashboard/finance', icon: CircleDollarSign, label: 'Finance' },
@@ -140,7 +136,6 @@ export default function DashboardLayout({
           <div className="w-full flex-1">
             {/* Can add a global search here if needed */}
           </div>
-          <NotificationsPopover />
           <UserNav />
         </header>
         <main className="flex flex-1 flex-col bg-background">
