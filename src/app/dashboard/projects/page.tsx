@@ -36,7 +36,7 @@ const convert = (amount: number, from: string, to: string) => {
 
 export default function ProjectsPage() {
   const { user } = useAuth();
-  const { globalCurrency, setGlobalCurrency } = useCurrency();
+  const { globalCurrency } = useCurrency();
   const displayCurrency = globalCurrency || 'USD';
   const [projects, setProjects] = useState<Project[]>([]);
   const [finances, setFinances] = useState<Finance[]>([]);
@@ -133,19 +133,6 @@ export default function ProjectsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Projects</h1>
         <div className='flex items-center gap-4'>
-            <div className="p-1 border rounded-lg bg-card flex items-center gap-1">
-                {["USD", "LKR", "EUR", "GBP"].map((c) => (
-                <Button
-                    key={c}
-                    onClick={() => setGlobalCurrency(c)}
-                    size="sm"
-                    variant={globalCurrency === c ? "secondary" : "ghost"}
-                    className='text-xs'
-                >
-                    {c}
-                </Button>
-                ))}
-            </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
                 <Button size="sm" className="gap-1">

@@ -40,6 +40,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { Loader2, Menu } from 'lucide-react';
+import { useCurrency } from '@/context/CurrencyContext';
 
 export default function DashboardLayout({
   children,
@@ -49,6 +50,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const router = useRouter();
+  const { globalCurrency, setGlobalCurrency } = useCurrency();
 
   if (loading) {
     return (
@@ -135,6 +137,19 @@ export default function DashboardLayout({
           </Sheet>
           <div className="w-full flex-1">
             {/* Can add a global search here if needed */}
+          </div>
+          <div className="p-1 border rounded-lg bg-card flex items-center gap-1">
+              {["USD", "LKR", "EUR", "GBP"].map((c) => (
+              <Button
+                  key={c}
+                  onClick={() => setGlobalCurrency(c)}
+                  size="sm"
+                  variant={globalCurrency === c ? "secondary" : "ghost"}
+                  className='text-xs'
+              >
+                  {c}
+              </Button>
+              ))}
           </div>
           <UserNav />
         </header>
