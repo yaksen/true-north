@@ -13,7 +13,7 @@ export function formatCurrency(
 ) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency,
+    currency: currency || 'USD',
     ...options,
   }).format(amount);
 }
