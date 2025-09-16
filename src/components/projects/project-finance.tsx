@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface ProjectFinanceProps {
     project: Project;
@@ -29,6 +30,8 @@ export function ProjectFinance({ project, finances }: ProjectFinanceProps) {
     const [isFinanceFormOpen, setIsFinanceFormOpen] = useState(false);
     const [typeFilter, setTypeFilter] = useState<FinanceType | 'all'>('all');
     const [dateFilter, setDateFilter] = useState<DateRange | undefined>();
+    const { globalCurrency } = useCurrency();
+    const displayCurrency = globalCurrency || project.currency;
 
     const handleStar = async (id: string, starred: boolean) => {
         try {
@@ -51,7 +54,7 @@ export function ProjectFinance({ project, finances }: ProjectFinanceProps) {
         }
     }
 
-    const columns = useMemo(() => financeColumns(handleStar), [handleStar]);
+    const columns = useMemo(() => financeColumns(handleStar, displayCurrency), [displayCurrency]);
 
     const filteredFinances = useMemo(() => {
         return finances.filter(f => {
