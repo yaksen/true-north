@@ -71,7 +71,7 @@ export function ProjectReports({ project, reports }: ProjectReportsProps) {
             mimeType: fileMetadata.contentType,
         });
 
-        await logActivity(project.id, 'report_uploaded' as any, { name: fileMetadata.name }, user.uid);
+        await logActivity(project.id, 'report_uploaded', { name: fileMetadata.name }, user.uid);
         
         toast({ title: 'Success', description: 'File uploaded successfully.' });
         setIsUploading(false);

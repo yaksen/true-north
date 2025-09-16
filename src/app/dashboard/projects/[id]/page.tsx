@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Invoice, Product, Channel, TaskTemplate } from '@/lib/types';
+import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Invoice, Product, Channel, TaskTemplate, Report } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,6 +20,7 @@ import { ProjectTemplates } from '@/components/projects/project-templates';
 import { ProjectRecords } from '@/components/projects/project-records';
 import { ProjectSettings } from '@/components/projects/project-settings';
 import { ProjectBilling } from '@/components/projects/project-billing';
+import { ProjectReports } from '@/components/projects/project-reports';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -41,6 +42,7 @@ export default function ProjectDetailPage() {
   const [records, setRecords] = useState<ActivityRecord[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -66,7 +68,7 @@ export default function ProjectDetailPage() {
         setAllProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)))
     });
 
-    const createCollectionSubscription = <T extends { date?: any, createdAt?: any, timestamp?: any }>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
+    const createCollectionSubscription = <T extends { date?: any, createdAt?: any, timestamp?: any, uploadedAt?: any }>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
         const q = query(collection(db, collectionName), where('projectId', '==', id));
         return onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => {
@@ -76,6 +78,7 @@ export default function ProjectDetailPage() {
                 if (docData.timestamp && docData.timestamp.toDate) docData.timestamp = docData.timestamp.toDate();
                 if (docData.issueDate && docData.issueDate.toDate) docData.issueDate = docData.issueDate.toDate();
                 if (docData.dueDate && docData.dueDate.toDate) docData.dueDate = docData.dueDate.toDate();
+                if (docData.uploadedAt && docData.uploadedAt.toDate) docData.uploadedAt = docData.uploadedAt.toDate();
                 if (docData.payments) {
                   docData.payments = docData.payments.map((p: any) => ({
                     ...p,
@@ -100,6 +103,7 @@ export default function ProjectDetailPage() {
     const unsubscribeRecords = createCollectionSubscription<ActivityRecord>('records', setRecords);
     const unsubscribeNotes = createCollectionSubscription<Note>('notes', setNotes);
     const unsubscribeInvoices = createCollectionSubscription<Invoice>('invoices', setInvoices);
+    const unsubscribeReports = createCollectionSubscription<Report>('reports', setReports);
 
     return () => {
         unsubscribeProject();
@@ -116,6 +120,7 @@ export default function ProjectDetailPage() {
         unsubscribeRecords();
         unsubscribeNotes();
         unsubscribeInvoices();
+        unsubscribeReports();
     };
   }, [user, id, router]);
 
@@ -142,6 +147,7 @@ export default function ProjectDetailPage() {
                     <TabsTrigger value="finance">Finance</TabsTrigger>
                     <TabsTrigger value="tasks">Tasks</TabsTrigger>
                     <TabsTrigger value="templates">Templates</TabsTrigger>
+                    <TabsTrigger value="reports">Reports</TabsTrigger>
                     <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
             </div>
@@ -177,6 +183,9 @@ export default function ProjectDetailPage() {
             </TabsContent>
             <TabsContent value="records">
                 <ProjectRecords project={project} records={records} notes={notes} />
+            </TabsContent>
+             <TabsContent value="reports">
+                <ProjectReports project={project} reports={reports} />
             </TabsContent>
             <TabsContent value="settings">
                 <ProjectSettings project={project} />
