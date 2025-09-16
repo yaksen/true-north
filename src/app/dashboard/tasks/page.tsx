@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, where, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task } from '@/lib/types';
+import type { Project, Task, TaskTemplate } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { GlobalTasksClient } from '@/components/tasks/global-tasks-client';
 
@@ -13,6 +13,7 @@ export default function GlobalTasksPage() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,22 +28,31 @@ export default function GlobalTasksPage() {
       
       if (projectsData.length === 0) {
         setTasks([]);
+        setTemplates([]);
         setLoading(false);
         return;
       }
 
-      // Fetch tasks for all projects the user is a member of.
-      // Firestore 'in' query is limited to 30 values, so we might need to batch this in the future if a user has many projects.
       const projectIds = projectsData.map(p => p.id);
+      
       const tasksQuery = query(collection(db, 'tasks'), where('projectId', 'in', projectIds));
+      const templatesQuery = query(collection(db, 'taskTemplates'), where('projectId', 'in', projectIds));
       
       const unsubscribeTasks = onSnapshot(tasksQuery, (tasksSnapshot) => {
         const tasksData = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
         setTasks(tasksData);
-        setLoading(false);
       });
 
-      return () => unsubscribeTasks();
+      const unsubscribeTemplates = onSnapshot(templatesQuery, (templatesSnapshot) => {
+        const templatesData = templatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TaskTemplate));
+        setTemplates(templatesData);
+        setLoading(false); // Consider loading complete only after all data is fetched
+      });
+
+      return () => {
+        unsubscribeTasks();
+        unsubscribeTemplates();
+      };
     });
 
     return () => unsubscribeProjects();
@@ -58,7 +68,7 @@ export default function GlobalTasksPage() {
           <Loader2 className='h-8 w-8 animate-spin text-primary' />
         </div>
       ) : (
-        <GlobalTasksClient projects={projects} tasks={tasks} />
+        <GlobalTasksClient projects={projects} tasks={tasks} templates={templates} />
       )}
     </>
   );
