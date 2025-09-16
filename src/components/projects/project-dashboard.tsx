@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Project, Task, Finance, Lead } from "@/lib/types";
+import { Project, Task, Finance, Lead, Channel } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
@@ -21,6 +21,7 @@ interface ProjectDashboardProps {
     project: Project;
     tasks: Task[];
     finances: Finance[];
+    channels: Channel[];
 }
 
 // Mock conversion rates - replace with a real API call in a real app
@@ -33,7 +34,7 @@ const convert = (amount: number, from: string, to: string) => {
 };
 
 
-export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardProps) {
+export function ProjectDashboard({ project, tasks, finances, channels }: ProjectDashboardProps) {
     const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
     const [isFinanceFormOpen, setIsFinanceFormOpen] = useState(false);
     const [leads, setLeads] = useState<Lead[]>([]);
@@ -125,11 +126,18 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
                 </Card>
                  <Card>
                     <CardHeader>
-                        <CardTitle>Active Leads</CardTitle>
-                        <CardDescription>Count of active leads</CardDescription>
+                        <CardTitle>Leads & Channels</CardTitle>
+                        <CardDescription>Active lead and channel counts</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold">{leads.length}</p>
+                    <CardContent className="grid grid-rows-2 gap-2">
+                        <div>
+                             <p className="text-xs text-muted-foreground">Active Leads</p>
+                            <p className="text-2xl font-bold">{leads.length}</p>
+                        </div>
+                         <div>
+                            <p className="text-xs text-muted-foreground">Channels</p>
+                            <p className="text-2xl font-bold">{channels.length}</p>
+                        </div>
                     </CardContent>
                 </Card>
                 <Card>
