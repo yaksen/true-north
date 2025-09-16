@@ -179,8 +179,8 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
                 if (projectTasks.length === 0) return null;
 
                 return (
-                    <AccordionItem value={project.id} key={project.id}>
-                    <AccordionTrigger className='hover:no-underline px-4'>
+                    <AccordionItem value={project.id} key={project.id} className="border-b-0">
+                    <AccordionTrigger className='hover:no-underline px-4 py-2 bg-muted/50 rounded-t-lg'>
                         <div className='flex flex-col items-start'>
                             <h3 className="font-semibold text-lg">{project.name}</h3>
                             <p className='text-sm text-muted-foreground'>
@@ -188,13 +188,15 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
                             </p>
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent>
-                        <DataTable 
-                            columns={taskColumns} 
-                            data={projectTasks}
-                            getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
-                            onDeleteSelected={handleDeleteSelected}
-                        />
+                    <AccordionContent className="p-0">
+                        <div className="border-x border-b rounded-b-lg p-4">
+                            <DataTable 
+                                columns={taskColumns} 
+                                data={projectTasks}
+                                getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
+                                onDeleteSelected={handleDeleteSelected}
+                            />
+                        </div>
                     </AccordionContent>
                     </AccordionItem>
                 )
