@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from "react";
-import { Project, Task, TaskStatus, Lead } from "@/lib/types";
+import { Project, Task, Lead, TaskTemplateSlot } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
@@ -11,7 +11,7 @@ import { getTaskColumns } from "./task-columns";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { TaskForm } from "./task-form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { getCoreRowModel, useReactTable, getExpandedRowModel, Row } from "@tanstack/react-table";
+import { Row } from "@tanstack/react-table";
 import { Checkbox } from "../ui/checkbox";
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -23,12 +23,12 @@ interface ProjectTasksProps {
     leads: Lead[];
 }
 
-const taskStatuses: TaskStatus[] = ['Call', 'Meeting', 'Project'];
+const slots: TaskTemplateSlot[] = ['morning', 'midday', 'night'];
 
 export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
     const { toast } = useToast();
     const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
-    const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
+    const [slotFilter, setSlotFilter] = useState<TaskTemplateSlot | 'all'>('all');
     const [hideCompleted, setHideCompleted] = useState(false);
 
     const handleStar = async (id: string, starred: boolean) => {
@@ -56,8 +56,8 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
 
     const filteredTasks = useMemo(() => {
         let filtered = tasks;
-        if (statusFilter !== 'all') {
-            filtered = filtered.filter(task => task.status === statusFilter);
+        if (slotFilter !== 'all') {
+            filtered = filtered.filter(task => task.slot === slotFilter);
         }
         if (hideCompleted) {
             // This is tricky with hierarchy. We'll filter out top-level completed tasks if they have no incomplete subtasks.
@@ -76,7 +76,7 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
             });
         }
         return filtered;
-    }, [tasks, statusFilter, hideCompleted]);
+    }, [tasks, slotFilter, hideCompleted]);
 
     const hierarchicalTasks = useMemo(() => {
         const taskMap = new Map(filteredTasks.map(t => [t.id, { ...t, subRows: [] as Task[] }]));
@@ -95,14 +95,14 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
 
     const Toolbar = () => (
         <div className="flex items-center gap-2">
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+            <Select value={slotFilter} onValueChange={(value) => setSlotFilter(value as any)}>
                 <SelectTrigger className="w-36 h-9 text-sm">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    {taskStatuses.map(status => (
-                        <SelectItem key={status} value={status}>{status}</SelectItem>
+                    <SelectItem value="all">All Slots</SelectItem>
+                    {slots.map(slot => (
+                        <SelectItem key={slot} value={slot} className="capitalize">{slot}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>
@@ -112,8 +112,8 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
                     Hide completed
                 </label>
             </div>
-            {(statusFilter !== 'all' || hideCompleted) && (
-                <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('all'); setHideCompleted(false); }}>
+            {(slotFilter !== 'all' || hideCompleted) && (
+                <Button variant="ghost" size="sm" onClick={() => { setSlotFilter('all'); setHideCompleted(false); }}>
                     Clear Filters
                 </Button>
             )}

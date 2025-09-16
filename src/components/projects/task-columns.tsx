@@ -2,7 +2,7 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Task, Lead } from "@/lib/types";
+import { Task, Lead, TaskTemplateSlot } from "@/lib/types";
 import { ArrowUpDown, MoreHorizontal, Edit, Trash2, PlusCircle, ChevronRight, Star } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -175,13 +175,11 @@ export const getTaskColumns = (dependencies: ColumnDependencies, onStar: (id: st
        },
     },
     {
-      accessorKey: "status",
-      header: "Status",
+      accessorKey: "slot",
+      header: "Slot",
       cell: ({ row }) => {
-        const status = row.getValue("status") as string;
-        let variant: "default" | "secondary" | "destructive" = "secondary";
-        if (status === 'Project') variant = 'default';
-        return <Badge variant={variant}>{status}</Badge>
+        const slot = row.getValue("slot") as TaskTemplateSlot;
+        return <Badge variant="outline" className="capitalize">{slot}</Badge>
       }
     },
     {

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Task, Project, Lead } from '@/lib/types';
+import type { Task, Project, Lead, TaskTemplateSlot } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { logActivity } from '@/lib/activity-log';
 
-const taskStatuses = ['Call', 'Meeting', 'Project'] as const;
+const slots: TaskTemplateSlot[] = ['morning', 'midday', 'night'];
 
 const formSchema = z.object({
   projectId: z.string().nonempty({ message: 'Project is required.' }),
@@ -31,7 +31,7 @@ const formSchema = z.object({
   leadId: z.string().optional(),
   title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
   description: z.string().optional(),
-  status: z.enum(taskStatuses),
+  slot: z.enum(slots),
   dueDate: z.date().optional(),
 });
 
@@ -63,7 +63,7 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
       leadId: leadId || '',
       title: '',
       description: '',
-      status: 'Project',
+      slot: 'morning',
       dueDate: new Date(),
     },
   });
@@ -184,15 +184,15 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
         <div className="grid grid-cols-2 gap-4">
             <FormField
                 control={form.control}
-                name="status"
+                name="slot"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel>Slot</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                         <SelectContent>
-                            {taskStatuses.map(status => (
-                                <SelectItem key={status} value={status}>{status}</SelectItem>
+                            {slots.map(slot => (
+                                <SelectItem key={slot} value={slot} className="capitalize">{slot}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>

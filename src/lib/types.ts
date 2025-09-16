@@ -55,7 +55,7 @@ export interface Task {
     leadId?: string;
     title: string;
     description?: string;
-    status: TaskStatus;
+    slot: TaskTemplateSlot;
     completed: boolean;
     dueDate?: Date;
     assigneeUid?: string;
@@ -215,6 +215,7 @@ export interface Package {
     discounts?: Discount[];
     discountPercentage: number;
     sku?: string;
+    imageUrl?: string;
     starred?: boolean;
     createdAt: Date;
     updatedAt: Date;
