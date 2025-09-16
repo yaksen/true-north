@@ -25,6 +25,16 @@ interface ColumnDependencies {
     onStar: (id: string, starred: boolean) => void;
 }
 
+// Mock conversion rates - replace with a real API call in a real app
+const MOCK_RATES: { [key: string]: number } = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
+
+const convert = (amount: number, from: string, to: string) => {
+    const fromRate = MOCK_RATES[from] || 1;
+    const toRate = MOCK_RATES[to] || 1;
+    return (amount / fromRate) * toRate;
+};
+
+
 const ActionsCell: React.FC<{ service: Service, dependencies: Omit<ColumnDependencies, 'onStar'> }> = ({ service, dependencies }) => {
     const { toast } = useToast();
     const { user } = useAuth();
@@ -75,7 +85,7 @@ const ActionsCell: React.FC<{ service: Service, dependencies: Omit<ColumnDepende
     );
 };
 
-export const getServicesColumns = (dependencies: ColumnDependencies): ColumnDef<Service>[] => [
+export const getServicesColumns = (dependencies: ColumnDependencies, displayCurrency: string): ColumnDef<Service>[] => [
     {
         id: 'select',
         header: ({ table }) => (
@@ -135,7 +145,8 @@ export const getServicesColumns = (dependencies: ColumnDependencies): ColumnDef<
       header: () => <div className="text-right">Price</div>,
       cell: ({ row }) => {
         const service = row.original;
-        const formatted = formatCurrency(service.price, service.currency);
+        const convertedAmount = convert(service.price, service.currency, displayCurrency);
+        const formatted = formatCurrency(convertedAmount, displayCurrency);
         return <div className="text-right">{formatted}</div>;
       },
     },

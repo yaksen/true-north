@@ -27,6 +27,7 @@ import { logActivity } from '@/lib/activity-log';
 import { ProductForm } from './product-form';
 import { getProductsColumns } from './product-columns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { useCurrency } from '@/context/CurrencyContext';
 
 interface ProjectProductsProps {
   project: Project;
@@ -36,9 +37,22 @@ interface ProjectProductsProps {
   packages: Package[];
 }
 
+// Mock conversion rates - replace with a real API call in a real app
+const MOCK_RATES: { [key: string]: number } = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
+
+const convert = (amount: number, from: string, to: string) => {
+    const fromRate = MOCK_RATES[from] || 1;
+    const toRate = MOCK_RATES[to] || 1;
+    return (amount / fromRate) * toRate;
+};
+
+
 export function ProjectProducts({ project, categories, services, products, packages }: ProjectProductsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { globalCurrency } = useCurrency();
+  const displayCurrency = globalCurrency || project.currency;
+
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
   const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
@@ -72,8 +86,9 @@ export function ProjectProducts({ project, categories, services, products, packa
   }
 
   const categoryColumns = useMemo(() => getCategoriesColumns(handleStar('categories')), []);
-  const serviceColumns = useMemo(() => getServicesColumns({ categories, project, onStar: handleStar('services') }), [categories, project]);
-  const productColumns = useMemo(() => getProductsColumns({ categories, onStar: handleStar('products') }), [categories]);
+  const serviceColumns = useMemo(() => getServicesColumns({ categories, project, onStar: handleStar('services') }, displayCurrency), [categories, project, displayCurrency]);
+  const productColumns = useMemo(() => getProductsColumns({ categories, onStar: handleStar('products') }, displayCurrency), [categories, displayCurrency]);
+
 
   const filteredServices = useMemo(() => {
     if (serviceCategoryFilter === 'all') return services;
@@ -308,6 +323,7 @@ export function ProjectProducts({ project, categories, services, products, packa
                         {filteredPackages.map(pkg => {
                             const includedServices = pkg.services.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
                             const includedProducts = (pkg.products || []).map(id => products.find(p => p.id === id)).filter(Boolean) as Product[];
+                            const convertedPrice = convert(pkg.price, pkg.currency, displayCurrency);
                             return (
                             <Card key={pkg.id}>
                                 <CardHeader>
@@ -351,7 +367,7 @@ export function ProjectProducts({ project, categories, services, products, packa
                                     <div>
                                         <p className='text-sm text-muted-foreground'>Price</p>
                                         <p className='text-xl font-bold'>
-                                            {formatCurrency(pkg.price, pkg.currency)}
+                                            {formatCurrency(convertedPrice, displayCurrency)}
                                         </p>
                                     </div>
                                 </CardFooter>
