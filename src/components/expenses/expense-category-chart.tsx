@@ -57,7 +57,7 @@ const CustomizedLabel = (props: any) => {
                 fill="none"
             />
             <text x={x3} y={y3} textAnchor={textAnchor} dominantBaseline="central" className="text-xs fill-muted-foreground">
-                {name} ({(percent * 100).toFixed(0)}%)
+                ({(percent * 100).toFixed(0)}%)
             </text>
         </>
     );
