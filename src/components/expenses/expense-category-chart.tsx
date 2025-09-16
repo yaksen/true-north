@@ -2,7 +2,7 @@
 'use client';
 
 import { TrendingUp } from 'lucide-react';
-import { Pie, PieChart, Cell } from 'recharts';
+import { Pie, PieChart, Cell, LabelList } from 'recharts';
 import {
   ChartConfig,
   ChartContainer,
@@ -36,6 +36,33 @@ const generateColor = (index: number) => {
   return colors[index % colors.length];
 };
 
+const polarToCartesian = (cx: number, cy: number, radius: number, angle: number) => ({
+    x: cx + radius * Math.cos((-angle * Math.PI) / 180),
+    y: cy + radius * Math.sin((-angle * Math.PI) / 180),
+});
+
+const CustomizedLabel = (props: any) => {
+    const { cx, cy, midAngle, outerRadius, percent, name } = props;
+    const { x: x1, y: y1 } = polarToCartesian(cx, cy, outerRadius, midAngle);
+    const { x: x2, y: y2 } = polarToCartesian(cx, cy, outerRadius + 20, midAngle);
+    const { x: x3, y: y3 } = polarToCartesian(cx, cy, outerRadius + 40, midAngle);
+
+    const textAnchor = x3 > cx ? 'start' : 'end';
+
+    return (
+        <>
+            <path
+                d={`M${x1},${y1}L${x2},${y2}L${x3},${y3}`}
+                stroke="hsl(var(--muted-foreground))"
+                fill="none"
+            />
+            <text x={x3} y={y3} textAnchor={textAnchor} dominantBaseline="central" className="text-xs fill-muted-foreground">
+                {name} ({(percent * 100).toFixed(0)}%)
+            </text>
+        </>
+    );
+};
+
 export function ExpenseCategoryChart({ data, currency, total }: ExpenseCategoryChartProps) {
     const chartData = useMemo(() => {
         return data.map((item, index) => ({
@@ -58,15 +85,15 @@ export function ExpenseCategoryChart({ data, currency, total }: ExpenseCategoryC
 
   if (data.length === 0) {
     return (
-        <div className="flex items-center justify-center h-48">
+        <div className="flex items-center justify-center h-64">
             <p className="text-sm text-muted-foreground">No expense data for this period.</p>
         </div>
     );
   }
 
   return (
-    <ChartContainer config={chartConfig} className="mx-auto aspect-square h-48">
-      <PieChart>
+    <ChartContainer config={chartConfig} className="mx-auto aspect-square h-64">
+      <PieChart margin={{ top: 30, right: 50, bottom: 30, left: 50 }}>
         <ChartTooltip
             cursor={false}
             content={<ChartTooltipContent 
@@ -85,7 +112,16 @@ export function ExpenseCategoryChart({ data, currency, total }: ExpenseCategoryC
                 }}
             />}
         />
-        <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={60} strokeWidth={5}>
+        <Pie 
+            data={chartData} 
+            dataKey="value" 
+            nameKey="name" 
+            innerRadius={60} 
+            outerRadius={80} 
+            strokeWidth={5}
+            labelLine={false}
+            label={<CustomizedLabel />}
+        >
             {chartData.map((entry) => (
                 <Cell key={`cell-${entry.name}`} fill={entry.fill} />
             ))}
