@@ -17,7 +17,17 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from "@/hooks/use-auth";
 import { logActivity } from "@/lib/activity-log";
 import { Checkbox } from "../ui/checkbox";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
+
+// Mock conversion rates - replace with a real API call in a real app
+const MOCK_RATES: { [key: string]: number } = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
+
+const convert = (amount: number, from: string, to: string) => {
+    const fromRate = MOCK_RATES[from] || 1;
+    const toRate = MOCK_RATES[to] || 1;
+    return (amount / fromRate) * toRate;
+};
+
 
 const ActionsCell: React.FC<{ finance: Finance }> = ({ finance }) => {
     const { toast } = useToast();
@@ -82,7 +92,7 @@ const ActionsCell: React.FC<{ finance: Finance }> = ({ finance }) => {
     );
 };
 
-export const financeColumns = (onStar: (id: string, starred: boolean) => void): ColumnDef<Finance>[] => [
+export const financeColumns = (onStar: (id: string, starred: boolean) => void, displayCurrency: string): ColumnDef<Finance>[] => [
     {
         id: 'select',
         header: ({ table }) => (
@@ -152,12 +162,9 @@ export const financeColumns = (onStar: (id: string, starred: boolean) => void): 
       accessorKey: "amount",
       header: () => <div className="text-right">Amount</div>,
       cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("amount"));
-        const currency = row.original.currency;
-        const formatted = new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: currency,
-        }).format(amount);
+        const financeRecord = row.original;
+        const convertedAmount = convert(financeRecord.amount, financeRecord.currency, displayCurrency);
+        const formatted = formatCurrency(convertedAmount, displayCurrency);
         return <div className="text-right font-medium">{formatted}</div>;
       },
     },

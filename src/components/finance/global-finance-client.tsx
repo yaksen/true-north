@@ -67,7 +67,7 @@ export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientP
       }
   }
   
-  const columns = useMemo(() => financeColumns(handleStar), []);
+  const columns = useMemo(() => financeColumns(handleStar, displayCurrency), [displayCurrency]);
 
   const filteredFinances = useMemo(() => {
     return finances.filter(f => {
