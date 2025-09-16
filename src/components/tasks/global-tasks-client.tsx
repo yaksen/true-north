@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { Project, Task, Lead, TaskTemplate } from '@/lib/types';
+import type { Project, Task, Lead, TaskTemplate, UserProfile } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { DataTable } from '@/components/ui/data-table';
 import { getTaskColumns } from '@/components/projects/task-columns';
@@ -11,7 +11,7 @@ import { PlusCircle, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/projects/task-form';
 import { Card, CardContent } from '../ui/card';
-import { collection, onSnapshot, query, where, doc, writeBatch, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, writeBatch, updateDoc, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect } from 'react';
 import { Row } from '@tanstack/react-table';
@@ -29,7 +29,8 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   const { toast } = useToast();
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [loadingLeads, setLoadingLeads] = useState(true);
+  const [memberProfiles, setMemberProfiles] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleStar = async (id: string, starred: boolean) => {
@@ -103,14 +104,29 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   const taskColumns = useMemo(() => getTaskColumns({ leads }, handleStar), [leads]);
 
   useEffect(() => {
-    setLoadingLeads(true);
+    setLoading(true);
     const leadsQuery = query(collection(db, 'leads'));
-    const unsubscribe = onSnapshot(leadsQuery, (snapshot) => {
+    const unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
         setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
-        setLoadingLeads(false);
     });
-    return () => unsubscribe();
-  }, []);
+
+    const allMemberIds = projects.reduce((acc, p) => [...acc, ...p.members], [] as string[]);
+    const uniqueMemberIds = [...new Set(allMemberIds)];
+
+    const fetchMemberProfiles = async () => {
+        if (uniqueMemberIds.length > 0) {
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('id', 'in', uniqueMemberIds));
+            const querySnapshot = await getDocs(q);
+            setMemberProfiles(querySnapshot.docs.map(doc => doc.data() as UserProfile));
+        }
+        setLoading(false);
+    };
+
+    fetchMemberProfiles();
+
+    return () => unsubscribeLeads();
+  }, [projects]);
 
   const hierarchicalTasksByProject = useMemo(() => {
     const groupedByProject: { [key: string]: Task[] } = {};
@@ -137,7 +153,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
 
   const defaultAccordionValues = useMemo(() => projects.filter(p => (hierarchicalTasksByProject[p.id] || []).length > 0).map(p => p.id), [projects, hierarchicalTasksByProject]);
 
-  if (loadingLeads) {
+  if (loading) {
       return (
         <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-4">
             <Loader2 className='h-8 w-8 animate-spin text-primary' />
@@ -165,6 +181,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
             <TaskForm 
               projects={projects} 
               leads={leads}
+              memberProfiles={memberProfiles}
               closeForm={() => setIsTaskFormOpen(false)} 
             />
           </DialogContent>

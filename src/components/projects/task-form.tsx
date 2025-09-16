@@ -8,13 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Task, Project, Lead, TaskTemplateSlot } from '@/lib/types';
+import type { Task, Project, Lead, TaskTemplateSlot, UserProfile } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, serverTimestamp, updateDoc, getDocs, where, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -33,6 +33,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   slot: z.enum(slots),
   dueDate: z.date().optional(),
+  assigneeUid: z.string().optional(),
 });
 
 type TaskFormValues = z.infer<typeof formSchema>;
@@ -44,13 +45,16 @@ interface TaskFormProps {
   leadId?: string;
   projects?: Project[];
   leads?: Lead[];
+  members?: string[];
+  memberProfiles?: UserProfile[];
   closeForm: () => void;
 }
 
-export function TaskForm({ task, projectId, parentTaskId, leadId, projects, leads, closeForm }: TaskFormProps) {
+export function TaskForm({ task, projectId, parentTaskId, leadId, projects, leads, members, memberProfiles: initialMemberProfiles, closeForm }: TaskFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [memberProfiles, setMemberProfiles] = useState<UserProfile[]>(initialMemberProfiles || []);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(formSchema),
@@ -65,8 +69,22 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
       description: '',
       slot: 'morning',
       dueDate: new Date(),
+      assigneeUid: user?.uid || '',
     },
   });
+
+  useEffect(() => {
+    async function fetchProfiles() {
+        if (members && members.length > 0 && !initialMemberProfiles) {
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('id', 'in', members));
+            const querySnapshot = await getDocs(q);
+            setMemberProfiles(querySnapshot.docs.map(doc => doc.data() as UserProfile));
+        }
+    }
+    fetchProfiles();
+  }, [members, initialMemberProfiles]);
+
 
   async function onSubmit(values: TaskFormValues) {
     if (!user) {
@@ -87,7 +105,7 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
         const taskData: any = {
           ...values,
           completed: false, // New tasks are not completed by default
-          assigneeUid: user.uid,
+          assigneeUid: values.assigneeUid || user.uid,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
@@ -131,30 +149,54 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
             )}
            />
         )}
-         {leads && (
-           <FormField
-            control={form.control}
-            name="leadId"
-            render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Lead (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Assign to a lead..." />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {leads.map(l => (
-                                <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                </FormItem>
+         <div className='grid grid-cols-2 gap-4'>
+            {leads && (
+            <FormField
+                control={form.control}
+                name="leadId"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Lead (Optional)</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Assign to a lead..." />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {leads.map(l => (
+                                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
             )}
-           />
-        )}
+             <FormField
+                control={form.control}
+                name="assigneeUid"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Assignee</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select an assignee..." />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {memberProfiles.map(p => (
+                                    <SelectItem key={p.id} value={p.id}>{p.name || p.email}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
         <FormField
           control={form.control}
           name="title"

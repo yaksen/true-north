@@ -137,7 +137,7 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
                                 <DialogHeader>
                                     <DialogTitle>Add New Task</DialogTitle>
                                 </DialogHeader>
-                                <TaskForm projectId={project.id} leads={leads} closeForm={() => setIsTaskFormOpen(false)} />
+                                <TaskForm projectId={project.id} leads={leads} members={project.members} closeForm={() => setIsTaskFormOpen(false)} />
                             </DialogContent>
                         </Dialog>
                     </div>
