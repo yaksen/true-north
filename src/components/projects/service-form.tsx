@@ -19,6 +19,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/lib/activity-log';
 import { CurrencyInput } from '../ui/currency-input';
 import { useCurrency } from '@/context/CurrencyContext';
+import { v4 as uuidv4 } from 'uuid';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -53,7 +54,7 @@ export function ServiceForm({ service, project, categories, closeForm }: Service
     resolver: zodResolver(formSchema),
     defaultValues: service || {
       name: '',
-      sku: '',
+      sku: `SVC-${uuidv4().substring(0, 8).toUpperCase()}`,
       categoryId: '',
       finishTime: '1 Days',
       price: 0,
@@ -118,9 +119,9 @@ export function ServiceForm({ service, project, categories, closeForm }: Service
             name="sku"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>SKU (Optional)</FormLabel>
+                <FormLabel>SKU</FormLabel>
                 <FormControl>
-                    <Input placeholder="Unique Product Code" {...field} />
+                    <Input placeholder="Auto-generated SKU" {...field} readOnly />
                 </FormControl>
                 <FormMessage />
                 </FormItem>

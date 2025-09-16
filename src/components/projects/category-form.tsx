@@ -16,6 +16,7 @@ import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/lib/activity-log';
+import { v4 as uuidv4 } from 'uuid';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -40,7 +41,7 @@ export function CategoryForm({ category, projectId, closeForm }: CategoryFormPro
     resolver: zodResolver(formSchema),
     defaultValues: category || {
       name: '',
-      sku: '',
+      sku: `CAT-${uuidv4().substring(0, 8).toUpperCase()}`,
       notes: '',
     },
   });
@@ -95,9 +96,9 @@ export function CategoryForm({ category, projectId, closeForm }: CategoryFormPro
             name="sku"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>SKU (Optional)</FormLabel>
+                <FormLabel>SKU</FormLabel>
                 <FormControl>
-                    <Input placeholder="Unique Product Code" {...field} />
+                    <Input placeholder="Auto-generated SKU" {...field} readOnly />
                 </FormControl>
                 <FormMessage />
                 </FormItem>

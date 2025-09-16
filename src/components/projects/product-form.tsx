@@ -52,7 +52,7 @@ export function ProductForm({ product, project, categories, closeForm }: Product
     resolver: zodResolver(formSchema),
     defaultValues: product || {
       name: '',
-      sku: `SKU-${uuidv4().substring(0, 8).toUpperCase()}`,
+      sku: `PROD-${uuidv4().substring(0, 8).toUpperCase()}`,
       categoryId: '',
       quantity: 0,
       price: 0,
@@ -117,9 +117,9 @@ export function ProductForm({ product, project, categories, closeForm }: Product
             name="sku"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>SKU (Optional)</FormLabel>
+                <FormLabel>SKU</FormLabel>
                 <FormControl>
-                    <Input placeholder="Unique Product Code" {...field} />
+                    <Input placeholder="Auto-generated SKU" {...field} readOnly />
                 </FormControl>
                 <FormMessage />
                 </FormItem>

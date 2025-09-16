@@ -73,7 +73,7 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
         products: pkg.products || [],
     } : {
       name: '',
-      sku: '',
+      sku: `PKG-${uuidv4().substring(0, 8).toUpperCase()}`,
       description: '',
       services: [],
       products: [],
@@ -188,9 +188,9 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
             name="sku"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>SKU (Optional)</FormLabel>
+                <FormLabel>SKU</FormLabel>
                 <FormControl>
-                    <Input placeholder="Unique Product Code" {...field} />
+                    <Input placeholder="Auto-generated SKU" {...field} readOnly />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
