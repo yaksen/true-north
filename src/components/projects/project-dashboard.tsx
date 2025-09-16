@@ -15,6 +15,7 @@ import { FinanceForm } from "./finance-form";
 import { Row } from "@tanstack/react-table";
 import { collection, onSnapshot, query, where, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface ProjectDashboardProps {
     project: Project;
@@ -22,10 +23,22 @@ interface ProjectDashboardProps {
     finances: Finance[];
 }
 
+// Mock conversion rates - replace with a real API call in a real app
+const MOCK_RATES: { [key: string]: number } = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
+
+const convert = (amount: number, from: string, to: string) => {
+    const fromRate = MOCK_RATES[from] || 1;
+    const toRate = MOCK_RATES[to] || 1;
+    return (amount / fromRate) * toRate;
+};
+
+
 export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardProps) {
     const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
     const [isFinanceFormOpen, setIsFinanceFormOpen] = useState(false);
     const [leads, setLeads] = useState<Lead[]>([]);
+    const { globalCurrency } = useCurrency();
+    const displayCurrency = globalCurrency || project.currency;
 
     useEffect(() => {
         const q = query(collection(db, 'leads'), where('projectId', '==', project.id));
@@ -47,15 +60,26 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
 
     const taskColumns = useMemo(() => getTaskColumns({ leads }, handleStar), [leads]);
 
-    const totalIncome = finances.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
-    const totalExpenses = finances.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
-    const profitLoss = totalIncome - totalExpenses;
+    const { profitLoss, taskCompletionRate, completedTasks } = useMemo(() => {
+        const totalIncome = finances
+            .filter(f => f.type === 'income')
+            .reduce((sum, f) => sum + convert(f.amount, f.currency, displayCurrency), 0);
+        
+        const totalExpenses = finances
+            .filter(f => f.type === 'expense')
+            .reduce((sum, f) => sum + convert(f.amount, f.currency, displayCurrency), 0);
+            
+        const profitLoss = totalIncome - totalExpenses;
+        
+        const completedTasks = tasks.filter(t => t.completed).length;
+        const taskCompletionRate = tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0;
 
-    const completedTasks = tasks.filter(t => t.completed).length;
-    const taskCompletionRate = tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0;
+        return { profitLoss, taskCompletionRate, completedTasks };
+    }, [finances, tasks, displayCurrency]);
+
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: project.currency }).format(amount);
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: displayCurrency }).format(amount);
     }
 
     const hierarchicalTasks = useMemo(() => {
