@@ -19,6 +19,7 @@ import { Input } from '../ui/input';
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrency } from '@/context/CurrencyContext';
 
 type FinanceTypeFilter = 'all' | 'income' | 'expense';
 
@@ -27,8 +28,19 @@ interface GlobalFinanceClientProps {
   finances: Finance[];
 }
 
+// Mock conversion rates - replace with a real API call in a real app
+const MOCK_RATES: { [key: string]: number } = { USD: 1, LKR: 300, EUR: 0.9, GBP: 0.8 };
+
+const convert = (amount: number, from: string, to: string) => {
+    const fromRate = MOCK_RATES[from] || 1;
+    const toRate = MOCK_RATES[to] || 1;
+    return (amount / fromRate) * toRate;
+};
+
 export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientProps) {
   const { toast } = useToast();
+  const { globalCurrency } = useCurrency();
+  const displayCurrency = globalCurrency || 'USD';
   const [isFinanceFormOpen, setIsFinanceFormOpen] = useState(false);
   const [dateFilter, setDateFilter] = useState<DateRange | undefined>();
   const [typeFilter, setTypeFilter] = useState<FinanceTypeFilter>('all');
@@ -85,25 +97,28 @@ export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientP
   }, [projects, filteredFinances]);
 
   const projectSummaries = useMemo(() => {
-    const summaries: { [key: string]: { income: number; expense: number; net: number; currency: string } } = {};
+    const summaries: { [key: string]: { income: number; expense: number; net: number } } = {};
     for (const project of projects) {
         const projectFinances = financesByProject[project.id] || [];
-        const income = projectFinances.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
-        const expense = projectFinances.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
+        const income = projectFinances
+            .filter(f => f.type === 'income')
+            .reduce((sum, f) => sum + convert(f.amount, f.currency, displayCurrency), 0);
+        const expense = projectFinances
+            .filter(f => f.type === 'expense')
+            .reduce((sum, f) => sum + convert(f.amount, f.currency, displayCurrency), 0);
         summaries[project.id] = {
             income,
             expense,
             net: income - expense,
-            currency: project.currency,
         };
     }
     return summaries;
-  }, [projects, financesByProject]);
+  }, [projects, financesByProject, displayCurrency]);
 
   const defaultAccordionValues = useMemo(() => projects.filter(p => (financesByProject[p.id] || []).length > 0).map(p => p.id), [projects, financesByProject]);
 
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: displayCurrency }).format(amount);
   };
 
   const clearFilters = () => {
@@ -189,7 +204,7 @@ export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientP
                                 <div className='text-sm text-muted-foreground flex items-center gap-4'>
                                     <span>{projectFinances.length} transaction(s)</span>
                                     <span className={`font-medium ${summary.net >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                        Net: {formatCurrency(summary.net, summary.currency)}
+                                        Net: {formatCurrency(summary.net)}
                                     </span>
                                 </div>
                             </div>
