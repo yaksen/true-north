@@ -297,11 +297,18 @@ export interface AIPrompt {
     projectId: string;
     title: string;
     description?: string;
-    body: string;
     category?: string;
+    role: string;
+    task: string;
+    constraints: string;
+    examples?: string;
+    instructions?: string;
+    outputFormat: string;
+    tags: string[];
     createdAt: Date;
     updatedAt: Date;
 }
+
 
 export interface Report {
     id: string;

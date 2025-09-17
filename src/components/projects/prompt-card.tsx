@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { formatDistanceToNow } from 'date-fns';
+import { Badge } from '../ui/badge';
 
 interface PromptCardProps {
   prompt: AIPrompt;
@@ -35,9 +35,30 @@ export function PromptCard({ prompt }: PromptCardProps) {
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(prompt.body);
+    const sections = [
+        { title: 'Role/Context', content: prompt.role },
+        { title: 'Task', content: prompt.task },
+        { title: 'Constraints', content: prompt.constraints },
+        { title: 'Examples', content: prompt.examples },
+        { title: 'Step-by-step instructions', content: prompt.instructions },
+        { title: 'Output format', content: prompt.outputFormat },
+    ];
+    
+    const finalPrompt = sections
+        .filter(section => section.content && section.content.trim() !== '')
+        .map(section => `### ${section.title}\n${section.content}`)
+        .join('\n\n');
+
+    navigator.clipboard.writeText(finalPrompt);
     toast({ title: 'Copied!', description: 'Prompt body copied to clipboard.' });
   }
+
+  const sectionsForDisplay = [
+    { label: 'Role/Context', value: prompt.role },
+    { label: 'Task', value: prompt.task },
+    { label: 'Constraints', value: prompt.constraints },
+    { label: 'Output Format', value: prompt.outputFormat },
+  ];
 
   return (
     <Card className="flex flex-col">
@@ -47,42 +68,56 @@ export function PromptCard({ prompt }: PromptCardProps) {
           {prompt.description || 'No description'}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow">
-        <p className="text-sm bg-muted/50 p-3 rounded-md font-mono line-clamp-4">{prompt.body}</p>
+      <CardContent className="flex-grow space-y-2">
+        {sectionsForDisplay.map(sec => (
+            <div key={sec.label}>
+                <h4 className='font-semibold text-xs uppercase text-muted-foreground'>{sec.label}</h4>
+                <p className="text-sm line-clamp-2">{sec.value}</p>
+            </div>
+        ))}
       </CardContent>
-      <CardFooter className="flex w-full justify-between items-center">
-        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-            <DialogTrigger asChild>
-                <Button variant="outline" size="sm">View / Edit</Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader><DialogTitle>Edit AI Prompt</DialogTitle></DialogHeader>
-                <PromptForm prompt={prompt} projectId={prompt.projectId} closeForm={() => setIsEditOpen(false)} />
-            </DialogContent>
-        </Dialog>
-        <div className='flex items-center'>
-            <Button size="icon" variant="ghost" onClick={handleCopy}>
-                <Copy className="h-4 w-4" />
-            </Button>
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
+      <CardFooter className="flex-col items-start gap-4">
+        {prompt.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {prompt.tags.map(tag => (
+              <Badge key={tag} variant="secondary">{tag}</Badge>
+            ))}
+          </div>
+        )}
+        <div className="flex w-full justify-between items-center">
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">View / Edit</Button>
+                </DialogTrigger>
+                <DialogContent className='max-w-4xl'>
+                    <DialogHeader><DialogTitle>Edit AI Prompt</DialogTitle></DialogHeader>
+                    <PromptForm prompt={prompt} projectId={prompt.projectId} closeForm={() => setIsEditOpen(false)} />
+                </DialogContent>
+            </Dialog>
+            <div className='flex items-center'>
+                <Button size="icon" variant="ghost" onClick={handleCopy}>
+                    <Copy className="h-4 w-4" />
                 </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                    This will permanently delete the prompt. This action cannot be undone.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                    <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                        This will permanently delete the prompt. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
         </div>
       </CardFooter>
     </Card>

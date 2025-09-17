@@ -34,7 +34,8 @@ export function ProjectWorkspace({ project, notes, aiPrompts }: ProjectWorkspace
   const filteredPrompts = aiPrompts.filter(prompt =>
     prompt.title.toLowerCase().includes(promptSearchTerm.toLowerCase()) ||
     prompt.description?.toLowerCase().includes(promptSearchTerm.toLowerCase()) ||
-    prompt.category?.toLowerCase().includes(promptSearchTerm.toLowerCase())
+    prompt.category?.toLowerCase().includes(promptSearchTerm.toLowerCase()) ||
+    prompt.tags?.some(tag => tag.toLowerCase().includes(promptSearchTerm.toLowerCase()))
   );
 
   return (
@@ -79,7 +80,7 @@ export function ProjectWorkspace({ project, notes, aiPrompts }: ProjectWorkspace
                 <DialogTrigger asChild>
                 <Button><PlusCircle className="mr-2 h-4 w-4" /> New Prompt</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className='max-w-4xl'>
                 <DialogHeader><DialogTitle>Create New AI Prompt</DialogTitle></DialogHeader>
                 <PromptForm projectId={project.id} closeForm={() => setIsPromptFormOpen(false)} />
                 </DialogContent>
