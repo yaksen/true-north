@@ -32,11 +32,13 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
     
     useEffect(() => {
         const fetchMembers = async () => {
-          if (project.members.length === 0) return;
-          const usersRef = collection(db, 'users');
-          const q = query(usersRef, where('id', 'in', project.members));
-          const snapshot = await getDocs(q);
-          setMemberProfiles(snapshot.docs.map(doc => doc.data() as UserProfile));
+            if (project.members.length === 0) return;
+            const memberUids = project.members.map(m => m.uid);
+            if (memberUids.length === 0) return;
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('id', 'in', memberUids));
+            const snapshot = await getDocs(q);
+            setMemberProfiles(snapshot.docs.map(doc => doc.data() as UserProfile));
         };
         fetchMembers();
     }, [project.members]);
@@ -56,7 +58,7 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
         });
         try {
             await batch.commit();
-            toast({ title: "Success", description: `${ids.length} template(s) deleted.`});
+            toast({ title: "Success", description: `${ids.length} template(s) a deleted.`});
         } catch (error) {
             toast({ variant: 'destructive', title: "Error", description: "Could not delete selected templates."})
         }
@@ -132,7 +134,7 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
                                     <DialogHeader>
                                         <DialogTitle>Create New Task Template</DialogTitle>
                                     </DialogHeader>
-                                    <TaskTemplateForm projectId={project.id} members={project.members} closeForm={() => setIsTemplateFormOpen(false)} />
+                                    <TaskTemplateForm projectId={project.id} members={project.members.map(m => m.uid)} closeForm={() => setIsTemplateFormOpen(false)} />
                                 </DialogContent>
                             </Dialog>
                         </div>

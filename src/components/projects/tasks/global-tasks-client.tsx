@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/projects/task-form';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { collection, onSnapshot, query, where, doc, writeBatch, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect } from 'react';

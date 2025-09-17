@@ -28,6 +28,7 @@ import { ProductForm } from './product-form';
 import { getProductsColumns } from './product-columns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { useCurrency } from '@/context/CurrencyContext';
+import { PackageCard } from './package-card';
 
 interface ProjectProductsProps {
   project: Project;
@@ -320,60 +321,15 @@ export function ProjectProducts({ project, categories, services, products, packa
             <ScrollArea className='h-[calc(100vh-22rem)]'>
                 {filteredPackages.length > 0 ? (
                     <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                        {filteredPackages.map(pkg => {
-                            const includedServices = pkg.services.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
-                            const includedProducts = (pkg.products || []).map(id => products.find(p => p.id === id)).filter(Boolean) as Product[];
-                            const convertedPrice = convert(pkg.price, pkg.currency, displayCurrency);
-                            return (
-                            <Card key={pkg.id}>
-                                <CardHeader>
-                                    <div className='flex justify-between items-start'>
-                                        <div>
-                                            <CardTitle>{pkg.name}</CardTitle>
-                                            {pkg.sku && <CardDescription>SKU: {pkg.sku}</CardDescription>}
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <Button size="icon" variant="ghost" onClick={() => handleEditPackage(pkg)}><Edit className="h-4 w-4" /></Button>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the package. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                                                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeletePackage(pkg)}>Delete</AlertDialogAction></AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </div>
-                                    </div>
-                                    <CardDescription>{pkg.description}</CardDescription>
-                                    <div className='flex gap-2 pt-2'>
-                                        <Badge variant="secondary">{getFormattedDuration(pkg.duration)}</Badge>
-                                        {pkg.custom && <Badge variant="outline">Custom</Badge>}
-                                        {pkg.discountPercentage !== 0 && (
-                                            <Badge variant={pkg.discountPercentage > 0 ? "default" : "destructive"}>
-                                                {pkg.discountPercentage > 0 ? `${pkg.discountPercentage}% off` : `${-pkg.discountPercentage}% markup`}
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <h4 className='font-semibold text-sm mb-2'>Included Items:</h4>
-                                    <ul className='space-y-1 text-sm text-muted-foreground'>
-                                        {includedServices.map(s => <li key={s.id} className='flex items-center gap-2'><ArrowRight className='h-3 w-3'/>{s.name}</li>)}
-                                        {includedProducts.map(p => <li key={p.id} className='flex items-center gap-2'><ArrowRight className='h-3 w-3'/>{p.name}</li>)}
-                                    </ul>
-                                </CardContent>
-                                <CardFooter>
-                                    <div>
-                                        <p className='text-sm text-muted-foreground'>Price</p>
-                                        <p className='text-xl font-bold'>
-                                            {formatCurrency(convertedPrice, displayCurrency)}
-                                        </p>
-                                    </div>
-                                </CardFooter>
-                            </Card>
-                            )
-                        })}
+                        {filteredPackages.map(pkg => (
+                            <PackageCard 
+                                key={pkg.id} 
+                                pkg={pkg} 
+                                project={project} 
+                                allServices={services} 
+                                allProducts={products} 
+                            />
+                        ))}
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground py-12">

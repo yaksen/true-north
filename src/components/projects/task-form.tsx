@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { logActivity } from '@/lib/activity-log';
 
-const slots: TaskTemplateSlot[] = ['morning', 'midday', 'night'];
+const slots = ['morning', 'midday', 'night'] as const;
 
 const formSchema = z.object({
   projectId: z.string().nonempty({ message: 'Project is required.' }),

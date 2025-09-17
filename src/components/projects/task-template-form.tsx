@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
 import { Checkbox } from '../ui/checkbox';
 
-const slots: TaskTemplateSlot[] = ['morning', 'midday', 'night'];
+const slots = ['morning', 'midday', 'night'] as const;
 const days = [
     { id: 0, label: 'S' }, { id: 1, label: 'M' }, { id: 2, label: 'T' }, 
     { id: 3, label: 'W' }, { id: 4, label: 'T' }, { id: 5, label: 'F' }, { id: 6, label: 'S' }

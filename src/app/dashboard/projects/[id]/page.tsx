@@ -71,7 +71,7 @@ export default function ProjectDetailPage() {
         setAllProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)))
     });
 
-    const createCollectionSubscription = <T extends { date?: any, createdAt?: any }>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
+    const createCollectionSubscription = <T extends { date?: any, createdAt?: any, timestamp?: any, uploadedAt?: any }>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
         const q = query(collection(db, collectionName), where('projectId', '==', id));
         return onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => {

@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { Project, Task, Lead, TaskTemplate, UserProfile } from '@/lib/types';
+import type { Project, Task, Lead, TaskTemplate, UserProfile, ProjectMember } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { DataTable } from '@/components/ui/data-table';
 import { getTaskColumns } from '@/components/projects/task-columns';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/projects/task-form';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { collection, onSnapshot, query, where, doc, writeBatch, updateDoc, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect } from 'react';
@@ -110,7 +110,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
         setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
     });
 
-    const allMemberIds = projects.reduce((acc, p) => [...acc, ...p.members], [] as string[]);
+    const allMemberIds = projects.reduce((acc, p) => [...acc, ...p.members.map(m => m.uid)], [] as string[]);
     const uniqueMemberIds = [...new Set(allMemberIds)];
 
     const fetchMemberProfiles = async () => {
@@ -152,6 +152,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   }, [projects, tasks]);
 
   const defaultAccordionValues = useMemo(() => projects.filter(p => (hierarchicalTasksByProject[p.id] || []).length > 0).map(p => p.id), [projects, hierarchicalTasksByProject]);
+  const members: ProjectMember[] = useMemo(() => memberProfiles.map(p => ({ uid: p.id, displayName: p.name || '', email: p.email, photoURL: p.photoURL, role: 'viewer' })), [memberProfiles]);
 
   if (loading) {
       return (
@@ -166,7 +167,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
       <div className="flex justify-end items-center gap-4 mb-4">
         <Button size="sm" variant="outline" onClick={handleGenerateTodaysTasks} disabled={isGenerating}>
             {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Generate Today&apos;s Tasks
+            Generate Today's Tasks
         </Button>
         <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
           <DialogTrigger asChild>
@@ -181,7 +182,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
             <TaskForm 
               projects={projects} 
               leads={leads}
-              memberProfiles={memberProfiles}
+              members={members}
               closeForm={() => setIsTaskFormOpen(false)} 
             />
           </DialogContent>

@@ -18,6 +18,7 @@ import {
   UserPlus,
   UserX,
   Trash2,
+  Hash
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -57,6 +58,9 @@ const recordDetails: Record<
   service_created: { icon: FileText, message: (p) => `Service "${p.name}" was created.` },
   service_updated: { icon: FileText, message: (p) => `Service "${p.name}" was updated.` },
   service_deleted: { icon: FileText, message: (p) => `Service "${p.name}" was deleted.` },
+  product_created: { icon: Package, message: (p) => `Product "${p.name}" was created.` },
+  product_updated: { icon: Package, message: (p) => `Product "${p.name}" was updated.` },
+  product_deleted: { icon: Package, message: (p) => `Product "${p.name}" was deleted.` },
   package_created: { icon: Package, message: (p) => `Package "${p.name}" was created.` },
   package_updated: { icon: Package, message: (p) => `Package "${p.name}" was updated.` },
   package_deleted: { icon: Package, message: (p) => `Package "${p.name}" was deleted.` },
@@ -70,6 +74,9 @@ const recordDetails: Record<
   member_added: { icon: UserPlus, message: (p) => `Added ${p.email} to the project.` },
   member_removed: { icon: UserX, message: (p) => `Removed ${p.email} from the project.` },
   payment_added: { icon: CircleDollarSign, message: (p) => `Payment of ${p.amount} was added.` },
+  channel_created: { icon: Hash, message: (p) => `Channel "${p.name}" was created.` },
+  channel_updated: { icon: Hash, message: (p) => `Channel "${p.name}" was updated.` },
+  channel_deleted: { icon: Hash, message: (p) => `Channel "${p.name}" was deleted.` },
 };
 
 export function RecordsTimeline({ items }: RecordsTimelineProps) {
