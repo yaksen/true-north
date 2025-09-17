@@ -369,7 +369,14 @@ export interface VaultItem {
     folderId: string;
     type: VaultItemType;
     title: string;
-    content: string;
+    content: string; // Used for 'note' and 'link' types
+    // Fields for 'prompt' type
+    role?: string;
+    task?: string;
+    constraints?: string;
+    examples?: string;
+    instructions?: string;
+    outputFormat?: string;
     tags: string[];
     createdAt: Date;
     updatedAt: Date;

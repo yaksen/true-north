@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -8,7 +9,7 @@ import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { VaultItemForm } from './vault-item-form';
-import { Edit, Trash2, Link, FileText, Bot } from 'lucide-react';
+import { Edit, Trash2, Link, FileText, Bot, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { deleteDoc, doc } from 'firebase/firestore';
@@ -41,6 +42,25 @@ export function VaultItemCard({ item, folders }: VaultItemCardProps) {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not delete item.' });
     }
   };
+
+  const handleCopyPrompt = () => {
+    const sections = [
+        { title: 'Role/Context', content: item.role },
+        { title: 'Task', content: item.task },
+        { title: 'Constraints', content: item.constraints },
+        { title: 'Examples', content: item.examples },
+        { title: 'Step-by-step instructions', content: item.instructions },
+        { title: 'Output format', content: item.outputFormat },
+    ];
+    
+    const finalPrompt = sections
+        .filter(section => section.content && section.content.trim() !== '')
+        .map(section => `### ${section.title}\n${section.content}`)
+        .join('\n\n');
+
+    navigator.clipboard.writeText(finalPrompt);
+    toast({ title: 'Copied!', description: 'Prompt body copied to clipboard.' });
+  }
   
   const updatedAt = item.updatedAt instanceof Date ? item.updatedAt : new Date(item.updatedAt);
   const Icon = typeIcons[item.type];
@@ -59,10 +79,17 @@ export function VaultItemCard({ item, folders }: VaultItemCardProps) {
             Last updated {formatDistanceToNow(updatedAt, { addSuffix: true })}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow">
-        <p className="text-sm text-muted-foreground line-clamp-3 break-all">
-            {item.content}
-        </p>
+      <CardContent className="flex-grow space-y-2">
+        {item.type === 'prompt' ? (
+          <>
+            <p className="text-sm text-muted-foreground line-clamp-1"><b>Role:</b> {item.role}</p>
+            <p className="text-sm text-muted-foreground line-clamp-1"><b>Task:</b> {item.task}</p>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground line-clamp-3 break-all">
+              {item.content}
+          </p>
+        )}
       </CardContent>
       <CardFooter className="flex-col items-start gap-4">
         {item.tags.length > 0 && (
@@ -77,30 +104,37 @@ export function VaultItemCard({ item, folders }: VaultItemCardProps) {
                 <DialogTrigger asChild>
                     <Button variant="outline" size="sm">View / Edit</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className='max-w-4xl'>
                     <DialogHeader><DialogTitle>Edit Vault Item</DialogTitle></DialogHeader>
                     <VaultItemForm item={item} userId={user!.uid} folders={folders} closeForm={() => setIsEditOpen(false)} />
                 </DialogContent>
             </Dialog>
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                    This will permanently delete the item. This action cannot be undone.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <div className='flex items-center'>
+                {item.type === 'prompt' && (
+                    <Button size="icon" variant="ghost" onClick={handleCopyPrompt}>
+                        <Copy className="h-4 w-4" />
+                    </Button>
+                )}
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                    <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                        This will permanently delete the item. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
         </div>
       </CardFooter>
     </Card>
