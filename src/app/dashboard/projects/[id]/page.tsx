@@ -162,7 +162,7 @@ export default function ProjectDetailPage() {
                 </TabsList>
             </div>
             <TabsContent value="dashboard">
-                <ProjectDashboard project={project} tasks={tasks} finances={finances} />
+                <ProjectDashboard project={project} tasks={tasks} finances={finances} channels={channels} />
             </TabsContent>
             <TabsContent value="leads">
                 <ProjectLeads project={project} leads={leads} packages={packages} services={services} />
