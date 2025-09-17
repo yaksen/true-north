@@ -23,21 +23,27 @@ export default function VaultPage() {
     const itemsQuery = query(collection(db, 'vaultItems'), where('userId', '==', user.uid));
 
     const unsubscribeFolders = onSnapshot(foldersQuery, (snapshot) => {
-      setFolders(snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate(),
-      } as VaultFolder)));
+      setFolders(snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+        } as VaultFolder;
+      }));
     });
 
     const unsubscribeItems = onSnapshot(itemsQuery, (snapshot) => {
-      setItems(snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate(),
-      } as VaultItem)));
+      setItems(snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+        } as VaultItem;
+      }));
       setLoading(false);
     });
 
