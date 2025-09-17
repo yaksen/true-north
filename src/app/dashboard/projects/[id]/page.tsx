@@ -6,8 +6,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Invoice, Product, Channel, TaskTemplate, Report } from '@/lib/types';
-import { Loader2 } from 'lucide-react';
+import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Invoice, Product, Channel, TaskTemplate, Report, AIPrompt } from '@/lib/types';
+import { Loader2, BookText } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectDashboard } from '@/components/projects/project-dashboard';
@@ -21,6 +21,7 @@ import { ProjectRecords } from '@/components/projects/project-records';
 import { ProjectSettings } from '@/components/projects/project-settings';
 import { ProjectBilling } from '@/components/projects/project-billing';
 import { ProjectReports } from '@/components/projects/project-reports';
+import { ProjectWorkspace } from '@/components/projects/project-workspace';
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -41,6 +42,7 @@ export default function ProjectDetailPage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [records, setRecords] = useState<ActivityRecord[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [aiPrompts, setAIPrompts] = useState<AIPrompt[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +104,7 @@ export default function ProjectDetailPage() {
     const unsubscribePackages = createCollectionSubscription<Package>('packages', setPackages);
     const unsubscribeRecords = createCollectionSubscription<ActivityRecord>('records', setRecords);
     const unsubscribeNotes = createCollectionSubscription<Note>('notes', setNotes);
+    const unsubscribeAIPrompts = createCollectionSubscription<AIPrompt>('aiPrompts', setAIPrompts);
     const unsubscribeInvoices = createCollectionSubscription<Invoice>('invoices', setInvoices);
     const unsubscribeReports = createCollectionSubscription<Report>('reports', setReports);
 
@@ -119,6 +122,7 @@ export default function ProjectDetailPage() {
         unsubscribePackages();
         unsubscribeRecords();
         unsubscribeNotes();
+        unsubscribeAIPrompts();
         unsubscribeInvoices();
         unsubscribeReports();
     };
@@ -147,6 +151,10 @@ export default function ProjectDetailPage() {
                     <TabsTrigger value="finance">Finance</TabsTrigger>
                     <TabsTrigger value="tasks">Tasks</TabsTrigger>
                     <TabsTrigger value="templates">Templates</TabsTrigger>
+                    <TabsTrigger value="workspace">
+                        <BookText className="mr-2 h-4 w-4" />
+                        Workspace
+                    </TabsTrigger>
                     <TabsTrigger value="reports">Reports</TabsTrigger>
                     <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
@@ -180,6 +188,9 @@ export default function ProjectDetailPage() {
             </TabsContent>
             <TabsContent value="templates">
                 <ProjectTemplates project={project} templates={taskTemplates} tasks={tasks} />
+            </TabsContent>
+            <TabsContent value="workspace">
+                <ProjectWorkspace project={project} notes={notes} aiPrompts={aiPrompts} />
             </TabsContent>
             <TabsContent value="records">
                 <ProjectRecords project={project} records={records} notes={notes} />

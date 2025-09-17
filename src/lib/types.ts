@@ -285,7 +285,20 @@ export interface Note {
     id: string;
     projectId: string;
     authorUid: string;
+    title: string;
     content: string;
+    tags: string[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface AIPrompt {
+    id: string;
+    projectId: string;
+    title: string;
+    description?: string;
+    body: string;
+    category?: string;
     createdAt: Date;
     updatedAt: Date;
 }
