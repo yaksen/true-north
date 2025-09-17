@@ -25,7 +25,7 @@ export function TopProjects({ summaries, currency }: TopProjectsProps) {
 
   const topProjects = useMemo(() => {
     return [...summaries]
-        .sort((a, b) => b.totalIncome - a.totalIncome)
+        .sort((a, b) => b.profitLoss - a.profitLoss)
         .slice(0, 5);
   }, [summaries]);
 
@@ -33,7 +33,7 @@ export function TopProjects({ summaries, currency }: TopProjectsProps) {
     <Card>
       <CardHeader>
         <CardTitle>Top Projects</CardTitle>
-        <CardDescription>Your top 5 projects by total revenue.</CardDescription>
+        <CardDescription>Your top 5 projects by profit/loss.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
         {topProjects.map(summary => (
@@ -44,14 +44,17 @@ export function TopProjects({ summaries, currency }: TopProjectsProps) {
                 <div className="grid gap-1 flex-1">
                     <p className="text-sm font-medium leading-none truncate">{summary.project.name}</p>
                 </div>
-                <div className="font-medium text-right">{formatCurrency(summary.totalIncome, currency)}</div>
+                <div className={cn("font-medium text-right", summary.profitLoss >= 0 ? 'text-green-400' : 'text-red-400')}>
+                    {formatCurrency(summary.profitLoss, currency)}
+                </div>
           </Link>
         ))}
         {topProjects.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">No projects with revenue yet.</p>
+            <p className="text-sm text-muted-foreground text-center py-4">No projects with financial data yet.</p>
         )}
       </CardContent>
     </Card>
   );
 }
+
 
