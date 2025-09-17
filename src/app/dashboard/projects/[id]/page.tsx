@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -152,7 +151,6 @@ export default function ProjectDetailPage() {
                     <TabsTrigger value="tasks">Tasks</TabsTrigger>
                     <TabsTrigger value="templates">Templates</TabsTrigger>
                     <TabsTrigger value="workspace">
-                        <BookText className="mr-2 h-4 w-4" />
                         Workspace
                     </TabsTrigger>
                     <TabsTrigger value="reports">Reports</TabsTrigger>
