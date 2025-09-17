@@ -14,6 +14,7 @@ import {
   ReceiptText,
   Wallet,
   BookText,
+  CreditCard,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -72,7 +73,7 @@ export default function DashboardLayout({
     { href: '/dashboard/billing', icon: ReceiptText, label: 'Billing' },
     { href: '/dashboard/tasks', icon: ListChecks, label: 'Tasks' },
     { href: '/dashboard/finance', icon: CircleDollarSign, label: 'Finance' },
-    { href: '/dashboard/expenses', icon: Wallet, label: 'Expenses' },
+    { href: '/dashboard/expenses', icon: CreditCard, label: 'Expenses' },
     { href: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
   ];
 
