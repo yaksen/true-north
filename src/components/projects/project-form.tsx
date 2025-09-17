@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Project } from '@/lib/types';
+import type { Project, ProjectMember } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -71,7 +71,7 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
   const type = form.watch('type');
 
   async function onSubmit(values: ProjectFormValues) {
-    if (!user) {
+    if (!user || !user.profile) {
       toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
       return;
     }
@@ -91,10 +91,18 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
         toast({ title: 'Success', description: 'Project updated successfully.' });
       } else {
         // Create new project
+        const newMember: ProjectMember = {
+          uid: user.uid,
+          displayName: user.profile.name || user.profile.email,
+          email: user.profile.email,
+          photoURL: user.profile.photoURL,
+          role: 'owner',
+        };
+
         const projectData = {
           ...dataToSubmit,
           ownerUid: user.uid,
-          members: [user.uid], // Initially, only the creator is a member
+          members: [newMember],
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };

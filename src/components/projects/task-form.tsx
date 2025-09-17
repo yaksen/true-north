@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Task, Project, Lead, TaskTemplateSlot, UserProfile } from '@/lib/types';
+import type { Task, Project, Lead, TaskTemplateSlot, ProjectMember } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, doc, serverTimestamp, updateDoc, getDocs, where, query } from 'firebase/firestore';
+import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -45,16 +45,14 @@ interface TaskFormProps {
   leadId?: string;
   projects?: Project[];
   leads?: Lead[];
-  members?: string[];
-  memberProfiles?: UserProfile[];
+  members?: ProjectMember[];
   closeForm: () => void;
 }
 
-export function TaskForm({ task, projectId, parentTaskId, leadId, projects, leads, members, memberProfiles: initialMemberProfiles, closeForm }: TaskFormProps) {
+export function TaskForm({ task, projectId, parentTaskId, leadId, projects, leads, members, closeForm }: TaskFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [memberProfiles, setMemberProfiles] = useState<UserProfile[]>(initialMemberProfiles || []);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(formSchema),
@@ -72,19 +70,6 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
       assigneeUid: user?.uid || '',
     },
   });
-
-  useEffect(() => {
-    async function fetchProfiles() {
-        if (members && members.length > 0 && !initialMemberProfiles) {
-            const usersRef = collection(db, 'users');
-            const q = query(usersRef, where('id', 'in', members));
-            const querySnapshot = await getDocs(q);
-            setMemberProfiles(querySnapshot.docs.map(doc => doc.data() as UserProfile));
-        }
-    }
-    fetchProfiles();
-  }, [members, initialMemberProfiles]);
-
 
   async function onSubmit(values: TaskFormValues) {
     if (!user) {
@@ -187,8 +172,8 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                {memberProfiles.map(p => (
-                                    <SelectItem key={p.id} value={p.id}>{p.name || p.email}</SelectItem>
+                                {members?.map(m => (
+                                    <SelectItem key={m.uid} value={m.uid}>{m.displayName}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>

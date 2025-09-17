@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Project, UserProfile } from '@/lib/types';
+import { Project, ProjectMember } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { useAuth } from '@/hooks/use-auth';
@@ -24,7 +24,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { deleteDoc, doc, updateDoc, arrayUnion, getDocs, collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Input } from '../ui/input';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { MemberForm } from './member-form';
 
 interface ProjectSettingsProps {
   project: Project;
@@ -35,55 +36,9 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [emailToAdd, setEmailToAdd] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
 
   const isOwner = user?.uid === project.ownerUid;
-
-  async function handleAddMember() {
-    if (!isOwner) {
-      toast({ variant: 'destructive', title: 'Unauthorized', description: 'Only project owners can add members.' });
-      return;
-    }
-    if (!emailToAdd) {
-        toast({ variant: 'destructive', title: 'No Email Entered', description: 'Please enter the email of the user to add.' });
-        return;
-    }
-
-    setIsAdding(true);
-    try {
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where("email", "==", emailToAdd));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-            toast({ variant: 'destructive', title: 'User Not Found', description: 'No user exists with that email address.' });
-            setIsAdding(false);
-            return;
-        }
-
-        const userToAdd = querySnapshot.docs[0].data() as UserProfile;
-
-        if (project.members.includes(userToAdd.id)) {
-            toast({ variant: 'destructive', title: 'Already a Member', description: 'This user is already a member of the project.' });
-            setIsAdding(false);
-            return;
-        }
-
-        const projectRef = doc(db, 'projects', project.id);
-        await updateDoc(projectRef, { members: arrayUnion(userToAdd.id) });
-        
-        await logActivity(project.id, 'member_added' as any, { email: userToAdd.email }, user!.uid);
-
-        toast({ title: 'Success', description: 'Member added to the project.' });
-        setEmailToAdd('');
-    } catch (error) {
-        console.error("Error adding member: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not add member.' });
-    } finally {
-        setIsAdding(false);
-    }
-  }
 
   async function handleDeleteProject() {
     if (!isOwner) {
@@ -93,7 +48,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'projects', project.id));
-      await logActivity(project.id, 'project_deleted', { name: project.name }, user!.uid);
+      // Note: logging activity for a deleted project might fail or be orphaned.
+      // Consider a different logging strategy for deletions.
       
       toast({ title: 'Success', description: 'Project has been permanently deleted.' });
       router.push('/dashboard/projects');
@@ -107,30 +63,28 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   return (
     <div className="grid gap-6 mt-4 max-w-4xl mx-auto">
       <Card>
-        <CardHeader>
-          <CardTitle>Manage Members</CardTitle>
-          <CardDescription>Add new members from registered users and manage existing ones.</CardDescription>
+        <CardHeader className='flex-row items-center justify-between'>
+          <div>
+            <CardTitle>Manage Members</CardTitle>
+            <CardDescription>Add new members from registered users and manage existing ones.</CardDescription>
+          </div>
+           {isOwner && (
+            <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
+              <DialogTrigger asChild>
+                <Button><UserPlus className='mr-2' /> Add Member</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Member</DialogTitle>
+                </DialogHeader>
+                <MemberForm project={project} closeForm={() => setIsAddMemberOpen(false)} />
+              </DialogContent>
+            </Dialog>
+           )}
         </CardHeader>
         <CardContent>
           <MembersList project={project} />
         </CardContent>
-        {isOwner && (
-          <CardFooter className="border-t pt-6">
-            <div className="flex w-full items-center gap-2">
-                <Input
-                    type="email"
-                    placeholder="Enter user's email to add..."
-                    value={emailToAdd}
-                    onChange={(e) => setEmailToAdd(e.target.value)}
-                    className="flex-1"
-                />
-              <Button onClick={handleAddMember} disabled={isAdding}>
-                {isAdding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                Add Member
-              </Button>
-            </div>
-          </CardFooter>
-        )}
       </Card>
       
       {isOwner && (

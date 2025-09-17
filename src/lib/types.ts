@@ -3,6 +3,7 @@
 import { CurrencyCode } from "@/context/CurrencyContext";
 
 export type UserRole = 'admin' | 'manager' | 'member';
+export type ProjectRole = 'owner' | 'editor' | 'viewer';
 export type ProjectType = 'Active' | 'Passive' | 'Fun' | 'Sub';
 export type TaskStatus = 'Call' | 'Meeting' | 'Project';
 export type FinanceType = 'income' | 'expense';
@@ -32,13 +33,21 @@ export interface Presence {
     lastSeen: Date;
 }
 
+export interface ProjectMember {
+    uid: string;
+    displayName: string;
+    email: string;
+    photoURL?: string;
+    role: ProjectRole;
+}
+
 export interface Project {
   id: string;
   name: string;
   description?: string;
-  ownerUid: string;
+  ownerUid: string; // Remains for top-level ownership check
   private: boolean;
-  members: string[]; // List of user UIDs
+  members: ProjectMember[];
   currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
   type: ProjectType;
   emoji?: string;
@@ -299,12 +308,7 @@ export interface AIPrompt {
     title: string;
     description?: string;
     category?: string;
-    role: string;
-    task: string;
-    constraints: string;
-    examples?: string;
-    instructions?: string;
-    outputFormat: string;
+    body: string;
     tags: string[];
     createdAt: Date;
     updatedAt: Date;
@@ -369,14 +373,7 @@ export interface VaultItem {
     folderId: string;
     type: VaultItemType;
     title: string;
-    content: string; // Used for 'note' and 'link' types
-    // Fields for 'prompt' type
-    role?: string;
-    task?: string;
-    constraints?: string;
-    examples?: string;
-    instructions?: string;
-    outputFormat?: string;
+    content: string;
     tags: string[];
     createdAt: Date;
     updatedAt: Date;

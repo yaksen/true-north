@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -49,8 +50,9 @@ export default function ProjectsPage() {
     if (!user) return;
 
     setLoading(true);
+    // Updated query to work with the new members array structure
     const projectsQuery = query(
-        collection(db, 'projects'), where('members', 'array-contains', user.uid)
+        collection(db, 'projects'), where('members.uid', '==', user.uid)
     );
     
     const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {

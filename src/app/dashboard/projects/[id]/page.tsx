@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -5,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, Invoice, Product, Channel, TaskTemplate, Report, AIPrompt } from '@/lib/types';
+import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, AIPrompt, Report, Invoice, Product, Channel, TaskTemplate } from '@/lib/types';
 import { Loader2, BookText } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -53,7 +54,8 @@ export default function ProjectDetailPage() {
     const unsubscribeProject = onSnapshot(projectRef, (docSnap) => {
       if (docSnap.exists()) {
         const projectData = { id: docSnap.id, ...docSnap.data() } as Project;
-        if (projectData.private && !projectData.members.includes(user.uid)) {
+        // Check if user is a member using the new members array structure
+        if (projectData.private && !projectData.members.some(m => m.uid === user.uid)) {
             router.push('/dashboard/projects');
             return;
         }
@@ -69,7 +71,7 @@ export default function ProjectDetailPage() {
         setAllProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)))
     });
 
-    const createCollectionSubscription = <T extends { date?: any, createdAt?: any, updatedAt?: any, timestamp?: any, uploadedAt?: any }>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
+    const createCollectionSubscription = <T extends { date?: any, createdAt?: any }>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
         const q = query(collection(db, collectionName), where('projectId', '==', id));
         return onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => {
@@ -152,6 +154,7 @@ export default function ProjectDetailPage() {
                     <TabsTrigger value="tasks">Tasks</TabsTrigger>
                     <TabsTrigger value="templates">Templates</TabsTrigger>
                     <TabsTrigger value="workspace">
+                        <BookText className="mr-2 h-4 w-4" />
                         Workspace
                     </TabsTrigger>
                     <TabsTrigger value="reports">Reports</TabsTrigger>
@@ -159,7 +162,7 @@ export default function ProjectDetailPage() {
                 </TabsList>
             </div>
             <TabsContent value="dashboard">
-                <ProjectDashboard project={project} tasks={tasks} finances={finances} channels={channels} />
+                <ProjectDashboard project={project} tasks={tasks} finances={finances} />
             </TabsContent>
             <TabsContent value="leads">
                 <ProjectLeads project={project} leads={leads} packages={packages} services={services} />
