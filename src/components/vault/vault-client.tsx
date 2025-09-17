@@ -27,7 +27,7 @@ export function VaultClient({ folders, items }: VaultClientProps) {
     const folderMatch = selectedFolderId === 'all' || item.folderId === selectedFolderId;
     const searchMatch = 
       item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.content && item.content.toLowerCase().includes(searchTerm.toLowerCase())) ||
       item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     
     return folderMatch && searchMatch;
@@ -52,7 +52,7 @@ export function VaultClient({ folders, items }: VaultClientProps) {
                 <DialogTrigger asChild>
                     <Button><PlusCircle className="mr-2 h-4 w-4" /> New Item</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className='max-w-4xl'>
                     <DialogHeader><DialogTitle>Create New Vault Item</DialogTitle></DialogHeader>
                     <VaultItemForm 
                         userId={user!.uid} 

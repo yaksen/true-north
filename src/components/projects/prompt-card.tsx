@@ -70,7 +70,7 @@ export function PromptCard({ prompt }: PromptCardProps) {
       </CardHeader>
       <CardContent className="flex-grow space-y-2">
         {sectionsForDisplay.map(sec => (
-            <div key={sec.label}>
+            sec.value && <div key={sec.label}>
                 <h4 className='font-semibold text-xs uppercase text-muted-foreground'>{sec.label}</h4>
                 <p className="text-sm line-clamp-2">{sec.value}</p>
             </div>

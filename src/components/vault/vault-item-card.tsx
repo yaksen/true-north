@@ -43,8 +43,10 @@ export function VaultItemCard({ item, folders }: VaultItemCardProps) {
     }
   };
 
-  const handleCopyPrompt = () => {
-    const sections = [
+  const handleCopy = () => {
+    let contentToCopy = item.content || '';
+    if (item.type === 'prompt') {
+      const sections = [
         { title: 'Role/Context', content: item.role },
         { title: 'Task', content: item.task },
         { title: 'Constraints', content: item.constraints },
@@ -53,13 +55,14 @@ export function VaultItemCard({ item, folders }: VaultItemCardProps) {
         { title: 'Output format', content: item.outputFormat },
     ];
     
-    const finalPrompt = sections
+    contentToCopy = sections
         .filter(section => section.content && section.content.trim() !== '')
         .map(section => `### ${section.title}\n${section.content}`)
         .join('\n\n');
+    }
 
-    navigator.clipboard.writeText(finalPrompt);
-    toast({ title: 'Copied!', description: 'Prompt body copied to clipboard.' });
+    navigator.clipboard.writeText(contentToCopy);
+    toast({ title: 'Copied!', description: 'Content copied to clipboard.' });
   }
   
   const updatedAt = item.updatedAt instanceof Date ? item.updatedAt : new Date(item.updatedAt);
@@ -110,11 +113,9 @@ export function VaultItemCard({ item, folders }: VaultItemCardProps) {
                 </DialogContent>
             </Dialog>
             <div className='flex items-center'>
-                {item.type === 'prompt' && (
-                    <Button size="icon" variant="ghost" onClick={handleCopyPrompt}>
-                        <Copy className="h-4 w-4" />
-                    </Button>
-                )}
+                <Button size="icon" variant="ghost" onClick={handleCopy}>
+                    <Copy className="h-4 w-4" />
+                </Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                     <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive">

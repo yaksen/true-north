@@ -308,6 +308,12 @@ export interface AIPrompt {
     title: string;
     description?: string;
     category?: string;
+    role?: string;
+    task?: string;
+    constraints?: string;
+    examples?: string;
+    instructions?: string;
+    outputFormat?: string;
     body: string;
     tags: string[];
     createdAt: Date;
@@ -373,8 +379,15 @@ export interface VaultItem {
     folderId: string;
     type: VaultItemType;
     title: string;
-    content: string;
+    content?: string;
     tags: string[];
     createdAt: Date;
     updatedAt: Date;
+    // Prompt fields
+    role?: string;
+    task?: string;
+    constraints?: string;
+    examples?: string;
+    instructions?: string;
+    outputFormat?: string;
 }

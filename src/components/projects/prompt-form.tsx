@@ -47,7 +47,13 @@ export function PromptForm({ prompt, projectId, closeForm }: PromptFormProps) {
 
   const form = useForm<PromptFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: prompt || {
+    defaultValues: prompt ? {
+        ...prompt,
+        role: prompt.role || '',
+        task: prompt.task || '',
+        constraints: prompt.constraints || '',
+        outputFormat: prompt.outputFormat || '',
+    } : {
       title: '',
       description: '',
       category: '',
