@@ -75,7 +75,9 @@ export function MembersList({ project }: MembersListProps) {
   const sortedMembers = [...project.members].sort((a, b) => {
     if (a.role === 'owner') return -1;
     if (b.role === 'owner') return 1;
-    return a.displayName.localeCompare(b.displayName);
+    const nameA = a.displayName || a.email || '';
+    const nameB = b.displayName || b.email || '';
+    return nameA.localeCompare(nameB);
   });
 
   return (
