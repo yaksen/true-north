@@ -69,13 +69,14 @@ export default function ProjectDetailPage() {
         setAllProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)))
     });
 
-    const createCollectionSubscription = <T extends { date?: any, createdAt?: any, timestamp?: any, uploadedAt?: any }>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
+    const createCollectionSubscription = <T extends { date?: any, createdAt?: any, updatedAt?: any, timestamp?: any, uploadedAt?: any }>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
         const q = query(collection(db, collectionName), where('projectId', '==', id));
         return onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => {
                 const docData = doc.data();
                 if (docData.date && docData.date.toDate) docData.date = docData.date.toDate();
                 if (docData.createdAt && docData.createdAt.toDate) docData.createdAt = docData.createdAt.toDate();
+                if (docData.updatedAt && docData.updatedAt.toDate) docData.updatedAt = docData.updatedAt.toDate();
                 if (docData.timestamp && docData.timestamp.toDate) docData.timestamp = docData.timestamp.toDate();
                 if (docData.issueDate && docData.issueDate.toDate) docData.issueDate = docData.issueDate.toDate();
                 if (docData.dueDate && docData.dueDate.toDate) docData.dueDate = docData.dueDate.toDate();
