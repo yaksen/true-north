@@ -13,6 +13,7 @@ export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void' | 'partial' | 'un
 export type PaymentMethod = 'cash' | 'bank transfer' | 'online' | 'other';
 export type WalletTransactionType = 'add' | 'expense';
 export type TaskTemplateSlot = 'morning' | 'midday' | 'night';
+export type VaultItemType = 'note' | 'link' | 'prompt';
 
 export interface UserProfile {
     id: string;
@@ -350,4 +351,26 @@ export interface WalletTransaction {
     expenseId?: string; // For 'expense' type when paying for a personal expense
     note?: string;
     timestamp: Date;
+}
+
+export interface VaultFolder {
+    id: string;
+    userId: string;
+    name: string;
+    emoji: string;
+    parentId?: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface VaultItem {
+    id: string;
+    userId: string;
+    folderId: string;
+    type: VaultItemType;
+    title: string;
+    content: string;
+    tags: string[];
+    createdAt: Date;
+    updatedAt: Date;
 }

@@ -15,6 +15,7 @@ import {
   Wallet,
   BookText,
   CreditCard,
+  Shield,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -75,6 +76,7 @@ export default function DashboardLayout({
     { href: '/dashboard/finance', icon: CircleDollarSign, label: 'Finance' },
     { href: '/dashboard/expenses', icon: CreditCard, label: 'Expenses' },
     { href: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
+    { href: '/dashboard/vault', icon: Shield, label: 'Vault' },
   ];
 
   return (
@@ -92,7 +94,7 @@ export default function DashboardLayout({
                   href={item.href}
                   className={cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground transition-all hover:text-primary hover:bg-muted',
-                    pathname === item.href ? 'bg-muted text-primary' : ''
+                    pathname.startsWith(item.href) ? 'bg-muted text-primary' : ''
                   )}
                 >
                   <item.icon className="h-4 w-4" />
@@ -127,7 +129,7 @@ export default function DashboardLayout({
                     href={item.href}
                     className={cn(
                       'flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground',
-                      pathname === item.href ? 'bg-muted text-foreground' : ''
+                      pathname.startsWith(item.href) ? 'bg-muted text-foreground' : ''
                     )}
                   >
                     <item.icon className="h-5 w-5" />
