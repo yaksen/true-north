@@ -66,7 +66,7 @@ export function VaultItemCard({ item, folders }: VaultItemCardProps) {
     toast({ title: 'Copied!', description: 'Content copied to clipboard.' });
   }
   
-  const updatedAt = item.updatedAt instanceof Date ? item.updatedAt : new Date(item.updatedAt);
+  const updatedAt = item.updatedAt ? new Date(item.updatedAt) : null;
   const Icon = typeIcons[item.type];
 
   return (
@@ -80,7 +80,7 @@ export function VaultItemCard({ item, folders }: VaultItemCardProps) {
             <Badge variant="outline" className='capitalize'>{item.type}</Badge>
         </div>
         <CardDescription>
-            Last updated {formatDistanceToNow(updatedAt, { addSuffix: true })}
+            {updatedAt ? `Last updated ${formatDistanceToNow(updatedAt, { addSuffix: true })}` : 'Not recently updated'}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow space-y-2">

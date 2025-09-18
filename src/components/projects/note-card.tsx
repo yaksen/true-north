@@ -35,14 +35,14 @@ export function NoteCard({ note }: NoteCardProps) {
     }
   };
 
-  const updatedAt = note.updatedAt instanceof Date ? note.updatedAt : new Date(note.updatedAt);
+  const updatedAt = note.updatedAt ? new Date(note.updatedAt) : null;
 
   return (
     <Card className="flex flex-col">
       <CardHeader>
         <CardTitle className="truncate">{note.title}</CardTitle>
         <CardDescription>
-          Last updated {formatDistanceToNow(updatedAt, { addSuffix: true })}
+          {updatedAt ? `Last updated ${formatDistanceToNow(updatedAt, { addSuffix: true })}` : 'Not recently updated'}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
