@@ -1,57 +1,101 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    // Helper functions to get user roles
-    function getUserRole(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    // =============================================
+    // Helper Functions
+    // =============================================
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    function isUserAdmin(userId) {
-      return getUserRole(userId) == 'admin';
+    function isUser(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
     
-    function isUserOwner(userId) {
-        // In this security model, the document owner is the user whose UID matches the {userId} wildcard.
-        return request.auth.uid == userId;
-    }
-    
-    // Global settings can be read by any authenticated user (for signup page), but only written by admins.
-    match /settings/crm {
-        allow read: if request.auth != null;
-        allow write: if isUserAdmin(request.auth.uid);
-    }
-
-    // User profiles
+    // =============================================
+    // User Profiles
+    // =============================================
     match /users/{userId} {
-      // Allow user creation (signup) for anyone.
-      allow create: if request.auth.uid == userId;
-      
-      // A user can read/update their own profile. Admins can read/update any profile.
-      allow read, update: if isUserOwner(userId) || isUserAdmin(request.auth.uid);
-
-      // Only admins can delete users (but not themselves).
-      allow delete: if isUserAdmin(request.auth.uid) && request.auth.uid != userId;
+      allow read, update: if isUser(userId);
+      // Deny creation and deletion of user profiles from the client.
+      // Creation is handled by the backend on signup.
+      allow create, delete: if false;
     }
     
-    // User-specific subcollections (e.g., leads, services, projects)
-    match /users/{userId}/{collection}/{docId} {
+    // =============================================
+    // Settings
+    // =============================================
+    // Allow any signed-in user to read global settings.
+    // Writing should be restricted to admins in a real app, but for now allow any user.
+    match /settings/global {
+       allow read: if isSignedIn();
+       allow write: if isSignedIn(); 
+    }
     
-        // Default rule: A user can only access their own documents. Admins can access anyone's.
-        allow read, write: if isUserOwner(userId) || isUserAdmin(request.auth.uid);
+    // =============================================
+    // Personal Collections (Wallet, Expenses, Vault)
+    // =============================================
+    function isOwner(collectionName, resourceId) {
+        return isUser(get(/databases/$(database)/documents/$(collectionName)/$(resourceId)).data.userId);
+    }
+    
+    match /personalWallets/{walletId} {
+        allow read, write: if isUser(walletId); // Wallet ID is the user's UID
+    }
+    
+    match /walletTransactions/{txId} {
+      // Allow read/write if the user owns the wallet associated with the transaction
+      allow read, write: if isUser(get(/databases/$(database)/documents/walletTransactions/$(txId)).data.walletId);
+    }
+    
+    match /personalExpenses/{expenseId} {
+       allow read, write, delete: if isOwner('personalExpenses', expenseId);
+       allow create: if isUser(request.resource.data.userId);
+    }
+    
+    match /personalExpenseCategories/{categoryId} {
+        allow read, write, delete: if isOwner('personalExpenseCategories', categoryId);
+        allow create: if isUser(request.resource.data.userId);
+    }
+    
+    match /vaultFolders/{folderId} {
+        allow read, write, delete: if isOwner('vaultFolders', folderId);
+        allow create: if isUser(request.resource.data.userId);
+    }
+    
+    match /vaultItems/{itemId} {
+        allow read, write, delete: if isOwner('vaultItems', itemId);
+        allow create: if isUser(request.resource.data.userId);
+    }
+
+    // =============================================
+    // Project-Based Collections
+    // =============================================
+    function isProjectMember(projectId) {
+      return isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.memberUids;
+    }
+
+    function isProjectOwnerOrEditor(projectId) {
+        let projectData = get(/databases/$(database)/documents/projects/$(projectId)).data;
+        // Find the member object for the current user
+        let member = projectData.members.filter(m => m.uid == request.auth.uid)[0];
         
-        // Specific rule for private projects:
-        // A user can read a project if they own it, are an admin, OR if the project is not private,
-        // OR if it is private and they are a member.
-        match /projects/{projectId} {
-            allow read: if isUserOwner(userId) || isUserAdmin(request.auth.uid) 
-                || resource.data.private == false
-                || (resource.data.private == true && request.auth.uid in resource.data.members);
-                
-            // Write access remains governed by the parent rule (owner or admin).
-            allow write: if isUserOwner(userId) || isUserAdmin(request.auth.uid);
-        }
+        return isProjectMember(projectId) && (projectData.ownerUid == request.auth.uid || member.role == 'editor');
+    }
+    
+    match /projects/{projectId} {
+        allow read: if isProjectMember(projectId);
+        allow create: if isUser(request.resource.data.ownerUid);
+        allow update: if isProjectOwnerOrEditor(projectId);
+        allow delete: if get(/databases/$(database)/documents/projects/$(projectId)).data.ownerUid == request.auth.uid;
+    }
+    
+    match /{collection}/{docId} {
+      // This rule applies to all project-related collections like tasks, leads, invoices, etc.
+      // It checks the `projectId` field on the document.
+      allow read, delete: if isProjectMember(get(/databases/$(database)/documents/$(collection)/$(docId)).data.projectId);
+      allow create, update: if isProjectMember(request.resource.data.projectId);
     }
   }
 }
