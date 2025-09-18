@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import { useState } from 'react';
-import type { VaultFolder, VaultItem } from '@/lib/types';
+import type { VaultFolder, VaultItem, VaultItemType } from '@/lib/types';
 import { VaultSidebar } from './vault-sidebar';
 import { VaultItemGrid } from './vault-item-grid';
 import { Input } from '../ui/input';
@@ -15,9 +16,10 @@ import { useAuth } from '@/hooks/use-auth';
 interface VaultClientProps {
   folders: VaultFolder[];
   items: VaultItem[];
+  itemType?: VaultItemType;
 }
 
-export function VaultClient({ folders, items }: VaultClientProps) {
+export function VaultClient({ folders, items, itemType }: VaultClientProps) {
   const { user } = useAuth();
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,7 +36,7 @@ export function VaultClient({ folders, items }: VaultClientProps) {
   });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 mt-4">
+    <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 mt-4 h-full">
       <VaultSidebar 
         folders={folders}
         selectedFolderId={selectedFolderId}
@@ -58,6 +60,7 @@ export function VaultClient({ folders, items }: VaultClientProps) {
                         userId={user!.uid} 
                         folders={folders} 
                         closeForm={() => setIsItemFormOpen(false)} 
+                        defaultType={itemType}
                     />
                 </DialogContent>
             </Dialog>

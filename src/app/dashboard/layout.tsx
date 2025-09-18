@@ -16,6 +16,7 @@ import {
   BookText,
   Vault,
   DatabaseZap,
+  Link2,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -55,10 +56,13 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { writeBatch, doc, collection } from 'firebase/firestore';
+import { writeBatch, doc, collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import type { VaultFolder, VaultItem } from '@/lib/types';
+import { VaultClient } from '@/components/vault/vault-client';
+
 
 export default function DashboardLayout({
   children,
@@ -71,6 +75,49 @@ export default function DashboardLayout({
   const { toast } = useToast();
   const { globalCurrency, setGlobalCurrency } = useCurrency();
   const [isRestoring, setIsRestoring] = useState(false);
+
+  const [vaultFolders, setVaultFolders] = useState<VaultFolder[]>([]);
+  const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
+  const [vaultLoading, setVaultLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    setVaultLoading(true);
+
+    const foldersQuery = query(collection(db, 'vaultFolders'), where('userId', '==', user.uid));
+    const itemsQuery = query(collection(db, 'vaultItems'), where('userId', '==', user.uid));
+
+    const unsubscribeFolders = onSnapshot(foldersQuery, (snapshot) => {
+      setVaultFolders(snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+        } as VaultFolder;
+      }));
+    });
+
+    const unsubscribeItems = onSnapshot(itemsQuery, (snapshot) => {
+      setVaultItems(snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+        } as VaultItem;
+      }));
+      setVaultLoading(false);
+    });
+
+    return () => {
+      unsubscribeFolders();
+      unsubscribeItems();
+    };
+  }, [user]);
+
 
   if (loading) {
     return (
@@ -132,6 +179,8 @@ export default function DashboardLayout({
     { href: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
     { href: '/dashboard/vault', icon: Vault, label: 'Vault' },
   ];
+  
+  const linkItems = vaultItems.filter(item => item.type === 'link');
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[240px_1fr] lg:grid-cols-[280px_1fr]">
@@ -222,6 +271,26 @@ export default function DashboardLayout({
                 </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Link2 className="h-4 w-4" />
+                <span className="sr-only">Quick Links</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-full max-w-full sm:max-w-4xl p-0">
+                <div className='p-6 h-full'>
+                    {vaultLoading ? (
+                        <div className="flex h-full flex-1 items-center justify-center">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                    ) : (
+                        <VaultClient folders={vaultFolders} items={linkItems} itemType='link' />
+                    )}
+                </div>
+            </SheetContent>
+          </Sheet>
 
           <div className="p-1 border rounded-lg bg-card flex items-center gap-1">
               {["USD", "LKR", "EUR", "GBP"].map((c) => (

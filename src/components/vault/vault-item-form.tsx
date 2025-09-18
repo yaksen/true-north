@@ -51,9 +51,10 @@ interface VaultItemFormProps {
   userId: string;
   folders: VaultFolder[];
   closeForm: () => void;
+  defaultType?: VaultItemType;
 }
 
-export function VaultItemForm({ item, userId, folders, closeForm }: VaultItemFormProps) {
+export function VaultItemForm({ item, userId, folders, closeForm, defaultType }: VaultItemFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tagInput, setTagInput] = useState('');
@@ -64,7 +65,7 @@ export function VaultItemForm({ item, userId, folders, closeForm }: VaultItemFor
         title: '',
         content: '',
         folderId: '',
-        type: 'note',
+        type: defaultType || 'note',
         tags: [],
         role: '',
         task: '',

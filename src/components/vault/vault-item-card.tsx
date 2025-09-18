@@ -9,13 +9,14 @@ import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { VaultItemForm } from './vault-item-form';
-import { Edit, Trash2, Link, FileText, Bot, Copy } from 'lucide-react';
+import { Edit, Trash2, Link as LinkIcon, FileText, Bot, Copy, ArrowUpRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Badge } from '../ui/badge';
 import { formatDistanceToNow } from 'date-fns';
+import Link from 'next/link';
 
 interface VaultItemCardProps {
   item: VaultItem;
@@ -24,7 +25,7 @@ interface VaultItemCardProps {
 
 const typeIcons = {
     note: FileText,
-    link: Link,
+    link: LinkIcon,
     prompt: Bot,
 };
 
@@ -103,15 +104,24 @@ export function VaultItemCard({ item, folders }: VaultItemCardProps) {
           </div>
         )}
         <div className="flex w-full justify-between items-center">
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">View / Edit</Button>
-                </DialogTrigger>
-                <DialogContent className='max-w-4xl'>
-                    <DialogHeader><DialogTitle>Edit Vault Item</DialogTitle></DialogHeader>
-                    <VaultItemForm item={item} userId={user!.uid} folders={folders} closeForm={() => setIsEditOpen(false)} />
-                </DialogContent>
-            </Dialog>
+            <div className='flex items-center gap-1'>
+                <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">View / Edit</Button>
+                    </DialogTrigger>
+                    <DialogContent className='max-w-4xl'>
+                        <DialogHeader><DialogTitle>Edit Vault Item</DialogTitle></DialogHeader>
+                        <VaultItemForm item={item} userId={user!.uid} folders={folders} closeForm={() => setIsEditOpen(false)} />
+                    </DialogContent>
+                </Dialog>
+                {item.type === 'link' && (
+                    <Button asChild size="icon" variant="ghost">
+                        <Link href={item.content || '#'} target='_blank' rel='noopener noreferrer'>
+                            <ArrowUpRight className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                )}
+            </div>
             <div className='flex items-center'>
                 <Button size="icon" variant="ghost" onClick={handleCopy}>
                     <Copy className="h-4 w-4" />
