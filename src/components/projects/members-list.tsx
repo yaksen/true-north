@@ -50,7 +50,12 @@ export function MembersList({ project }: MembersListProps) {
     try {
       const projectRef = doc(db, 'projects', project.id);
       const updatedMembers = project.members.filter(m => m.uid !== memberToRemove.uid);
-      await updateDoc(projectRef, { members: updatedMembers });
+      const updatedMemberUids = project.memberUids.filter(uid => uid !== memberToRemove.uid);
+
+      await updateDoc(projectRef, { 
+          members: updatedMembers,
+          memberUids: updatedMemberUids,
+      });
       
       await logActivity(project.id, 'member_removed', { email: memberToRemove.email }, user.uid);
       

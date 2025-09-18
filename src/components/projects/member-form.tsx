@@ -58,13 +58,15 @@ export function MemberForm({ project, existingMember, closeForm }: MemberFormPro
     setIsSubmitting(true);
     
     try {
-      let updatedMembers: ProjectMember[];
-
+      const projectRef = doc(db, 'projects', project.id);
+      
       if (existingMember) {
-        // Editing an existing member
-        updatedMembers = project.members.map(m =>
+        // Editing an existing member's role or displayName
+        const updatedMembers = project.members.map(m =>
           m.uid === existingMember.uid ? { ...m, displayName: values.displayName, role: values.role } : m
         );
+        // No change to memberUids is needed when editing
+        await updateDoc(projectRef, { members: updatedMembers });
         await logActivity(project.id, 'member_updated' as any, { email: existingMember.email, role: values.role }, user.uid);
         toast({ title: 'Success', description: 'Member updated.' });
 
@@ -88,7 +90,7 @@ export function MemberForm({ project, existingMember, closeForm }: MemberFormPro
         
         const userToAdd = userSnapshot.docs[0].data() as UserProfile;
 
-        if (project.members.some(m => m.uid === userToAdd.id)) {
+        if (project.memberUids.includes(userToAdd.id)) {
             toast({ variant: 'destructive', title: 'User already in project' });
             setIsSubmitting(false);
             return;
@@ -101,13 +103,18 @@ export function MemberForm({ project, existingMember, closeForm }: MemberFormPro
             photoURL: userToAdd.photoURL,
             role: values.role,
         };
-        updatedMembers = [...project.members, newMember];
+
+        const updatedMembers = [...project.members, newMember];
+        const updatedMemberUids = [...project.memberUids, newMember.uid];
+        
+        await updateDoc(projectRef, { 
+            members: updatedMembers,
+            memberUids: updatedMemberUids 
+        });
+        
         await logActivity(project.id, 'member_added', { email: values.email, role: values.role }, user.uid);
         toast({ title: 'Success', description: 'Member added.' });
       }
-
-      const projectRef = doc(db, 'projects', project.id);
-      await updateDoc(projectRef, { members: updatedMembers });
 
       closeForm();
     } catch (error) {
