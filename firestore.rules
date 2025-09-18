@@ -49,13 +49,14 @@ service cloud.firestore {
     // This rule applies to any document in any collection that is a sub-collection of a project.
     // We check that the document being created/modified has a `projectId` field that matches a project the user is a member of.
     match /{path=**}/{docId} {
-        // Read, Create: Allow if the user is a member of the project linked in the document.
-        allow read, create: if isAuth() && exists(/databases/$(database)/documents/projects/$(request.resource.data.projectId)) 
-                                    && isProjectMember(request.resource.data.projectId);
+        // Read: Allow if the user is a member of the project linked in the document.
+        allow read: if isAuth() && isProjectMember(resource.data.projectId);
+
+        // Create: Allow if the user is a member of the project linked in the new document.
+        allow create: if isAuth() && isProjectMember(request.resource.data.projectId);
                                     
         // Update, Delete: Allow if the user is a member of the project linked in the *existing* document.
-        allow update, delete: if isAuth() && exists(/databases/$(database)/documents/projects/$(resource.data.projectId))
-                                       && isProjectMember(resource.data.projectId);
+        allow update, delete: if isAuth() && isProjectMember(resource.data.projectId);
     }
 
     // --- Personal Collections (Wallet, Expenses, Vault) ---
@@ -65,7 +66,7 @@ service cloud.firestore {
       allow create: if isAuth() && request.auth.uid == request.resource.data.userId;
     }
 
-    match /walletTransactions/{walletId}/{txId} {
+    match /personalWallets/{walletId}/walletTransactions/{txId} {
       allow read, create: if isAuth() && get(/databases/$(database)/documents/personalWallets/$(walletId)).data.userId == request.auth.uid;
       allow update, delete: if false; // Transactions should be immutable
     }

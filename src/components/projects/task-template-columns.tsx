@@ -79,7 +79,7 @@ const ActionsCell: React.FC<ActionsCellProps> = ({ template, project }) => {
                     </AlertDialog>
                 </DropdownMenuContent>
             </DropdownMenu>
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Edit Template</DialogTitle></DialogHeader><TaskTemplateForm template={template} projectId={project.id} members={project.members.map(m => m.uid)} closeForm={() => setIsEditOpen(false)} /></DialogContent></Dialog>
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Edit Template</DialogTitle></DialogHeader><TaskTemplateForm template={template} projectId={project.id} members={project.memberUids} closeForm={() => setIsEditOpen(false)} /></DialogContent></Dialog>
         </>
     );
 };

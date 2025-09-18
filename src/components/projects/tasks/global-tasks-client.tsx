@@ -1,226 +1,141 @@
-
-
 'use client';
 
-import { useMemo, useState } from 'react';
-import type { Project, Task, Lead, TaskTemplate, ProjectMember } from '@/lib/types';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { DataTable } from '@/components/ui/data-table';
-import { getTaskColumns } from '@/components/projects/task-columns';
+import { useState } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { Task, Project, Lead } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
+import { TaskList } from './task-list';
+import { TaskCalendar } from './task-calendar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/projects/task-form';
 import { Card, CardContent } from '@/components/ui/card';
 import { collection, onSnapshot, query, where, doc, writeBatch, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect } from 'react';
-import { Row } from '@tanstack/react-table';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
 
 interface GlobalTasksClientProps {
-  projects: Project[];
   tasks: Task[];
-  templates: TaskTemplate[];
+  projects: Project[];
+  leads: Lead[];
 }
 
-export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksClientProps) {
+export function GlobalTasksClient({ tasks: initialTasks, projects, leads }: GlobalTasksClientProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [tasks, setTasks] = useState(initialTasks);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
-  const handleStar = async (id: string, starred: boolean) => {
-    try {
-        await updateDoc(doc(db, 'tasks', id), { starred });
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
-    }
-  }
+  useEffect(() => {
+    if (!user) return;
 
-  const handleDeleteSelected = async (ids: string[]) => {
-      const batch = writeBatch(db);
-      ids.forEach(id => {
-          batch.delete(doc(db, 'tasks', id));
-      });
-      try {
-          await batch.commit();
-          toast({ title: "Success", description: `${ids.length} task(s) deleted.`});
-      } catch (error) {
-          toast({ variant: 'destructive', title: "Error", description: "Could not delete selected tasks."})
-      }
-  }
+    const q = query(
+      collection(db, 'tasks'),
+      where('assigneeUid', '==', user.uid)
+    );
 
-  const handleGenerateTodaysTasks = async () => {
-    if (!user) {
-        toast({ variant: 'destructive', title: 'Not authenticated' });
-        return;
-    }
-    setIsGenerating(true);
-    
-    const today = new Date().getDay(); // Sunday - 0, Monday - 1, etc.
-    const todaysTemplates = templates.filter(t => t.daysOfWeek.includes(today));
-    
-    if (todaysTemplates.length === 0) {
-        toast({ title: 'No tasks to generate', description: 'No templates are scheduled for today.' });
-        setIsGenerating(false);
-        return;
-    }
-
-    const batch = writeBatch(db);
-    let tasksGeneratedCount = 0;
-
-    todaysTemplates.forEach(template => {
-        // Here you might add logic to check if a task from this template has already been created today
-        const newTaskData = {
-            projectId: template.projectId,
-            title: template.title,
-            description: template.description || '',
-            status: 'Project', // Or a default status from template
-            completed: false,
-            assigneeUid: template.assigneeUids[0] || user.uid, // Default to first assignee or current user
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-        };
-        const newTaskRef = doc(collection(db, 'tasks'));
-        batch.set(newTaskRef, newTaskData);
-        tasksGeneratedCount++;
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const newTasks: Task[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as Task));
+      setTasks(newTasks);
     });
 
+    return () => unsubscribe();
+  }, [user]);
+
+
+  const handleTaskCompletion = async (taskId: string, completed: boolean) => {
+    if (!user) return;
     try {
-        await batch.commit();
-        toast({ title: 'Success', description: `${tasksGeneratedCount} tasks have been generated for today.` });
+      const taskRef = doc(db, 'tasks', taskId);
+      await updateDoc(taskRef, { completed });
+      
+      const task = tasks.find(t => t.id === taskId);
+      if (task && task.parentTaskId) {
+          const parentTaskRef = doc(db, 'tasks', task.parentTaskId);
+          const childTasksQuery = query(collection(db, 'tasks'), where('parentTaskId', '==', task.parentTaskId));
+          
+          onSnapshot(childTasksQuery, async (snapshot) => {
+              const allChildTasks = snapshot.docs.map(doc => doc.data() as Task);
+              const allChildrenCompleted = allChildTasks.every(t => t.completed);
+              await updateDoc(parentTaskRef, { completed: allChildrenCompleted });
+          });
+      }
+
+      toast({ title: 'Success', description: `Task marked as ${completed ? 'complete' : 'incomplete'}.` });
     } catch (error) {
-        console.error('Error generating tasks:', error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not generate tasks.' });
-    } finally {
-        setIsGenerating(false);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update task completion.' });
     }
   };
 
-  const taskColumns = useMemo(() => getTaskColumns({ leads }, handleStar), [leads]);
-
-  useEffect(() => {
-    setLoading(true);
-    const leadsQuery = query(collection(db, 'leads'));
-    const unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
-        setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
-        setLoading(false);
-    });
-
-    return () => unsubscribeLeads();
-  }, []);
-
-  const hierarchicalTasksByProject = useMemo(() => {
-    const groupedByProject: { [key: string]: Task[] } = {};
-    for (const project of projects) {
-        groupedByProject[project.id] = [];
+  const handleBulkDelete = async (taskIds: string[]) => {
+    if (!user) return;
+    try {
+      const batch = writeBatch(db);
+      taskIds.forEach(id => {
+        batch.delete(doc(db, 'tasks', id));
+      });
+      await batch.commit();
+      toast({ title: 'Success', description: 'Selected tasks deleted.' });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not delete tasks.' });
     }
+  };
 
-    const taskMap = new Map(tasks.map(t => [t.id, { ...t, subRows: [] as Task[] }]));
+  const getProjectName = (projectId: string) => {
+    return projects.find(p => p.id === projectId)?.name || 'N/A';
+  };
 
-    for (const task of tasks) {
-        if (groupedByProject[task.projectId]) {
-            if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
-                const parent = taskMap.get(task.parentTaskId);
-                if(parent) {
-                    parent.subRows.push(taskMap.get(task.id)!);
-                }
-            } else {
-                groupedByProject[task.projectId].push(taskMap.get(task.id)!);
-            }
-        }
-    }
-    return groupedByProject;
-  }, [projects, tasks]);
-
-  const defaultAccordionValues = useMemo(() => projects.filter(p => (hierarchicalTasksByProject[p.id] || []).length > 0).map(p => p.id), [projects, hierarchicalTasksByProject]);
-
-  if (loading) {
-      return (
-        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-4">
-            <Loader2 className='h-8 w-8 animate-spin text-primary' />
-        </div>
-      );
+  const getLeadName = (leadId: string) => {
+    return leads.find(l => l.id === leadId)?.name || 'N/A';
   }
 
-  const allMembers = projects.reduce((acc, p) => {
-    p.members.forEach(m => {
-        if (!acc.find(am => am.uid === m.uid)) {
-            acc.push(m);
-        }
-    });
-    return acc;
-  }, [] as ProjectMember[]);
-
   return (
-    <>
-      <div className="flex justify-end items-center gap-4 mb-4">
-        <Button size="sm" variant="outline" onClick={handleGenerateTodaysTasks} disabled={isGenerating}>
-            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Generate Today&apos;s Tasks
-        </Button>
-        <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <PlusCircle className="mr-2 h-4 w-4" /> New Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Global Task</DialogTitle>
-            </DialogHeader>
-            <TaskForm 
-              projects={projects} 
+    <Card>
+      <CardContent className="p-4">
+        <Tabs defaultValue="list">
+          <div className="flex justify-between items-center mb-4">
+            <TabsList>
+              <TabsTrigger value="list">Task List</TabsTrigger>
+              <TabsTrigger value="calendar">Calendar</TabsTrigger>
+            </TabsList>
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogTrigger asChild>
+                <Button><PlusCircle className="mr-2 h-4 w-4" /> New Task</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader><DialogTitle>Create a New Task</DialogTitle></DialogHeader>
+                <TaskForm 
+                  projects={projects}
+                  leads={leads}
+                  members={[]}
+                  closeForm={() => setIsFormOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+          <TabsContent value="list">
+            <TaskList 
+              tasks={tasks}
               leads={leads}
-              members={allMembers}
-              closeForm={() => setIsTaskFormOpen(false)} 
+              onTaskCompletion={handleTaskCompletion}
+              onBulkDelete={handleBulkDelete}
+              getProjectName={getProjectName}
+              getLeadName={getLeadName}
             />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <Card>
-        <CardContent className='pt-6'>
-            <Accordion type="multiple" defaultValue={defaultAccordionValues} className="w-full">
-            {projects.map(project => {
-                const projectTasks = hierarchicalTasksByProject[project.id] || [];
-                if (projectTasks.length === 0) return null;
-
-                return (
-                    <AccordionItem value={project.id} key={project.id} className="border-b-0">
-                    <AccordionTrigger className='hover:no-underline px-4 py-2 bg-muted/50 rounded-t-lg'>
-                        <div className='flex flex-col items-start'>
-                            <h3 className="font-semibold text-lg">{project.name}</h3>
-                            <p className='text-sm text-muted-foreground'>
-                                {tasks.filter(t => t.projectId === project.id).length} task(s)
-                            </p>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="p-0">
-                        <div className="border-x border-b rounded-b-lg p-4">
-                            <DataTable 
-                                columns={taskColumns} 
-                                data={projectTasks}
-                                getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
-                                onDeleteSelected={handleDeleteSelected}
-                            />
-                        </div>
-                    </AccordionContent>
-                    </AccordionItem>
-                )
-            })}
-            </Accordion>
-            {tasks.length === 0 && (
-                 <div className="text-center text-muted-foreground py-12">
-                    <p>No tasks found. Create a task to get started.</p>
-                </div>
-            )}
-        </CardContent>
-      </Card>
-    </>
+          </TabsContent>
+          <TabsContent value="calendar">
+            <TaskCalendar 
+              tasks={tasks}
+              getProjectName={getProjectName}
+            />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 }

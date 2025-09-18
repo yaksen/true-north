@@ -33,6 +33,16 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const projectMembers: ProjectMember[] = useMemo(() => {
+    return memberProfiles.map(p => ({
+      uid: p.id,
+      displayName: p.name || '',
+      email: p.email,
+      photoURL: p.photoURL,
+      role: 'viewer'
+    }));
+  }, [memberProfiles]);
+
   const handleStar = async (id: string, starred: boolean) => {
     try {
         await updateDoc(doc(db, 'tasks', id), { starred });
@@ -110,7 +120,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
         setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
     });
 
-    const allMemberIds = projects.reduce((acc, p) => [...acc, ...p.members.map(m => m.uid)], [] as string[]);
+    const allMemberIds = projects.reduce((acc, p) => [...acc, ...p.memberUids], [] as string[]);
     const uniqueMemberIds = [...new Set(allMemberIds)];
 
     const fetchMemberProfiles = async () => {
@@ -182,7 +192,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
             <TaskForm 
               projects={projects} 
               leads={leads}
-              members={members}
+              members={projectMembers}
               closeForm={() => setIsTaskFormOpen(false)} 
             />
           </DialogContent>

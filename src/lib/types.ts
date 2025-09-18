@@ -289,7 +289,8 @@ export interface ActivityRecord {
     type: ActivityRecordType;
     payload: Record<string, any>;
     actorUid: string;
-    timestamp: Date;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface Note {
@@ -328,9 +329,10 @@ export interface Report {
     name: string;
     storagePath: string;
     uploadedByUid: string;
-    uploadedAt: Date;
     sizeBytes: number;
     mimeType: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface CrmSettings {

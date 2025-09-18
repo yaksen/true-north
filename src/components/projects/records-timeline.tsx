@@ -1,4 +1,3 @@
-
 'use client';
 
 import { ActivityRecord, Note } from '@/lib/types';
@@ -22,7 +21,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
-type FeedItem = (ActivityRecord & { feedType: 'record' }) | (Note & { feedType: 'note'; timestamp: Date });
+type FeedItem = (Omit<ActivityRecord, 'createdAt' | 'updatedAt'> & { feedType: 'record', timestamp: Date }) | (Omit<Note, 'createdAt' | 'updatedAt'> & { feedType: 'note'; timestamp: Date });
 
 interface RecordsTimelineProps {
   items: FeedItem[];
@@ -52,6 +51,9 @@ const recordDetails: Record<
   lead_created: { icon: Contact, message: (p) => `Lead "${p.name}" was created.` },
   lead_updated: { icon: Contact, message: (p) => `Lead "${p.name}" was updated.` },
   lead_deleted: { icon: Contact, message: (p) => `Lead "${p.name}" was deleted.` },
+  channel_created: { icon: Contact, message: (p) => `Channel "${p.name}" was created.` },
+  channel_updated: { icon: Contact, message: (p) => `Channel "${p.name}" was updated.` },
+  channel_deleted: { icon: Contact, message: (p) => `Channel "${p.name}" was deleted.` },
   category_created: { icon: Tag, message: (p) => `Category "${p.name}" was created.` },
   category_updated: { icon: Tag, message: (p) => `Category "${p.name}" was updated.` },
   category_deleted: { icon: Tag, message: (p) => `Category "${p.name}" was deleted.` },
@@ -127,7 +129,7 @@ export function RecordsTimeline({ items }: RecordsTimelineProps) {
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    {recordDetails[item.type as keyof typeof recordDetails]?.message(item.payload) || 'An unknown action occurred.'}
+                    {(recordDetails[item.type as keyof typeof recordDetails]?.message(item.payload) || 'An unknown action occurred.')}
                   </p>
                 )}
               </div>

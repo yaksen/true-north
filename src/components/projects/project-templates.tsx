@@ -32,16 +32,14 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
     
     useEffect(() => {
         const fetchMembers = async () => {
-            if (project.members.length === 0) return;
-            const memberUids = project.members.map(m => m.uid);
-            if (memberUids.length === 0) return;
-            const usersRef = collection(db, 'users');
-            const q = query(usersRef, where('id', 'in', memberUids));
-            const snapshot = await getDocs(q);
-            setMemberProfiles(snapshot.docs.map(doc => doc.data() as UserProfile));
+          if (!project.memberUids || project.memberUids.length === 0) return;
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('id', 'in', project.memberUids));
+          const snapshot = await getDocs(q);
+          setMemberProfiles(snapshot.docs.map(doc => doc.data() as UserProfile));
         };
         fetchMembers();
-    }, [project.members]);
+    }, [project.memberUids]);
 
     const handleStar = async (id: string, starred: boolean) => {
         try {
@@ -134,7 +132,7 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
                                     <DialogHeader>
                                         <DialogTitle>Create New Task Template</DialogTitle>
                                     </DialogHeader>
-                                    <TaskTemplateForm projectId={project.id} members={project.members.map(m => m.uid)} closeForm={() => setIsTemplateFormOpen(false)} />
+                                    <TaskTemplateForm projectId={project.id} members={project.memberUids} closeForm={() => setIsTemplateFormOpen(false)} />
                                 </DialogContent>
                             </Dialog>
                         </div>

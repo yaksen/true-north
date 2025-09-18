@@ -15,8 +15,8 @@ interface ProjectRecordsProps {
 
 export function ProjectRecords({ project, records, notes }: ProjectRecordsProps) {
     const combinedFeed = [
-        ...records.map(r => ({ ...r, feedType: 'record' as const })),
-        ...notes.map(n => ({ ...n, feedType: 'note' as const, timestamp: n.createdAt }))
+        ...records.map(r => ({ ...r, feedType: 'record' as const, timestamp: r.createdAt })),
+        ...notes.map(n => ({ ...n, feedType: 'note' as const, timestamp: n.createdAt })),
       ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return (
