@@ -2,7 +2,7 @@
 
 // src/context/CurrencyContext.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot, Unsubscribe } from "firebase/firestore";
 import { db } from "@/lib/firebase"; // adjust path to your firebase init
 
 export type CurrencyCode = "USD" | "LKR" | "EUR" | "GBP" | string;
@@ -28,9 +28,13 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Load & subscribe
   useEffect(() => {
-    let unsub = onSnapshot(
+    let unsub: Unsubscribe | null = null;
+    let mounted = true;
+
+    unsub = onSnapshot(
       settingsDocRef,
       (snap) => {
+        if (!mounted) return;
         if (snap.exists()) {
           const data = snap.data() as any;
           setGlobalCurrencyState(data?.currency ?? "USD");
@@ -44,11 +48,17 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
       },
       (err) => {
+        if (!mounted) return;
         console.error("settings snapshot error", err);
         setLoading(false);
       }
     );
-    return () => unsub();
+    return () => {
+        mounted = false;
+        if (unsub) {
+            unsub();
+        }
+    };
   }, []);
 
   // setter that writes to Firestore
