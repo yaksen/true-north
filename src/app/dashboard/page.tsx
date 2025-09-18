@@ -22,7 +22,7 @@ export default function DashboardPage() {
 
     setLoading(true);
 
-    const projectsQuery = query(collection(db, 'projects'), where('members', 'array-contains', user.uid));
+    const projectsQuery = query(collection(db, 'projects'), where('memberUids', 'array-contains', user.uid));
     const tasksQuery = query(collection(db, 'tasks')); // Consider adding a project filter here
     const financesQuery = query(collection(db, 'finances')); // Consider adding a project filter here
     const settingsRef = doc(db, 'settings', 'crm');
