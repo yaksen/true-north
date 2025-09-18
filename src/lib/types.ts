@@ -48,6 +48,7 @@ export interface Project {
   ownerUid: string; // Remains for top-level ownership check
   private: boolean;
   members: ProjectMember[];
+  memberUids: string[]; // For querying
   currency: 'LKR' | 'USD' | 'EUR' | 'GBP';
   type: ProjectType;
   emoji?: string;

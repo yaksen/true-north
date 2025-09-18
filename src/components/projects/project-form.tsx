@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -77,16 +78,16 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
     }
     setIsSubmitting(true);
 
-    const dataToSubmit = {
-        ...values,
-        parentProjectId: values.type === 'Sub' ? values.parentProjectId : '', // Clear parent if not a sub-project
-    };
-
     try {
       if (project) {
         // Update existing project
         const projectRef = doc(db, 'projects', project.id);
-        await updateDoc(projectRef, { ...dataToSubmit, updatedAt: serverTimestamp() });
+        const dataToUpdate = {
+            ...values,
+            parentProjectId: values.type === 'Sub' ? values.parentProjectId : '',
+            updatedAt: serverTimestamp()
+        };
+        await updateDoc(projectRef, dataToUpdate);
         await logActivity(project.id, 'project_updated', { name: values.name }, user.uid);
         toast({ title: 'Success', description: 'Project updated successfully.' });
       } else {
@@ -100,9 +101,11 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
         };
 
         const projectData = {
-          ...dataToSubmit,
+          ...values,
           ownerUid: user.uid,
           members: [newMember],
+          memberUids: [user.uid], // Add the simple array of UIDs for querying
+          parentProjectId: values.type === 'Sub' ? values.parentProjectId : '',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };

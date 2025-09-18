@@ -50,9 +50,9 @@ export default function ProjectsPage() {
     if (!user) return;
 
     setLoading(true);
-    // Updated query to work with the new members array structure
+    // Corrected query to use `array-contains` on a simple array of UIDs.
     const projectsQuery = query(
-        collection(db, 'projects'), where('members.uid', '==', user.uid)
+        collection(db, 'projects'), where('memberUids', 'array-contains', user.uid)
     );
     
     const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
@@ -62,6 +62,7 @@ export default function ProjectsPage() {
         } as Project)));
     });
 
+    // In a larger app, these would also be filtered by the user's projects
     const financesQuery = query(collection(db, 'finances'));
     const unsubscribeFinances = onSnapshot(financesQuery, snapshot => {
         setFinances(snapshot.docs.map(doc => doc.data() as Finance));
