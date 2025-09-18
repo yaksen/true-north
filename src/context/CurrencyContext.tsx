@@ -1,3 +1,4 @@
+
 'use client';
 
 // src/context/CurrencyContext.tsx
@@ -28,13 +29,13 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Load & subscribe
   useEffect(() => {
-    let unsub: Unsubscribe | null = null;
-    let mounted = true;
+    let unsubscribe: Unsubscribe | undefined;
+    let isMounted = true;
 
-    unsub = onSnapshot(
+    const unsub = onSnapshot(
       settingsDocRef,
       (snap) => {
-        if (!mounted) return;
+        if (!isMounted) return;
         if (snap.exists()) {
           const data = snap.data() as any;
           setGlobalCurrencyState(data?.currency ?? "USD");
@@ -48,15 +49,17 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
       },
       (err) => {
-        if (!mounted) return;
+        if (!isMounted) return;
         console.error("settings snapshot error", err);
         setLoading(false);
       }
     );
+    unsubscribe = unsub;
+
     return () => {
-        mounted = false;
-        if (unsub) {
-            unsub();
+        isMounted = false;
+        if (unsubscribe) {
+            unsubscribe();
         }
     };
   }, []);
