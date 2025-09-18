@@ -23,6 +23,14 @@ import { ProjectBilling } from '@/components/projects/project-billing';
 import { ProjectReports } from '@/components/projects/project-reports';
 import { ProjectWorkspace } from '@/components/projects/project-workspace';
 
+function toDate(timestamp: any): Date | undefined {
+    if (!timestamp) return undefined;
+    if (timestamp.toDate) return timestamp.toDate();
+    if (typeof timestamp === 'string' || typeof timestamp === 'number') return new Date(timestamp);
+    return timestamp; // Already a Date object
+}
+
+
 export default function ProjectDetailPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -55,7 +63,7 @@ export default function ProjectDetailPage() {
       if (docSnap.exists()) {
         const projectData = { id: docSnap.id, ...docSnap.data() } as Project;
         // Check if user is a member using the new members array structure
-        if (projectData.private && !projectData.members.some(m => m.uid === user.uid)) {
+        if (projectData.private && !projectData.memberUids.includes(user.uid)) {
             router.push('/dashboard/projects');
             return;
         }
@@ -66,30 +74,33 @@ export default function ProjectDetailPage() {
       setLoading(false);
     });
 
-    const allProjectsQuery = query(collection(db, 'projects'), where('members', 'array-contains', user.uid));
+    const allProjectsQuery = query(collection(db, 'projects'), where('memberUids', 'array-contains', user.uid));
     const unsubscribeAllProjects = onSnapshot(allProjectsQuery, (snapshot) => {
         setAllProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)))
     });
 
-    const createCollectionSubscription = <T extends { date?: any, createdAt?: any, timestamp?: any, uploadedAt?: any }>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
+    const createCollectionSubscription = <T extends {}>(collectionName: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
         const q = query(collection(db, collectionName), where('projectId', '==', id));
         return onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => {
-                const docData = doc.data();
-                if (docData.date && docData.date.toDate) docData.date = docData.date.toDate();
-                if (docData.createdAt && docData.createdAt.toDate) docData.createdAt = docData.createdAt.toDate();
-                if (docData.updatedAt && docData.updatedAt.toDate) docData.updatedAt = docData.updatedAt.toDate();
-                if (docData.timestamp && docData.timestamp.toDate) docData.timestamp = docData.timestamp.toDate();
-                if (docData.issueDate && docData.issueDate.toDate) docData.issueDate = docData.issueDate.toDate();
-                if (docData.dueDate && docData.dueDate.toDate) docData.dueDate = docData.dueDate.toDate();
-                if (docData.uploadedAt && docData.uploadedAt.toDate) docData.uploadedAt = docData.uploadedAt.toDate();
-                if (docData.payments) {
+                const docData: any = doc.data();
+                
+                // Convert all possible date fields
+                for (const key of ['date', 'createdAt', 'updatedAt', 'timestamp', 'issueDate', 'dueDate', 'uploadedAt', 'lastLogin']) {
+                    if (docData[key]) {
+                        docData[key] = toDate(docData[key]);
+                    }
+                }
+
+                // Handle nested date fields like in payments
+                if (docData.payments && Array.isArray(docData.payments)) {
                   docData.payments = docData.payments.map((p: any) => ({
                     ...p,
-                    date: p.date.toDate ? p.date.toDate() : new Date(p.date)
+                    date: toDate(p.date),
                   }));
                 }
-                return { id: doc.id, ...docData } as unknown as T;
+
+                return { id: doc.id, ...docData } as T;
             });
             setter(data);
         });
