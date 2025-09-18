@@ -74,7 +74,6 @@ export default function DashboardLayout({
   const router = useRouter();
   const { toast } = useToast();
   const { globalCurrency, setGlobalCurrency } = useCurrency();
-  const [isRestoring, setIsRestoring] = useState(false);
 
   const [vaultFolders, setVaultFolders] = useState<VaultFolder[]>([]);
   const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
@@ -131,43 +130,6 @@ export default function DashboardLayout({
     router.push('/');
     return null;
   }
-
-  const handleRestoreDatabase = async () => {
-    setIsRestoring(true);
-    try {
-      const collections = [
-        "projects", "tasks", "finances", "leads", "channels",
-        "categories", "services", "products", "packages", "invoices",
-        "records", "notes", "aiPrompts", "reports", "settings",
-        "personalExpenses", "personalExpenseCategories", "personalWallets",
-        "walletTransactions", "vaultFolders", "vaultItems", "taskTemplates"
-      ];
-
-      const batch = writeBatch(db);
-      const placeholderId = "placeholder";
-
-      for (const coll of collections) {
-        const docRef = doc(db, coll, placeholderId);
-        batch.set(docRef, { initialized: true });
-      }
-
-      await batch.commit();
-      
-      toast({
-        title: "Database Restored",
-        description: "The required database structure has been created.",
-      });
-    } catch (error) {
-        console.error("Database restore failed: ", error);
-        toast({
-            variant: "destructive",
-            title: "Restore Failed",
-            description: "Could not restore the database structure. Check the console for errors.",
-        });
-    } finally {
-        setIsRestoring(false);
-    }
-  };
 
   const navItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard' },
@@ -248,30 +210,6 @@ export default function DashboardLayout({
             {/* Can add a global search here if needed */}
           </div>
 
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className='gap-1'>
-                  <DatabaseZap className="h-4 w-4" />
-                  Restore DB
-                </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This will create placeholder documents in all necessary collections to prevent the app from crashing. It should only be used on a new or empty database.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleRestoreDatabase} disabled={isRestoring}>
-                        {isRestoring ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Yes, Restore Structure
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon">
