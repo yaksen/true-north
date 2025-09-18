@@ -26,6 +26,7 @@ const formSchema = z.object({
   tags: z.array(z.string()).default([]),
   // Fields for note/link
   content: z.string().optional(),
+  description: z.string().optional(),
   // Fields for prompt
   role: z.string().optional(),
   task: z.string().optional(),
@@ -64,6 +65,7 @@ export function VaultItemForm({ item, userId, folders, closeForm, defaultType }:
     defaultValues: item || { 
         title: '',
         content: '',
+        description: '',
         folderId: '',
         type: defaultType || 'note',
         tags: [],
@@ -114,8 +116,10 @@ export function VaultItemForm({ item, userId, folders, closeForm, defaultType }:
             data.instructions = values.instructions;
             data.outputFormat = values.outputFormat;
             data.content = ''; // Clear content field
+            data.description = '';
         } else {
             data.content = values.content || '';
+            data.description = values.description || '';
             // Clear prompt fields
             data.role = '';
             data.task = '';
@@ -163,8 +167,13 @@ export function VaultItemForm({ item, userId, folders, closeForm, defaultType }:
                         <FormField control={form.control} name="instructions" render={({ field }) => (<FormItem><FormLabel>Step-by-step Instructions (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., 1. Analyze the topic. 2. Brainstorm keywords..." {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="outputFormat" render={({ field }) => (<FormItem><FormLabel>Output Format</FormLabel><FormControl><Textarea placeholder="e.g., A JSON array of strings" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
+                ) : itemType === 'link' ? (
+                    <>
+                        <FormField control={form.control} name="content" render={({ field }) => (<FormItem><FormLabel>URL</FormLabel><FormControl><Input placeholder='https://example.com' {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="A brief description of the link." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </>
                 ) : (
-                    <FormField control={form.control} name="content" render={({ field }) => (<FormItem><FormLabel>Content</FormLabel><FormControl><Textarea placeholder={itemType === 'link' ? 'https://example.com' : 'Your note content...'} className="min-h-[150px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="content" render={({ field }) => (<FormItem><FormLabel>Content</FormLabel><FormControl><Textarea placeholder={'Your note content...'} className="min-h-[150px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 )}
 
                 <div className='grid grid-cols-2 gap-4'>

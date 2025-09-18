@@ -383,6 +383,7 @@ export interface VaultItem {
     type: VaultItemType;
     title: string;
     content?: string;
+    description?: string;
     tags: string[];
     createdAt: Date;
     updatedAt: Date;

@@ -89,6 +89,10 @@ export function VaultItemCard({ item, folders }: VaultItemCardProps) {
             <p className="text-sm text-muted-foreground line-clamp-1"><b>Role:</b> {item.role}</p>
             <p className="text-sm text-muted-foreground line-clamp-1"><b>Task:</b> {item.task}</p>
           </>
+        ) : item.type === 'link' ? (
+            <p className="text-sm text-muted-foreground line-clamp-3 break-all">
+                {item.description || item.content}
+            </p>
         ) : (
           <p className="text-sm text-muted-foreground line-clamp-3 break-all">
               {item.content}
