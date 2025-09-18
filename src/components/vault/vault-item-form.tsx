@@ -169,9 +169,42 @@ export function VaultItemForm({ item, userId, folders, closeForm, defaultType }:
 
                 <div className='grid grid-cols-2 gap-4'>
                     <FormField control={form.control} name="folderId" render={({ field }) => (<FormItem><FormLabel>Folder</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a folder..." /></SelectTrigger></FormControl><SelectContent>{folders.map(f => (<SelectItem key={f.id} value={f.id}>{f.emoji} {f.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="tags" render={({ field }) => (<FormItem><FormLabel>Tags</FormLabel><FormControl><><Input placeholder="Add tags and press Enter" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={handleTagKeyDown} /><div className="flex flex-wrap gap-1 mt-2">{field.value.map(tag => (<Badge key={tag} variant="secondary">{tag}<button type="button" onClick={() => removeTag(tag)} className="ml-1 rounded-full hover:bg-muted-foreground/20"><X className="h-3 w-3" /></button></Badge>))}</div></>
-                        </FormControl><FormMessage /></FormItem>
-                    )} />
+                    <FormField
+                        control={form.control}
+                        name="tags"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Tags</FormLabel>
+                            <FormControl>
+                                <>
+                                <Input
+                                    placeholder="Add tags and press Enter"
+                                    value={tagInput}
+                                    onChange={(e) => setTagInput(e.target.value)}
+                                    onKeyDown={handleTagKeyDown}
+                                />
+                                {field.value && field.value.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-2">
+                                    {field.value.map((tag) => (
+                                        <Badge key={tag} variant="secondary">
+                                        {tag}
+                                        <button
+                                            type="button"
+                                            onClick={() => removeTag(tag)}
+                                            className="ml-1 rounded-full hover:bg-muted-foreground/20"
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                        </Badge>
+                                    ))}
+                                    </div>
+                                )}
+                                </>
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
                 </div>
             </div>
         </ScrollArea>

@@ -80,7 +80,7 @@ export function VaultItemCard({ item, folders }: VaultItemCardProps) {
             <Badge variant="outline" className='capitalize'>{item.type}</Badge>
         </div>
         <CardDescription>
-            {updatedAt ? `Last updated ${formatDistanceToNow(updatedAt, { addSuffix: true })}` : 'Not recently updated'}
+          {updatedAt ? `Last updated ${formatDistanceToNow(updatedAt, { addSuffix: true })}` : 'Not recently updated'}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow space-y-2">
@@ -96,7 +96,7 @@ export function VaultItemCard({ item, folders }: VaultItemCardProps) {
         )}
       </CardContent>
       <CardFooter className="flex-col items-start gap-4">
-        {item.tags.length > 0 && (
+        {item.tags && item.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {item.tags.map(tag => (
               <Badge key={tag} variant="secondary">{tag}</Badge>
