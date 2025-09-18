@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { Briefcase } from 'lucide-react';
 
 interface TopProjectsProps {
   summaries: ProjectSummary[];
@@ -38,9 +39,13 @@ export function TopProjects({ summaries, currency }: TopProjectsProps) {
       <CardContent className="space-y-2">
         {topProjects.map(summary => (
             <Link href={`/dashboard/projects/${summary.project.id}`} key={summary.project.id} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted transition-colors">
-                <Avatar className="h-9 w-9 hidden sm:flex">
-                    <AvatarFallback>{getInitials(summary.project.name)}</AvatarFallback>
-                </Avatar>
+                {summary.project.emoji ? (
+                  <span className="text-2xl h-9 w-9 flex items-center justify-center">{summary.project.emoji}</span>
+                ) : (
+                  <Avatar className="h-9 w-9 hidden sm:flex">
+                      <AvatarFallback>{getInitials(summary.project.name)}</AvatarFallback>
+                  </Avatar>
+                )}
                 <div className="grid gap-1 flex-1">
                     <p className="text-sm font-medium leading-none truncate">{summary.project.name}</p>
                 </div>
@@ -56,5 +61,6 @@ export function TopProjects({ summaries, currency }: TopProjectsProps) {
     </Card>
   );
 }
+
 
 
