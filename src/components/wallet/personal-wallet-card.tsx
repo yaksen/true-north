@@ -102,9 +102,6 @@ export function PersonalWalletCard({ wallet, projects }: PersonalWalletCardProps
                         </DialogContent>
                     </Dialog>
                  </div>
-                <Button asChild variant="outline">
-                    <Link href="/dashboard/wallet">View Transactions</Link>
-                </Button>
             </CardFooter>
         </Card>
     );
