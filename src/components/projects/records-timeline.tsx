@@ -51,9 +51,9 @@ const recordDetails: Record<
   lead_created: { icon: Contact, message: (p) => `Lead "${p.name}" was created.` },
   lead_updated: { icon: Contact, message: (p) => `Lead "${p.name}" was updated.` },
   lead_deleted: { icon: Contact, message: (p) => `Lead "${p.name}" was deleted.` },
-  channel_created: { icon: Contact, message: (p) => `Channel "${p.name}" was created.` },
-  channel_updated: { icon: Contact, message: (p) => `Channel "${p.name}" was updated.` },
-  channel_deleted: { icon: Contact, message: (p) => `Channel "${p.name}" was deleted.` },
+  channel_created: { icon: Hash, message: (p) => `Channel "${p.name}" was created.` },
+  channel_updated: { icon: Hash, message: (p) => `Channel "${p.name}" was updated.` },
+  channel_deleted: { icon: Hash, message: (p) => `Channel "${p.name}" was deleted.` },
   category_created: { icon: Tag, message: (p) => `Category "${p.name}" was created.` },
   category_updated: { icon: Tag, message: (p) => `Category "${p.name}" was updated.` },
   category_deleted: { icon: Tag, message: (p) => `Category "${p.name}" was deleted.` },
@@ -76,9 +76,6 @@ const recordDetails: Record<
   member_added: { icon: UserPlus, message: (p) => `Added ${p.email} to the project.` },
   member_removed: { icon: UserX, message: (p) => `Removed ${p.email} from the project.` },
   payment_added: { icon: CircleDollarSign, message: (p) => `Payment of ${p.amount} was added.` },
-  channel_created: { icon: Hash, message: (p) => `Channel "${p.name}" was created.` },
-  channel_updated: { icon: Hash, message: (p) => `Channel "${p.name}" was updated.` },
-  channel_deleted: { icon: Hash, message: (p) => `Channel "${p.name}" was deleted.` },
 };
 
 export function RecordsTimeline({ items }: RecordsTimelineProps) {
