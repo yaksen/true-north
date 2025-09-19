@@ -75,12 +75,17 @@ export function PartnerForm({ partner, projectId, channels, closeForm }: Partner
     name: "socials",
   });
 
-  async function onSubmit(values: PartnerFormValues) {
+  async function onSubmit(data: PartnerFormValues) {
     if (!user) {
       toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
       return;
     }
     setIsSubmitting(true);
+
+    const values = {
+      ...data,
+      channelId: data.channelId === 'none' ? '' : data.channelId,
+    };
 
     try {
       if (partner) {
@@ -231,10 +236,10 @@ export function PartnerForm({ partner, projectId, channels, closeForm }: Partner
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>From</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select a channel..." /></SelectTrigger></FormControl>
                         <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {channels.map(channel => (
                                 <SelectItem key={channel.id} value={channel.id}>{channel.name}</SelectItem>
                             ))}
