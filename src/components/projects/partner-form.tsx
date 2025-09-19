@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,12 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { logActivity } from '@/lib/activity-log';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+
+const socialPlatforms = ['LinkedIn', 'Twitter', 'GitHub', 'Facebook', 'Instagram', 'TikTok', 'Website'];
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -23,6 +26,10 @@ const formSchema = z.object({
   contactName: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().optional(),
+  socials: z.array(z.object({
+    platform: z.string().min(1, 'Platform is required'),
+    url: z.string().url('Must be a valid URL'),
+  })).optional(),
   notes: z.string().optional(),
 });
 
@@ -46,6 +53,7 @@ export function PartnerForm({ partner, projectId, closeForm }: PartnerFormProps)
       contactName: partner.contactName || '',
       email: partner.email || '',
       phone: partner.phone || '',
+      socials: partner.socials || [],
       notes: partner.notes || '',
     } : {
       name: '',
@@ -53,8 +61,14 @@ export function PartnerForm({ partner, projectId, closeForm }: PartnerFormProps)
       contactName: '',
       email: '',
       phone: '',
+      socials: [],
       notes: '',
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "socials",
   });
 
   async function onSubmit(values: PartnerFormValues) {
@@ -160,6 +174,51 @@ export function PartnerForm({ partner, projectId, closeForm }: PartnerFormProps)
                     </FormItem>
                 )}
             />
+        </div>
+        <div>
+            <FormLabel>Social Links</FormLabel>
+            <div className="space-y-2 mt-2">
+                {fields.map((field, index) => (
+                    <div key={field.id} className="flex items-center gap-2">
+                         <FormField
+                            control={form.control}
+                            name={`socials.${index}.platform`}
+                            render={({ field }) => (
+                                <FormItem className="w-1/3">
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Platform" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {socialPlatforms.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name={`socials.${index}.url`}
+                            render={({ field }) => (
+                                <Input {...field} placeholder="URL" className="flex-1"/>
+                            )}
+                        />
+                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                            <Trash2 className="h-4 w-4 text-destructive"/>
+                        </Button>
+                    </div>
+                ))}
+                 <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ platform: 'Website', url: '' })}
+                >
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Social Link
+                </Button>
+            </div>
         </div>
         <FormField
           control={form.control}

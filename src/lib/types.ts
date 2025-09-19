@@ -187,6 +187,7 @@ export interface Partner {
     contactName?: string;
     email?: string;
     phone?: string;
+    socials?: SocialLink[];
     notes?: string;
     starred?: boolean;
     createdAt: Date;
