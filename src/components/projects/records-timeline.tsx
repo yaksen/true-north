@@ -76,6 +76,12 @@ const recordDetails: Record<
   member_added: { icon: UserPlus, message: (p) => `Added ${p.email} to the project.` },
   member_removed: { icon: UserX, message: (p) => `Removed ${p.email} from the project.` },
   payment_added: { icon: CircleDollarSign, message: (p) => `Payment of ${p.amount} was added.` },
+  partner_created: { icon: Contact, message: (p) => `Partner "${p.name}" was created.` },
+  partner_updated: { icon: Contact, message: (p) => `Partner "${p.name}" was updated.` },
+  partner_deleted: { icon: Contact, message: (p) => `Partner "${p.name}" was deleted.` },
+  vendor_created: { icon: Contact, message: (p) => `Vendor "${p.name}" was created.` },
+  vendor_updated: { icon: Contact, message: (p) => `Vendor "${p.name}" was updated.` },
+  vendor_deleted: { icon: Contact, message: (p) => `Vendor "${p.name}" was deleted.` },
 };
 
 export function RecordsTimeline({ items }: RecordsTimelineProps) {
