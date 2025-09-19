@@ -164,6 +164,20 @@ export interface Channel {
     updatedAt: Date;
 }
 
+export interface Vendor {
+    id: string;
+    projectId: string;
+    name: string;
+    serviceType: string;
+    contactName?: string;
+    email?: string;
+    phone?: string;
+    notes?: string;
+    starred?: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
 export interface Category {
     id: string;
     projectId: string;

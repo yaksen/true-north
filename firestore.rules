@@ -10,16 +10,22 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Checks if the user's UID is in the `memberUids` array of a project.
     function isProjectMember(projectId) {
-      return request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.memberUids;
+      // Ensure the project document exists before trying to access its data.
+      return exists(/databases/$(database)/documents/projects/$(projectId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.memberUids;
     }
-
-    // Checks if the user is the owner of the project.
+    
     function isProjectOwner(projectId) {
       return request.auth.uid == get(/databases/$(database)/documents/projects/$(projectId)).data.ownerUid;
     }
-
+    
+    // A simplified check for now: any authenticated member of a project can write.
+    // We can add more granular role checks later if needed.
+    function canWrite(projectId) {
+      return isAuth() && isProjectMember(projectId);
+    }
+    
     // =================================
     // Collection Rules
     // =================================
@@ -32,63 +38,68 @@ service cloud.firestore {
     
     match /settings/{docId} {
       allow read: if isAuth();
-      // Only allow updating the global currency setting, not creating new setting docs.
+      // Allow any authenticated user to write to the 'global' settings doc,
+      // as this is used for shared settings like currency.
       allow write: if isAuth() && docId == 'global';
     }
 
     // --- Project Document ---
     match /projects/{projectId} {
       allow read: if isAuth() && isProjectMember(projectId);
-      allow create: if isAuth();
-      // Any member can update the project for now. Refine to editor/owner later if needed.
-      allow update: if isAuth() && isProjectMember(projectId); 
+      // Any authenticated user can create a project.
+      allow create: if isAuth(); 
+      // Only project members can update. We can refine this to 'editors' later.
+      allow update: if isAuth() && canWrite(projectId); 
+      // Only the project owner can delete.
       allow delete: if isAuth() && isProjectOwner(projectId);
     }
     
     // --- Generic Project Sub-Collection Rules ---
-    // This rule applies to any document in any collection that is a sub-collection of a project.
-    // We check that the document being created/modified has a `projectId` field that matches a project the user is a member of.
-    match /{path=**}/{docId} {
-        // Read: Allow if the user is a member of the project linked in the document.
-        allow read: if isAuth() && isProjectMember(resource.data.projectId);
-
-        // Create: Allow if the user is a member of the project linked in the new document.
-        allow create: if isAuth() && isProjectMember(request.resource.data.projectId);
-                                    
-        // Update, Delete: Allow if the user is a member of the project linked in the *existing* document.
-        allow update, delete: if isAuth() && isProjectMember(resource.data.projectId);
+    // This rule applies to any document in any collection where the document's
+    // 'projectId' field matches the {projectId} wildcard.
+    match /{path=**}/projectSubCollections/{docId} {
+        allow read, write: if isAuth() && isProjectMember(request.resource.data.projectId);
     }
+
+    function projectSubCollectionRules() {
+      return {
+        'allow read, create': if isAuth() && isProjectMember(request.resource.data.projectId),
+        'allow update, delete': if isAuth() && canWrite(resource.data.projectId)
+      }
+    }
+    
+    match /tasks/{docId} { rules projectSubCollectionRules(); }
+    match /leads/{docId} { rules projectSubCollectionRules(); }
+    match /channels/{docId} { rules projectSubCollectionRules(); }
+    match /vendors/{docId} { rules projectSubCollectionRules(); }
+    match /categories/{docId} { rules projectSubCollectionRules(); }
+    match /services/{docId} { rules projectSubCollectionRules(); }
+    match /products/{docId} { rules projectSubCollectionRules(); }
+    match /packages/{docId} { rules projectSubCollectionRules(); }
+    match /notes/{docId} { rules projectSubCollectionRules(); }
+    match /aiPrompts/{docId} { rules projectSubCollectionRules(); }
+    match /reports/{docId} { rules projectSubCollectionRules(); }
+    match /records/{docId} { rules projectSubCollectionRules(); }
+    match /taskTemplates/{docId} { rules projectSubCollectionRules(); }
+    match /finances/{docId} { rules projectSubCollectionRules(); }
+    match /invoices/{docId} { rules projectSubCollectionRules(); }
 
     // --- Personal Collections (Wallet, Expenses, Vault) ---
-    // These collections are not tied to a project, but directly to a user.
-    match /personalWallets/{docId} {
-      allow read, write: if isAuth() && request.auth.uid == resource.data.userId;
-      allow create: if isAuth() && request.auth.uid == request.resource.data.userId;
+    function userOwnedResourceRules() {
+       return {
+         'allow read, write, delete': if isAuth() && resource.data.userId == request.auth.uid,
+         'allow create': if isAuth() && request.resource.data.userId == request.auth.uid
+       }
     }
 
-    match /personalWallets/{walletId}/walletTransactions/{txId} {
-      allow read, create: if isAuth() && get(/databases/$(database)/documents/personalWallets/$(walletId)).data.userId == request.auth.uid;
+    match /personalWallets/{docId} { rules userOwnedResourceRules(); }
+    match /walletTransactions/{docId} {
+      allow read, create: if isAuth() && get(/databases/$(database)/documents/personalWallets/$(request.resource.data.walletId)).data.userId == request.auth.uid;
       allow update, delete: if false; // Transactions should be immutable
     }
-
-    match /personalExpenses/{docId} {
-      allow read, write: if isAuth() && request.auth.uid == resource.data.userId;
-      allow create: if isAuth() && request.auth.uid == request.resource.data.userId;
-    }
-
-    match /personalExpenseCategories/{docId} {
-      allow read, write: if isAuth() && request.auth.uid == resource.data.userId;
-      allow create: if isAuth() && request.auth.uid == request.resource.data.userId;
-    }
-
-    match /vaultFolders/{docId} {
-      allow read, write: if isAuth() && request.auth.uid == resource.data.userId;
-      allow create: if isAuth() && request.auth.uid == request.resource.data.userId;
-    }
-
-    match /vaultItems/{docId} {
-      allow read, write: if isAuth() && request.auth.uid == resource.data.userId;
-      allow create: if isAuth() && request.auth.uid == request.resource.data.userId;
-    }
+    match /personalExpenses/{docId} { rules userOwnedResourceRules(); }
+    match /personalExpenseCategories/{docId} { rules userOwnedResourceRules(); }
+    match /vaultFolders/{docId} { rules userOwnedResourceRules(); }
+    match /vaultItems/{docId} { rules userOwnedResourceRules(); }
   }
 }

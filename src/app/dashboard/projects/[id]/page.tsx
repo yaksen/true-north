@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, AIPrompt, Report, Invoice, Product, Channel, TaskTemplate } from '@/lib/types';
+import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, AIPrompt, Report, Invoice, Product, Channel, TaskTemplate, Vendor } from '@/lib/types';
 import { Loader2, BookText } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,6 +22,7 @@ import { ProjectSettings } from '@/components/projects/project-settings';
 import { ProjectBilling } from '@/components/projects/project-billing';
 import { ProjectReports } from '@/components/projects/project-reports';
 import { ProjectWorkspace } from '@/components/projects/project-workspace';
+import { ProjectVendors } from '@/components/projects/project-vendors';
 
 function toDate(timestamp: any): Date | undefined {
     if (!timestamp) return undefined;
@@ -44,6 +45,7 @@ export default function ProjectDetailPage() {
   const [finances, setFinances] = useState<Finance[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -111,6 +113,7 @@ export default function ProjectDetailPage() {
     const unsubscribeFinances = createCollectionSubscription<Finance>('finances', setFinances);
     const unsubscribeLeads = createCollectionSubscription<Lead>('leads', setLeads);
     const unsubscribeChannels = createCollectionSubscription<Channel>('channels', setChannels);
+    const unsubscribeVendors = createCollectionSubscription<Vendor>('vendors', setVendors);
     const unsubscribeCategories = createCollectionSubscription<Category>('categories', setCategories);
     const unsubscribeServices = createCollectionSubscription<Service>('services', setServices);
     const unsubscribeProducts = createCollectionSubscription<Product>('products', setProducts);
@@ -129,6 +132,7 @@ export default function ProjectDetailPage() {
         unsubscribeFinances();
         unsubscribeLeads();
         unsubscribeChannels();
+        unsubscribeVendors();
         unsubscribeCategories();
         unsubscribeServices();
         unsubscribeProducts();
@@ -159,6 +163,7 @@ export default function ProjectDetailPage() {
                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                     <TabsTrigger value="leads">Leads</TabsTrigger>
                     <TabsTrigger value="channels">Channels</TabsTrigger>
+                    <TabsTrigger value="vendors">Vendors</TabsTrigger>
                     <TabsTrigger value="products">P&S</TabsTrigger>
                     <TabsTrigger value="billing">Billing</TabsTrigger>
                     <TabsTrigger value="finance">Finance</TabsTrigger>
@@ -179,6 +184,9 @@ export default function ProjectDetailPage() {
             </TabsContent>
             <TabsContent value="channels">
                 <ProjectChannels project={project} channels={channels} />
+            </TabsContent>
+             <TabsContent value="vendors">
+                <ProjectVendors project={project} vendors={vendors} />
             </TabsContent>
             <TabsContent value="products">
                 <ProjectProducts 
