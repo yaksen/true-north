@@ -21,7 +21,7 @@ export default function GlobalTasksPage() {
     if (!user) return;
     setLoading(true);
 
-    const projectsQuery = query(collection(db, 'projects'), where('members', 'array-contains', user.uid));
+    const projectsQuery = query(collection(db, 'projects'), where('memberUids', 'array-contains', user.uid));
     
     const unsubscribeProjects = onSnapshot(projectsQuery, (projectsSnapshot) => {
       const projectsData = projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));

@@ -35,14 +35,12 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   const [isGenerating, setIsGenerating] = useState(false);
 
   const projectMembers: ProjectMember[] = useMemo(() => {
-    return memberProfiles.map(p => ({
-      uid: p.id,
-      displayName: p.name || '',
-      email: p.email,
-      photoURL: p.photoURL,
-      role: 'viewer'
-    }));
-  }, [memberProfiles]);
+    const allMembers: ProjectMember[] = [];
+    projects.forEach(p => allMembers.push(...p.members));
+    const uniqueMembers = Array.from(new Set(allMembers.map(m => m.uid)))
+      .map(uid => allMembers.find(m => m.uid === uid)!);
+    return uniqueMembers;
+  }, [projects]);
 
   const handleStar = async (id: string, starred: boolean) => {
     try {
@@ -90,7 +88,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
             projectId: template.projectId,
             title: template.title,
             description: template.description || '',
-            status: 'Project', // Or a default status from template
+            slot: template.slot,
             completed: false,
             assigneeUid: template.assigneeUids[0] || user.uid, // Default to first assignee or current user
             createdAt: serverTimestamp(),
@@ -119,25 +117,11 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
     const leadsQuery = query(collection(db, 'leads'));
     const unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
         setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
+        setLoading(false);
     });
 
-    const allMemberIds = projects.reduce((acc, p) => [...acc, ...(p.members as any)], [] as string[]);
-    const uniqueMemberIds = [...new Set(allMemberIds)];
-
-    const fetchMemberProfiles = async () => {
-        if (uniqueMemberIds.length > 0) {
-            const usersRef = collection(db, 'users');
-            const q = query(usersRef, where('id', 'in', uniqueMemberIds));
-            const querySnapshot = await getDocs(q);
-            setMemberProfiles(querySnapshot.docs.map(doc => doc.data() as UserProfile));
-        }
-        setLoading(false);
-    };
-
-    fetchMemberProfiles();
-
     return () => unsubscribeLeads();
-  }, [projects]);
+  }, []);
 
   const hierarchicalTasksByProject = useMemo(() => {
     const groupedByProject: { [key: string]: Task[] } = {};
@@ -163,7 +147,6 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   }, [projects, tasks]);
 
   const defaultAccordionValues = useMemo(() => projects.filter(p => (hierarchicalTasksByProject[p.id] || []).length > 0).map(p => p.id), [projects, hierarchicalTasksByProject]);
-  const members: ProjectMember[] = useMemo(() => memberProfiles.map(p => ({ uid: p.id, displayName: p.name || '', email: p.email, photoURL: p.photoURL, role: 'viewer' })), [memberProfiles]);
 
   if (loading) {
       return (

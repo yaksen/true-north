@@ -52,7 +52,7 @@ export default function ProjectsPage() {
     setLoading(true);
     // Corrected query to use `array-contains` on a simple array of UIDs.
     const projectsQuery = query(
-        collection(db, 'projects'), where('members', 'array-contains', user.uid)
+        collection(db, 'projects'), where('memberUids', 'array-contains', user.uid)
     );
     
     const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
