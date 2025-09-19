@@ -178,6 +178,20 @@ export interface Vendor {
     updatedAt: Date;
 }
 
+export interface Partner {
+    id: string;
+    projectId: string;
+    name: string;
+    roleInProject: string;
+    contactName?: string;
+    email?: string;
+    phone?: string;
+    notes?: string;
+    starred?: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
 export interface Category {
     id: string;
     projectId: string;
@@ -295,7 +309,8 @@ export type ActivityRecordType =
   | 'note_added' | 'report_uploaded' | 'report_deleted'
   | 'invoice_created' | 'invoice_updated' | 'invoice_deleted'
   | 'member_invited' | 'member_added' | 'member_removed'
-  | 'payment_added';
+  | 'payment_added'
+  | 'partner_created' | 'partner_updated' | 'partner_deleted';
 
 export interface ActivityRecord {
     id: string;

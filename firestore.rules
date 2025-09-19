@@ -11,21 +11,24 @@ service cloud.firestore {
     }
 
     function isProjectMember(projectId) {
-      // Ensure the project document exists before trying to access its data.
+      // Use `exists` which is more efficient and handles null checks.
       return exists(/databases/$(database)/documents/projects/$(projectId)) &&
              request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.memberUids;
     }
-    
+
     function isProjectOwner(projectId) {
-      return request.auth.uid == get(/databases/$(database)/documents/projects/$(projectId)).data.ownerUid;
+        return exists(/databases/$(database)/documents/projects/$(projectId)) &&
+               get(/databases/$(database)/documents/projects/$(projectId)).data.ownerUid == request.auth.uid;
     }
     
-    // A simplified check for now: any authenticated member of a project can write.
-    // We can add more granular role checks later if needed.
-    function canWrite(projectId) {
-      return isAuth() && isProjectMember(projectId);
+    // For now, we are simplifying editor logic. 
+    // A more robust solution would involve checking a 'roles' map.
+    // We will grant update/delete to any project member for simplicity,
+    // as only authenticated members can access project data anyway.
+    function isProjectEditor(projectId) {
+        return isProjectMember(projectId);
     }
-    
+
     // =================================
     // Collection Rules
     // =================================
@@ -38,40 +41,33 @@ service cloud.firestore {
     
     match /settings/{docId} {
       allow read: if isAuth();
-      // Allow any authenticated user to write to the 'global' settings doc,
-      // as this is used for shared settings like currency.
-      allow write: if isAuth() && docId == 'global';
+      // Allow any authenticated user to write to settings (e.g., for currency)
+      // In a multi-tenant app, you might restrict this to an admin role.
+      allow write: if isAuth(); 
     }
 
     // --- Project Document ---
     match /projects/{projectId} {
       allow read: if isAuth() && isProjectMember(projectId);
-      // Any authenticated user can create a project.
-      allow create: if isAuth(); 
-      // Only project members can update. We can refine this to 'editors' later.
-      allow update: if isAuth() && canWrite(projectId); 
-      // Only the project owner can delete.
+      allow create: if isAuth(); // Any authenticated user can create a project
+      allow update: if isAuth() && isProjectEditor(projectId);
       allow delete: if isAuth() && isProjectOwner(projectId);
     }
     
     // --- Generic Project Sub-Collection Rules ---
-    // This rule applies to any document in any collection where the document's
-    // 'projectId' field matches the {projectId} wildcard.
-    match /{path=**}/projectSubCollections/{docId} {
-        allow read, write: if isAuth() && isProjectMember(request.resource.data.projectId);
-    }
-
     function projectSubCollectionRules() {
       return {
-        'allow read, create': if isAuth() && isProjectMember(request.resource.data.projectId),
-        'allow update, delete': if isAuth() && canWrite(resource.data.projectId)
+        // Allow read, create, update, delete if the user is a member of the project.
+        'allow read, create, update, delete': if isAuth() && isProjectMember(request.resource.data.projectId)
       }
     }
-    
+
+    // Apply generic rules to all project sub-collections
     match /tasks/{docId} { rules projectSubCollectionRules(); }
     match /leads/{docId} { rules projectSubCollectionRules(); }
     match /channels/{docId} { rules projectSubCollectionRules(); }
     match /vendors/{docId} { rules projectSubCollectionRules(); }
+    match /partners/{docId} { rules projectSubCollectionRules(); }
     match /categories/{docId} { rules projectSubCollectionRules(); }
     match /services/{docId} { rules projectSubCollectionRules(); }
     match /products/{docId} { rules projectSubCollectionRules(); }
@@ -87,8 +83,8 @@ service cloud.firestore {
     // --- Personal Collections (Wallet, Expenses, Vault) ---
     function userOwnedResourceRules() {
        return {
-         'allow read, write, delete': if isAuth() && resource.data.userId == request.auth.uid,
-         'allow create': if isAuth() && request.resource.data.userId == request.auth.uid
+         'allow read, write': if isAuth() && request.auth.uid == resource.data.userId,
+         'allow create': if isAuth() && request.auth.uid == request.resource.data.userId
        }
     }
 

@@ -1,0 +1,180 @@
+
+'use client';
+
+import { ColumnDef } from "@tanstack/react-table";
+import { Partner } from "@/lib/types";
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star, Mail, Phone } from "lucide-react";
+import { Button } from "../ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { Badge } from "../ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { deleteDoc, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { PartnerForm } from "./partner-form";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
+import { useAuth } from "@/hooks/use-auth";
+import { logActivity } from "@/lib/activity-log";
+import { Checkbox } from "../ui/checkbox";
+import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+
+interface ActionsCellProps {
+  partner: Partner;
+}
+
+const ActionsCell: React.FC<ActionsCellProps> = ({ partner }) => {
+    const { toast } = useToast();
+    const { user } = useAuth();
+    const [isEditOpen, setIsEditOpen] = useState(false);
+
+    const handleDelete = async () => {
+        if (!user) return;
+        try {
+            await deleteDoc(doc(db, 'partners', partner.id));
+            await logActivity(partner.projectId, 'partner_deleted' as any, { name: partner.name }, user.uid);
+            toast({ title: 'Success', description: 'Partner deleted.' });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not delete partner.' });
+        }
+    };
+    
+    return (
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
+                        <Edit className="mr-2 h-4 w-4"/> Edit Partner
+                    </DropdownMenuItem>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4"/> Delete Partner
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the partner record.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Partner</DialogTitle>
+                    </DialogHeader>
+                    <PartnerForm partner={partner} projectId={partner.projectId} closeForm={() => setIsEditOpen(false)} />
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+};
+
+export const getPartnerColumns = (onStar: (id: string, starred: boolean) => void): ColumnDef<Partner>[] => [
+    {
+        id: 'select',
+        header: ({ table }) => (
+            <Checkbox
+                checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                aria-label="Select all"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={(value) => row.toggleSelected(!!value)}
+                aria-label="Select row"
+            />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+    },
+    {
+        id: 'star',
+        cell: ({ row }) => {
+            const partner = row.original;
+            return (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onStar(partner.id, !partner.starred)}>
+                    <Star className={cn("h-4 w-4", partner.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
+                </Button>
+            )
+        },
+        enableSorting: false,
+        enableHiding: false,
+    },
+    {
+      accessorKey: "name",
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          Partner Name <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => <div className="font-medium pl-4">{row.getValue("name")}</div>,
+    },
+    {
+        accessorKey: "roleInProject",
+        header: "Role",
+        cell: ({ row }) => <Badge variant="outline">{row.getValue("roleInProject")}</Badge>,
+    },
+    {
+        accessorKey: "contactName",
+        header: "Contact",
+    },
+    {
+        id: "contactDetails",
+        header: "Contact Details",
+        cell: ({ row }) => {
+            const partner = row.original;
+            return (
+                <div className="flex items-center gap-2">
+                    {partner.email && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                                        <a href={`mailto:${partner.email}`}><Mail className="h-4 w-4"/></a>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>{partner.email}</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                    {partner.phone && (
+                         <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                                        <a href={`tel:${partner.phone}`}><Phone className="h-4 w-4"/></a>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>{partner.phone}</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                </div>
+            )
+        }
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => <ActionsCell partner={row.original} />,
+    },
+  ];
