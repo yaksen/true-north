@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Vendor } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star, Mail, Phone } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star, Mail, Phone, Link as LinkIcon, Linkedin, Twitter, Github, Facebook, Instagram, CaseUpper } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -19,6 +19,7 @@ import { logActivity } from "@/lib/activity-log";
 import { Checkbox } from "../ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import Link from "next/link";
 
 interface ActionsCellProps {
   vendor: Vendor;
@@ -86,6 +87,42 @@ const ActionsCell: React.FC<ActionsCellProps> = ({ vendor }) => {
         </>
     );
 };
+
+const SocialsCell: React.FC<{ vendor: Vendor }> = ({ vendor }) => {
+    if (!vendor.socials || vendor.socials.length === 0) return null;
+
+    const getIcon = (platform: string) => {
+        const p = platform.toLowerCase();
+        if (p.includes('linkedin')) return <Linkedin className="h-4 w-4" />;
+        if (p.includes('twitter')) return <Twitter className="h-4 w-4" />;
+        if (p.includes('github')) return <Github className="h-4 w-4" />;
+        if (p.includes('facebook')) return <Facebook className="h-4 w-4" />;
+        if (p.includes('instagram')) return <Instagram className="h-4 w-4" />;
+        if (p.includes('website')) return <LinkIcon className="h-4 w-4" />;
+        return <CaseUpper className="h-4 w-4" />;
+    };
+
+    return (
+        <div className="flex items-center gap-1">
+            <TooltipProvider>
+                {vendor.socials.map((social) => (
+                    <Tooltip key={social.url}>
+                        <TooltipTrigger asChild>
+                            <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                                <Link href={social.url} target="_blank" rel="noopener noreferrer">
+                                    {getIcon(social.platform)}
+                                </Link>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{social.platform}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                ))}
+            </TooltipProvider>
+        </div>
+    )
+}
 
 export const getVendorColumns = (onStar: (id: string, starred: boolean) => void): ColumnDef<Vendor>[] => [
     {
@@ -174,7 +211,13 @@ export const getVendorColumns = (onStar: (id: string, starred: boolean) => void)
         }
     },
     {
+        accessorKey: "socials",
+        header: "Socials",
+        cell: ({ row }) => <SocialsCell vendor={row.original} />
+    },
+    {
       id: "actions",
       cell: ({ row }) => <ActionsCell vendor={row.original} />,
     },
   ];
+

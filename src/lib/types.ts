@@ -172,6 +172,7 @@ export interface Vendor {
     contactName?: string;
     email?: string;
     phone?: string;
+    socials?: SocialLink[];
     notes?: string;
     starred?: boolean;
     createdAt: Date;
@@ -310,7 +311,8 @@ export type ActivityRecordType =
   | 'invoice_created' | 'invoice_updated' | 'invoice_deleted'
   | 'member_invited' | 'member_added' | 'member_removed'
   | 'payment_added'
-  | 'partner_created' | 'partner_updated' | 'partner_deleted';
+  | 'partner_created' | 'partner_updated' | 'partner_deleted'
+  | 'vendor_created' | 'vendor_updated' | 'vendor_deleted';
 
 export interface ActivityRecord {
     id: string;

@@ -1,4 +1,5 @@
 
+
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import type { ActivityRecordType } from './types';
@@ -16,6 +17,8 @@ export async function logActivity(
             payload,
             actorUid,
             timestamp: serverTimestamp(),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
         });
     } catch (error) {
         console.error('Error logging activity:', error);
