@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from "react";
-import { Project, Lead, LeadStatus, Package, Service } from "@/lib/types";
+import { Project, Lead, LeadStatus, Package, Service, Channel } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle, SlidersHorizontal } from "lucide-react";
@@ -20,11 +20,12 @@ interface ProjectLeadsProps {
     leads: Lead[];
     packages: Package[];
     services: Service[];
+    channels: Channel[];
 }
 
 const leadStatuses: LeadStatus[] = ['new', 'contacted', 'qualified', 'lost', 'converted'];
 
-export function ProjectLeads({ project, leads, packages, services }: ProjectLeadsProps) {
+export function ProjectLeads({ project, leads, packages, services, channels }: ProjectLeadsProps) {
     const { toast } = useToast();
     const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
@@ -50,7 +51,7 @@ export function ProjectLeads({ project, leads, packages, services }: ProjectLead
         }
     }
     
-    const leadsColumns = useMemo(() => getLeadsColumns(project, packages, services, handleStar), [project, packages, services]);
+    const leadsColumns = useMemo(() => getLeadsColumns({ project, packages, services, channels }), [project, packages, services, channels]);
 
     const filteredLeads = useMemo(() => {
         if (statusFilter === 'all') return leads;
@@ -95,7 +96,7 @@ export function ProjectLeads({ project, leads, packages, services }: ProjectLead
                                 <DialogHeader>
                                     <DialogTitle>Add New Lead</DialogTitle>
                                 </DialogHeader>
-                                <LeadForm projectId={project.id} closeForm={() => setIsLeadFormOpen(false)} />
+                                <LeadForm projectId={project.id} channels={channels} closeForm={() => setIsLeadFormOpen(false)} />
                             </DialogContent>
                         </Dialog>
                     </div>

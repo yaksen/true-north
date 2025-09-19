@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { Project, Partner } from '@/lib/types';
+import type { Project, Partner, Channel } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -17,9 +17,10 @@ import { useToast } from '@/hooks/use-toast';
 interface ProjectPartnersProps {
   project: Project;
   partners: Partner[];
+  channels: Channel[];
 }
 
-export function ProjectPartners({ project, partners }: ProjectPartnersProps) {
+export function ProjectPartners({ project, partners, channels }: ProjectPartnersProps) {
   const { toast } = useToast();
   const [isPartnerFormOpen, setIsPartnerFormOpen] = useState(false);
 
@@ -44,7 +45,7 @@ export function ProjectPartners({ project, partners }: ProjectPartnersProps) {
       }
   }
   
-  const partnerColumns = useMemo(() => getPartnerColumns(handleStar), []);
+  const partnerColumns = useMemo(() => getPartnerColumns({ channels, onStar: handleStar }), [channels]);
 
   return (
     <div className="grid gap-6 mt-4">
@@ -65,7 +66,7 @@ export function ProjectPartners({ project, partners }: ProjectPartnersProps) {
                 <DialogHeader>
                   <DialogTitle>Add New Partner</DialogTitle>
                 </DialogHeader>
-                <PartnerForm projectId={project.id} closeForm={() => setIsPartnerFormOpen(false)} />
+                <PartnerForm projectId={project.id} channels={channels} closeForm={() => setIsPartnerFormOpen(false)} />
               </DialogContent>
             </Dialog>
           </div>

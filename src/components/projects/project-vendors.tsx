@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { Project, Vendor } from '@/lib/types';
+import type { Project, Vendor, Channel } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -17,9 +17,10 @@ import { useToast } from '@/hooks/use-toast';
 interface ProjectVendorsProps {
   project: Project;
   vendors: Vendor[];
+  channels: Channel[];
 }
 
-export function ProjectVendors({ project, vendors }: ProjectVendorsProps) {
+export function ProjectVendors({ project, vendors, channels }: ProjectVendorsProps) {
   const { toast } = useToast();
   const [isVendorFormOpen, setIsVendorFormOpen] = useState(false);
 
@@ -44,7 +45,7 @@ export function ProjectVendors({ project, vendors }: ProjectVendorsProps) {
       }
   }
   
-  const vendorColumns = useMemo(() => getVendorColumns(handleStar), []);
+  const vendorColumns = useMemo(() => getVendorColumns({ channels, onStar: handleStar }), [channels]);
 
   return (
     <div className="grid gap-6 mt-4">
@@ -65,7 +66,7 @@ export function ProjectVendors({ project, vendors }: ProjectVendorsProps) {
                 <DialogHeader>
                   <DialogTitle>Add New Vendor</DialogTitle>
                 </DialogHeader>
-                <VendorForm projectId={project.id} closeForm={() => setIsVendorFormOpen(false)} />
+                <VendorForm projectId={project.id} channels={channels} closeForm={() => setIsVendorFormOpen(false)} />
               </DialogContent>
             </Dialog>
           </div>

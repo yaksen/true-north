@@ -2,7 +2,7 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Vendor } from "@/lib/types";
+import { Vendor, Channel } from "@/lib/types";
 import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star, Mail, Phone, Link as LinkIcon, Linkedin, Twitter, Github, Facebook, Instagram, CaseUpper } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -21,11 +21,17 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import Link from "next/link";
 
-interface ActionsCellProps {
-  vendor: Vendor;
+interface ColumnDependencies {
+    channels: Channel[];
+    onStar: (id: string, starred: boolean) => void;
 }
 
-const ActionsCell: React.FC<ActionsCellProps> = ({ vendor }) => {
+interface ActionsCellProps {
+  vendor: Vendor;
+  dependencies: Omit<ColumnDependencies, 'onStar'>
+}
+
+const ActionsCell: React.FC<ActionsCellProps> = ({ vendor, dependencies }) => {
     const { toast } = useToast();
     const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -81,7 +87,7 @@ const ActionsCell: React.FC<ActionsCellProps> = ({ vendor }) => {
                     <DialogHeader>
                         <DialogTitle>Edit Vendor</DialogTitle>
                     </DialogHeader>
-                    <VendorForm vendor={vendor} projectId={vendor.projectId} closeForm={() => setIsEditOpen(false)} />
+                    <VendorForm vendor={vendor} projectId={vendor.projectId} channels={dependencies.channels} closeForm={() => setIsEditOpen(false)} />
                 </DialogContent>
             </Dialog>
         </>
@@ -124,7 +130,7 @@ const SocialsCell: React.FC<{ vendor: Vendor }> = ({ vendor }) => {
     )
 }
 
-export const getVendorColumns = (onStar: (id: string, starred: boolean) => void): ColumnDef<Vendor>[] => [
+export const getVendorColumns = (dependencies: ColumnDependencies): ColumnDef<Vendor>[] => [
     {
         id: 'select',
         header: ({ table }) => (
@@ -149,7 +155,7 @@ export const getVendorColumns = (onStar: (id: string, starred: boolean) => void)
         cell: ({ row }) => {
             const vendor = row.original;
             return (
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onStar(vendor.id, !vendor.starred)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => dependencies.onStar(vendor.id, !vendor.starred)}>
                     <Star className={cn("h-4 w-4", vendor.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
                 </Button>
             )
@@ -216,8 +222,16 @@ export const getVendorColumns = (onStar: (id: string, starred: boolean) => void)
         cell: ({ row }) => <SocialsCell vendor={row.original} />
     },
     {
+        accessorKey: "channelId",
+        header: "From",
+        cell: ({ row }) => {
+            const channelId = row.getValue("channelId") as string;
+            const channel = dependencies.channels.find(c => c.id === channelId);
+            return channel ? <Badge variant="outline">{channel.name}</Badge> : null;
+        }
+    },
+    {
       id: "actions",
-      cell: ({ row }) => <ActionsCell vendor={row.original} />,
+      cell: ({ row }) => <ActionsCell vendor={row.original} dependencies={dependencies} />,
     },
   ];
-

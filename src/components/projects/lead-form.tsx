@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Lead } from '@/lib/types';
+import type { Lead, Channel } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -32,6 +32,7 @@ const formSchema = z.object({
   })).optional(),
   notes: z.string().optional(),
   status: z.enum(leadStatuses),
+  channelId: z.string().optional(),
 });
 
 type LeadFormValues = z.infer<typeof formSchema>;
@@ -39,10 +40,11 @@ type LeadFormValues = z.infer<typeof formSchema>;
 interface LeadFormProps {
   lead?: Lead;
   projectId: string;
+  channels: Channel[];
   closeForm: () => void;
 }
 
-export function LeadForm({ lead, projectId, closeForm }: LeadFormProps) {
+export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,6 +57,7 @@ export function LeadForm({ lead, projectId, closeForm }: LeadFormProps) {
         phone: lead.phone || '',
         notes: lead.notes || '',
         socials: lead.socials || [],
+        channelId: lead.channelId || '',
     } : {
       name: '',
       email: '',
@@ -62,6 +65,7 @@ export function LeadForm({ lead, projectId, closeForm }: LeadFormProps) {
       socials: [],
       notes: '',
       status: 'new',
+      channelId: '',
     },
   });
 
@@ -192,25 +196,45 @@ export function LeadForm({ lead, projectId, closeForm }: LeadFormProps) {
                 </Button>
             </div>
         </div>
-
-        <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                    <SelectContent>
-                        {leadStatuses.map(status => (
-                            <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <FormMessage />
-                </FormItem>
-            )}
-        />
+        <div className='grid grid-cols-2 gap-4'>
+            <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            {leadStatuses.map(status => (
+                                <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="channelId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>From</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select a channel..." /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {channels.map(channel => (
+                                <SelectItem key={channel.id} value={channel.id}>{channel.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
         <FormField
           control={form.control}
           name="notes"

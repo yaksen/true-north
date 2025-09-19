@@ -2,7 +2,7 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Lead, LeadStatus, Package, Service, Project } from "@/lib/types";
+import { Lead, LeadStatus, Package, Service, Project, Channel } from "@/lib/types";
 import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon, Edit, Trash2, Facebook, Instagram, CaseUpper, Star } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -23,8 +23,14 @@ import { db } from "@/lib/firebase";
 import { logActivity } from "@/lib/activity-log";
 import { cn } from "@/lib/utils";
 
+interface ColumnDependencies {
+    project: Project;
+    packages: Package[];
+    services: Service[];
+    channels: Channel[];
+}
 
-const ActionsCell: React.FC<{ lead: Lead, project: Project, packages: Package[], services: Service[] }> = ({ lead, project, packages, services }) => {
+const ActionsCell: React.FC<{ lead: Lead, dependencies: ColumnDependencies }> = ({ lead, dependencies }) => {
     const { toast } = useToast();
     const { user } = useAuth();
     const [isFinanceOpen, setIsFinanceOpen] = useState(false);
@@ -91,7 +97,7 @@ const ActionsCell: React.FC<{ lead: Lead, project: Project, packages: Package[],
                     <DialogHeader>
                         <DialogTitle>Log Finance for {lead.name}</DialogTitle>
                     </DialogHeader>
-                    <FinanceForm project={project} leadId={lead.id} packages={packages} services={services} closeForm={() => setIsFinanceOpen(false)} />
+                    <FinanceForm project={dependencies.project} leadId={lead.id} packages={dependencies.packages} services={dependencies.services} closeForm={() => setIsFinanceOpen(false)} />
                 </DialogContent>
             </Dialog>
 
@@ -100,7 +106,7 @@ const ActionsCell: React.FC<{ lead: Lead, project: Project, packages: Package[],
                     <DialogHeader>
                         <DialogTitle>Add Task for {lead.name}</DialogTitle>
                     </DialogHeader>
-                    <TaskForm projectId={project.id} leadId={lead.id} closeForm={() => setIsTaskOpen(false)} />
+                    <TaskForm projectId={dependencies.project.id} leadId={lead.id} closeForm={() => setIsTaskOpen(false)} />
                 </DialogContent>
             </Dialog>
 
@@ -109,7 +115,7 @@ const ActionsCell: React.FC<{ lead: Lead, project: Project, packages: Package[],
                     <DialogHeader>
                         <DialogTitle>Edit Lead</DialogTitle>
                     </DialogHeader>
-                    <LeadForm lead={lead} projectId={project.id} closeForm={() => setIsEditOpen(false)} />
+                    <LeadForm lead={lead} projectId={dependencies.project.id} channels={dependencies.channels} closeForm={() => setIsEditOpen(false)} />
                 </DialogContent>
             </Dialog>
         </>
@@ -153,7 +159,7 @@ const SocialsCell: React.FC<{ lead: Lead }> = ({ lead }) => {
 }
 
 
-export const getLeadsColumns = (project: Project, packages: Package[], services: Service[], onStar: (id: string, starred: boolean) => void): ColumnDef<Lead>[] => [
+export const getLeadsColumns = (dependencies: ColumnDependencies): ColumnDef<Lead>[] => [
     {
         id: 'select',
         header: ({ table }) => (
@@ -181,7 +187,7 @@ export const getLeadsColumns = (project: Project, packages: Package[], services:
         cell: ({ row }) => {
             const lead = row.original;
             return (
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onStar(lead.id, !lead.starred)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => (dependencies as any).onStar(lead.id, !lead.starred)}>
                     <Star className={cn("h-4 w-4", lead.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
                 </Button>
             )
@@ -233,10 +239,19 @@ export const getLeadsColumns = (project: Project, packages: Package[], services:
       }
     },
     {
+        accessorKey: "channelId",
+        header: "From",
+        cell: ({ row }) => {
+            const channelId = row.getValue("channelId") as string;
+            const channel = dependencies.channels.find(c => c.id === channelId);
+            return channel ? <Badge variant="outline">{channel.name}</Badge> : null;
+        }
+    },
+    {
         id: "actions",
         cell: ({ row }) => {
           const lead = row.original;
-          return <ActionsCell lead={lead} project={project} packages={packages} services={services} />;
+          return <ActionsCell lead={lead} dependencies={dependencies} />;
         },
       },
   ];

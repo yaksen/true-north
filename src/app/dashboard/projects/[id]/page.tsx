@@ -186,16 +186,16 @@ export default function ProjectDetailPage() {
                 <ProjectDashboard project={project} tasks={tasks} finances={finances} channels={channels} />
             </TabsContent>
             <TabsContent value="leads">
-                <ProjectLeads project={project} leads={leads} packages={packages} services={services} />
+                <ProjectLeads project={project} leads={leads} packages={packages} services={services} channels={channels} />
             </TabsContent>
             <TabsContent value="channels">
                 <ProjectChannels project={project} channels={channels} />
             </TabsContent>
              <TabsContent value="vendors">
-                <ProjectVendors project={project} vendors={vendors} />
+                <ProjectVendors project={project} vendors={vendors} channels={channels} />
             </TabsContent>
             <TabsContent value="partners">
-                <ProjectPartners project={project} partners={partners} />
+                <ProjectPartners project={project} partners={partners} channels={channels} />
             </TabsContent>
             <TabsContent value="products">
                 <ProjectProducts 

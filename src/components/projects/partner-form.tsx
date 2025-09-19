@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Partner } from '@/lib/types';
+import type { Partner, Channel } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -31,6 +31,7 @@ const formSchema = z.object({
     url: z.string().url('Must be a valid URL'),
   })).optional(),
   notes: z.string().optional(),
+  channelId: z.string().optional(),
 });
 
 type PartnerFormValues = z.infer<typeof formSchema>;
@@ -38,10 +39,11 @@ type PartnerFormValues = z.infer<typeof formSchema>;
 interface PartnerFormProps {
   partner?: Partner;
   projectId: string;
+  channels: Channel[];
   closeForm: () => void;
 }
 
-export function PartnerForm({ partner, projectId, closeForm }: PartnerFormProps) {
+export function PartnerForm({ partner, projectId, channels, closeForm }: PartnerFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,6 +57,7 @@ export function PartnerForm({ partner, projectId, closeForm }: PartnerFormProps)
       phone: partner.phone || '',
       socials: partner.socials || [],
       notes: partner.notes || '',
+      channelId: partner.channelId || '',
     } : {
       name: '',
       roleInProject: '',
@@ -63,6 +66,7 @@ export function PartnerForm({ partner, projectId, closeForm }: PartnerFormProps)
       phone: '',
       socials: [],
       notes: '',
+      channelId: '',
     },
   });
 
@@ -220,6 +224,27 @@ export function PartnerForm({ partner, projectId, closeForm }: PartnerFormProps)
                 </Button>
             </div>
         </div>
+
+        <FormField
+                control={form.control}
+                name="channelId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>From</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select a channel..." /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {channels.map(channel => (
+                                <SelectItem key={channel.id} value={channel.id}>{channel.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+            
         <FormField
           control={form.control}
           name="notes"

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Vendor } from '@/lib/types';
+import type { Vendor, Channel } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -31,6 +31,7 @@ const formSchema = z.object({
     url: z.string().url('Must be a valid URL'),
   })).optional(),
   notes: z.string().optional(),
+  channelId: z.string().optional(),
 });
 
 type VendorFormValues = z.infer<typeof formSchema>;
@@ -38,10 +39,11 @@ type VendorFormValues = z.infer<typeof formSchema>;
 interface VendorFormProps {
   vendor?: Vendor;
   projectId: string;
+  channels: Channel[];
   closeForm: () => void;
 }
 
-export function VendorForm({ vendor, projectId, closeForm }: VendorFormProps) {
+export function VendorForm({ vendor, projectId, channels, closeForm }: VendorFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,6 +57,7 @@ export function VendorForm({ vendor, projectId, closeForm }: VendorFormProps) {
       phone: vendor.phone || '',
       socials: vendor.socials || [],
       notes: vendor.notes || '',
+      channelId: vendor.channelId || '',
     } : {
       name: '',
       serviceType: '',
@@ -63,6 +66,7 @@ export function VendorForm({ vendor, projectId, closeForm }: VendorFormProps) {
       phone: '',
       socials: [],
       notes: '',
+      channelId: '',
     },
   });
 
@@ -221,6 +225,26 @@ export function VendorForm({ vendor, projectId, closeForm }: VendorFormProps) {
                 </Button>
             </div>
         </div>
+
+        <FormField
+                control={form.control}
+                name="channelId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>From</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select a channel..." /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {channels.map(channel => (
+                                <SelectItem key={channel.id} value={channel.id}>{channel.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
 
         <FormField
           control={form.control}
