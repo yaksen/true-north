@@ -196,6 +196,10 @@ export const getLeadsColumns = (dependencies: ColumnDependencies): ColumnDef<Lea
         enableHiding: false,
     },
     {
+        accessorKey: "sku",
+        header: "SKU",
+    },
+    {
       accessorKey: "name",
       header: ({ column }) => {
         return (

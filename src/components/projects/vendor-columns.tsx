@@ -164,6 +164,10 @@ export const getVendorColumns = (dependencies: ColumnDependencies): ColumnDef<Ve
         enableHiding: false,
     },
     {
+        accessorKey: "sku",
+        header: "SKU",
+    },
+    {
       accessorKey: "name",
       header: ({ column }) => (
         <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>

@@ -17,11 +17,13 @@ import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { logActivity } from '@/lib/activity-log';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { v4 as uuidv4 } from 'uuid';
 
 const socialPlatforms = ['LinkedIn', 'Twitter', 'GitHub', 'Facebook', 'Instagram', 'TikTok', 'Website'];
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  sku: z.string().optional(),
   roleInProject: z.string().min(2, { message: 'Role is required.' }),
   contactName: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
@@ -60,6 +62,7 @@ export function PartnerForm({ partner, projectId, channels, closeForm }: Partner
       channelId: partner.channelId || '',
     } : {
       name: '',
+      sku: `PART-${uuidv4().substring(0, 8).toUpperCase()}`,
       roleInProject: '',
       contactName: '',
       email: '',
@@ -130,6 +133,20 @@ export function PartnerForm({ partner, projectId, channels, closeForm }: Partner
             )}
             />
             <FormField
+                control={form.control}
+                name="sku"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>SKU</FormLabel>
+                    <FormControl>
+                        <Input placeholder="Auto-generated SKU" {...field} readOnly />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
+        <FormField
             control={form.control}
             name="roleInProject"
             render={({ field }) => (
@@ -142,7 +159,6 @@ export function PartnerForm({ partner, projectId, channels, closeForm }: Partner
                 </FormItem>
             )}
             />
-        </div>
         <FormField
             control={form.control}
             name="contactName"

@@ -147,6 +147,7 @@ export interface Lead {
     status: LeadStatus;
     channelId?: string;
     notes?: string;
+    sku?: string;
     starred?: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -160,6 +161,7 @@ export interface Channel {
     url?: string;
     status: ChannelStatus;
     notes?: string;
+    sku?: string;
     starred?: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -176,6 +178,7 @@ export interface Vendor {
     socials?: SocialLink[];
     notes?: string;
     channelId?: string;
+    sku?: string;
     starred?: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -192,6 +195,7 @@ export interface Partner {
     socials?: SocialLink[];
     channelId?: string;
     notes?: string;
+    sku?: string;
     starred?: boolean;
     createdAt: Date;
     updatedAt: Date;

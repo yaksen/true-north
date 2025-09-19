@@ -17,6 +17,7 @@ import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { logActivity } from '@/lib/activity-log';
+import { v4 as uuidv4 } from 'uuid';
 
 const channelStatuses = ['new', 'active', 'inactive', 'closed'] as const;
 const channelPlatforms = ['Instagram', 'Facebook', 'Twitter', 'LinkedIn', 'Website', 'Referral', 'Other'];
@@ -24,6 +25,7 @@ const channelPlatforms = ['Instagram', 'Facebook', 'Twitter', 'LinkedIn', 'Websi
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  sku: z.string().optional(),
   platform: z.string().min(1, 'Platform is required'),
   url: z.string().url().optional().or(z.literal('')),
   notes: z.string().optional(),
@@ -51,6 +53,7 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
         notes: channel.notes || '',
     } : {
       name: '',
+      sku: `CHAN-${uuidv4().substring(0, 8).toUpperCase()}`,
       platform: 'Website',
       url: '',
       notes: '',
@@ -93,19 +96,34 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Channel Name</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. Summer Campaign Website" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Channel Name</FormLabel>
+                <FormControl>
+                    <Input placeholder="e.g. Summer Campaign Website" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+                control={form.control}
+                name="sku"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>SKU</FormLabel>
+                    <FormControl>
+                        <Input placeholder="Auto-generated SKU" {...field} readOnly />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
         <div className="grid grid-cols-2 gap-4">
              <FormField
                 control={form.control}

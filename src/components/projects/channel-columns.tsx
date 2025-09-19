@@ -137,6 +137,10 @@ export const getChannelsColumns = (project: Project, onStar: (id: string, starre
         enableHiding: false,
     },
     {
+        accessorKey: "sku",
+        header: "SKU",
+    },
+    {
       accessorKey: "name",
       header: ({ column }) => {
         return (

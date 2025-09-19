@@ -17,6 +17,7 @@ import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { logActivity } from '@/lib/activity-log';
+import { v4 as uuidv4 } from 'uuid';
 
 const leadStatuses = ['new', 'contacted', 'qualified', 'lost', 'converted'] as const;
 const socialPlatforms = ['LinkedIn', 'Twitter', 'GitHub', 'Facebook', 'Instagram', 'TikTok', 'Website'];
@@ -24,6 +25,7 @@ const socialPlatforms = ['LinkedIn', 'Twitter', 'GitHub', 'Facebook', 'Instagram
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  sku: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().optional(),
   socials: z.array(z.object({
@@ -60,6 +62,7 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
         channelId: lead.channelId || '',
     } : {
       name: '',
+      sku: `LEAD-${uuidv4().substring(0, 8).toUpperCase()}`,
       email: '',
       phone: '',
       socials: [],
@@ -114,19 +117,34 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Full Name</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. John Doe" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Full Name</FormLabel>
+                <FormControl>
+                    <Input placeholder="e.g. John Doe" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+             <FormField
+                control={form.control}
+                name="sku"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>SKU</FormLabel>
+                    <FormControl>
+                        <Input placeholder="Auto-generated SKU" {...field} readOnly />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
         <div className="grid grid-cols-2 gap-4">
              <FormField
                 control={form.control}
