@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -67,7 +68,7 @@ export default function ProjectDetailPage() {
       if (docSnap.exists()) {
         const projectData = { id: docSnap.id, ...docSnap.data() } as Project;
         // Check if user is a member using the new members array structure
-        if (projectData.private && !projectData.memberUids.includes(user.uid)) {
+        if (projectData.private && !projectData.members.includes(user.uid as any)) {
             router.push('/dashboard/projects');
             return;
         }
@@ -78,7 +79,7 @@ export default function ProjectDetailPage() {
       setLoading(false);
     });
 
-    const allProjectsQuery = query(collection(db, 'projects'), where('memberUids', 'array-contains', user.uid));
+    const allProjectsQuery = query(collection(db, 'projects'), where('members', 'array-contains', user.uid));
     const unsubscribeAllProjects = onSnapshot(allProjectsQuery, (snapshot) => {
         setAllProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)))
     });

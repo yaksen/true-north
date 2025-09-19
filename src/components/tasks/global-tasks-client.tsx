@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -120,7 +121,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
         setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
     });
 
-    const allMemberIds = projects.reduce((acc, p) => [...acc, ...p.memberUids], [] as string[]);
+    const allMemberIds = projects.reduce((acc, p) => [...acc, ...(p.members as any)], [] as string[]);
     const uniqueMemberIds = [...new Set(allMemberIds)];
 
     const fetchMemberProfiles = async () => {
