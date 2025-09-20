@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ChevronsUpDown, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Checkbox } from '../ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '../ui/command';
@@ -89,6 +89,7 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
   const selectedProductIds = form.watch('products');
   const packageCurrency = form.watch('currency');
   const discountPercentage = form.watch('discountPercentage');
+  const finalPrice = form.watch('price');
   const isCustom = form.watch('custom');
 
   // A mock conversion rate for suggestion. Replace with a real API call in a real app.
@@ -108,32 +109,53 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
     }
   }, [isCustom, pkg, form]);
 
-  useEffect(() => {
+  const basePrice = useMemo(() => {
       const selectedServiceDetails = selectedServiceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
       const selectedProductDetails = selectedProductIds.map(id => products.find(p => p.id === id)).filter(Boolean) as Product[];
 
       const totalServicePriceUSD = selectedServiceDetails.reduce((sum, s) => {
-        const rate = MOCK_RATES[s.currency] || 1;
+        const rate = MOCK_RATES[s.currency as keyof typeof MOCK_RATES] || 1;
         const priceInUSD = s.price / rate;
         return sum + priceInUSD;
       }, 0);
 
       const totalProductPriceUSD = selectedProductDetails.reduce((sum, p) => {
-        const rate = MOCK_RATES[p.currency] || 1;
+        const rate = MOCK_RATES[p.currency as keyof typeof MOCK_RATES] || 1;
         const priceInUSD = p.price / rate;
         return sum + priceInUSD;
       }, 0);
-
-      const basePriceInUSD = totalServicePriceUSD + totalProductPriceUSD;
-
-      const targetRate = MOCK_RATES[packageCurrency] || 1;
-      const basePriceInTargetCurrency = basePriceInUSD * targetRate;
       
-      const finalPrice = basePriceInTargetCurrency * (1 - (discountPercentage / 100));
+      const basePriceInUSD = totalServicePriceUSD + totalProductPriceUSD;
+      const targetRate = MOCK_RATES[packageCurrency as keyof typeof MOCK_RATES] || 1;
+      
+      return basePriceInUSD * targetRate;
+  }, [selectedServiceIds, selectedProductIds, services, products, packageCurrency]);
 
-      form.setValue('price', parseFloat(finalPrice.toFixed(2)));
-    
-  }, [selectedServiceIds, selectedProductIds, services, products, packageCurrency, discountPercentage, form]);
+
+  // Update price when discount changes
+  useEffect(() => {
+    const calculatedPrice = basePrice * (1 - (discountPercentage / 100));
+    // Only update if the change is significant to avoid infinite loops with rounding
+    if (Math.abs(calculatedPrice - finalPrice) > 0.01) {
+        form.setValue('price', parseFloat(calculatedPrice.toFixed(2)));
+    }
+  }, [discountPercentage, basePrice, form, finalPrice]);
+
+  // Update discount when price changes
+  useEffect(() => {
+    if (basePrice > 0) {
+        const calculatedDiscount = (1 - (finalPrice / basePrice)) * 100;
+        // Only update if the change is significant
+        if (Math.abs(calculatedDiscount - discountPercentage) > 0.1) {
+            form.setValue('discountPercentage', parseFloat(calculatedDiscount.toFixed(1)));
+        }
+    } else if (finalPrice > 0) {
+        // If there's a price but no base price, it's 100% markup
+        form.setValue('discountPercentage', -Infinity); // Or handle as an edge case
+    } else {
+        form.setValue('discountPercentage', 0);
+    }
+  }, [finalPrice, basePrice, form, discountPercentage]);
 
 
   async function onSubmit(values: PackageFormValues) {
@@ -296,12 +318,12 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
           name="discountPercentage"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Discount / Markup ( {field.value}% )</FormLabel>
+              <FormLabel>Discount / Markup ( {field.value.toFixed(1)}% )</FormLabel>
               <FormControl>
                 <Slider
                   min={-100}
                   max={100}
-                  step={1}
+                  step={0.1}
                   value={[field.value]}
                   onValueChange={(vals) => field.onChange(vals[0])}
                 />
@@ -323,7 +345,6 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
                             onValueChange={field.onChange}
                             currency={form.watch('currency')}
                             onCurrencyChange={(value) => form.setValue('currency', value)}
-                            readOnly
                         />
                         <FormMessage />
                     </FormItem>
