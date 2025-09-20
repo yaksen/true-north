@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Task, Project, Lead, ProjectMember } from '@/lib/types';
+import type { Task, Project, Lead, ProjectMember, TaskStatus } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -24,6 +24,7 @@ import { format } from 'date-fns';
 import { logActivity } from '@/lib/activity-log';
 
 const slots = ['morning', 'midday', 'night'] as const;
+const quickActions: TaskStatus[] = ['Call', 'Meeting', 'Project', 'Order', 'Deliver', 'Follow-up'];
 
 const formSchema = z.object({
   projectId: z.string().nonempty({ message: 'Project is required.' }),
@@ -196,19 +197,34 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
                 )}
             />
         </div>
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
+            <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                    <Input placeholder="e.g. Design the new logo" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
             <FormItem>
-              <FormLabel>Title</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. Design the new logo" {...field} />
-              </FormControl>
-              <FormMessage />
+                <FormLabel>Quick Action</FormLabel>
+                <Select onValueChange={(value) => form.setValue('title', value)}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {quickActions.map(action => (
+                            <SelectItem key={action} value={action}>{action}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </FormItem>
-          )}
-        />
+        </div>
         <FormField
           control={form.control}
           name="description"

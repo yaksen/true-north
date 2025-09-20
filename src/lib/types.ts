@@ -5,7 +5,7 @@ import { CurrencyCode } from "@/context/CurrencyContext";
 export type UserRole = 'admin' | 'manager' | 'member';
 export type ProjectRole = 'owner' | 'editor' | 'viewer';
 export type ProjectType = 'Active' | 'Passive' | 'Fun' | 'Sub';
-export type TaskStatus = 'Call' | 'Meeting' | 'Project';
+export type TaskStatus = 'Call' | 'Meeting' | 'Project' | 'Order' | 'Deliver' | 'Follow-up';
 export type FinanceType = 'income' | 'expense';
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 export type ChannelStatus = 'new' | 'active' | 'inactive' | 'closed';

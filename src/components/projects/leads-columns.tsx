@@ -106,7 +106,7 @@ const ActionsCell: React.FC<{ lead: Lead, dependencies: ColumnDependencies }> = 
                     <DialogHeader>
                         <DialogTitle>Add Task for {lead.name}</DialogTitle>
                     </DialogHeader>
-                    <TaskForm projectId={dependencies.project.id} leadId={lead.id} closeForm={() => setIsTaskOpen(false)} />
+                    <TaskForm projectId={dependencies.project.id} leadId={lead.id} members={dependencies.project.members} closeForm={() => setIsTaskOpen(false)} />
                 </DialogContent>
             </Dialog>
 
