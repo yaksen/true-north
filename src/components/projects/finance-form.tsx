@@ -418,6 +418,11 @@ export function FinanceForm({ finance, project, projects, packages, services, le
                                 disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                                 initialFocus
                             />
+                            <div className="p-2 border-t flex gap-1">
+                                <Button size="sm" variant="ghost" onClick={() => field.onChange(new Date())}>Today</Button>
+                                <Button size="sm" variant="ghost" onClick={() => field.onChange(addDays(new Date(), 1))}>Tomorrow</Button>
+                                <Button size="sm" variant="ghost" onClick={() => field.onChange(addDays(new Date(), 2))}>Day After</Button>
+                            </div>
                             </PopoverContent>
                         </Popover>
                         <FormMessage />

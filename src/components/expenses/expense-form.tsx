@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn, formatCurrency } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { useCurrency } from '@/context/CurrencyContext';
 import { CurrencyInput } from '../ui/currency-input';
 import { Switch } from '../ui/switch';
@@ -207,6 +207,11 @@ export function ExpenseForm({ wallet, categories, closeForm }: ExpenseFormProps)
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                  <div className="p-2 border-t flex gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => field.onChange(new Date())}>Today</Button>
+                      <Button size="sm" variant="ghost" onClick={() => field.onChange(addDays(new Date(), 1))}>Tomorrow</Button>
+                      <Button size="sm" variant="ghost" onClick={() => field.onChange(addDays(new Date(), 2))}>Day After</Button>
+                  </div>
                 </PopoverContent>
               </Popover>
               <FormMessage />
