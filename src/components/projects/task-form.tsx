@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -70,6 +70,20 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
       assigneeUid: user?.uid || '',
     },
   });
+
+  const selectedProjectId = form.watch('projectId');
+
+  const filteredLeads = useMemo(() => {
+    if (!selectedProjectId || !leads) {
+      return [];
+    }
+    return leads.filter(lead => lead.projectId === selectedProjectId);
+  }, [selectedProjectId, leads]);
+  
+  useEffect(() => {
+    // Reset lead selection when project changes
+    form.setValue('leadId', '');
+  }, [selectedProjectId, form]);
 
   async function onSubmit(values: TaskFormValues) {
     if (!user) {
@@ -142,14 +156,14 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
                 render={({ field }) => (
                     <FormItem>
                         <FormLabel>Lead (Optional)</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!selectedProjectId}>
                             <FormControl>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Assign to a lead..." />
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                {leads.map(l => (
+                                {filteredLeads.map(l => (
                                     <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
                                 ))}
                             </SelectContent>
