@@ -40,7 +40,14 @@ export default function GlobalTasksPage() {
       const templatesQuery = query(collection(db, 'taskTemplates'), where('projectId', 'in', projectIds));
       
       const unsubscribeTasks = onSnapshot(tasksQuery, (tasksSnapshot) => {
-        const tasksData = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+        const tasksData = tasksSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return { 
+                id: doc.id, 
+                ...data,
+                dueDate: data.dueDate?.toDate ? data.dueDate.toDate() : undefined,
+            } as Task
+        });
         setTasks(tasksData);
       });
 
