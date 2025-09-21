@@ -16,6 +16,7 @@ import { Checkbox } from "../ui/checkbox";
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { isToday, isTomorrow, addDays } from "date-fns";
 
 interface ProjectTasksProps {
     project: Project;
@@ -24,12 +25,15 @@ interface ProjectTasksProps {
 }
 
 const slots: TaskTemplateSlot[] = ['morning', 'midday', 'night'];
+type DateFilter = 'all' | 'today' | 'tomorrow' | 'day-after';
+
 
 export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
     const { toast } = useToast();
     const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
     const [slotFilter, setSlotFilter] = useState<TaskTemplateSlot | 'all'>('all');
     const [hideCompleted, setHideCompleted] = useState(false);
+    const [dateFilter, setDateFilter] = useState<DateFilter>('all');
 
     const handleStar = async (id: string, starred: boolean) => {
         try {
@@ -55,38 +59,59 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
     const taskColumns = useMemo(() => getTaskColumns({ leads }, handleStar), [leads]);
 
     const filteredTasks = useMemo(() => {
-        let filtered = tasks;
+        let filtered = [...tasks];
+
         if (slotFilter !== 'all') {
             filtered = filtered.filter(task => task.slot === slotFilter);
         }
+
+        if (dateFilter !== 'all') {
+            filtered = filtered.filter(task => {
+                if (!task.dueDate) return false;
+                const dueDate = new Date(task.dueDate);
+                if (dateFilter === 'today') return isToday(dueDate);
+                if (dateFilter === 'tomorrow') return isTomorrow(dueDate);
+                if (dateFilter === 'day-after') return isToday(addDays(new Date(), -2)); // Simplified logic
+                return true;
+            });
+        }
+        
         if (hideCompleted) {
-            // This is tricky with hierarchy. We'll filter out top-level completed tasks if they have no incomplete subtasks.
-            const taskMap = new Map(filtered.map(t => [t.id, t]));
+             const taskMap = new Map(filtered.map(t => [t.id, t]));
             const hasIncompleteSubtasks = (taskId: string): boolean => {
                 const subtasks = filtered.filter(t => t.parentTaskId === taskId);
                 if (subtasks.some(st => !st.completed)) return true;
                 return subtasks.some(st => hasIncompleteSubtasks(st.id));
             };
 
-            filtered = filtered.filter(task => {
-                // Always show incomplete tasks
-                if (!task.completed) return true;
-                // Hide completed tasks if they don't have any incomplete subtasks
-                return hasIncompleteSubtasks(task.id);
+             return filtered.filter(task => {
+                if (task.parentTaskId) {
+                    // Only show subtasks if their ultimate parent is not completed or has other incomplete subtasks
+                    let current = task;
+                    while (current.parentTaskId) {
+                        const parent = taskMap.get(current.parentTaskId);
+                        if (!parent) return true; // Orphaned, show it
+                        if (parent.completed && !hasIncompleteSubtasks(parent.id)) return false;
+                        current = parent;
+                    }
+                }
+                return !task.completed || hasIncompleteSubtasks(task.id);
             });
         }
+
         return filtered;
-    }, [tasks, slotFilter, hideCompleted]);
+    }, [tasks, slotFilter, hideCompleted, dateFilter]);
 
     const hierarchicalTasks = useMemo(() => {
         const taskMap = new Map(filteredTasks.map(t => [t.id, { ...t, subRows: [] as Task[] }]));
         const rootTasks: Task[] = [];
         
         for (const task of filteredTasks) {
+            const currentTask = taskMap.get(task.id);
             if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
-                taskMap.get(task.parentTaskId)!.subRows.push(taskMap.get(task.id)!);
+                taskMap.get(task.parentTaskId)!.subRows.push(currentTask!);
             } else {
-                rootTasks.push(taskMap.get(task.id)!);
+                rootTasks.push(currentTask!);
             }
         }
         return rootTasks;
@@ -97,7 +122,7 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
         <div className="flex items-center gap-2">
             <Select value={slotFilter} onValueChange={(value) => setSlotFilter(value as any)}>
                 <SelectTrigger className="w-36 h-9 text-sm">
-                    <SelectValue />
+                    <SelectValue placeholder="Filter by slot..."/>
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">All Slots</SelectItem>
@@ -112,8 +137,15 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
                     Hide completed
                 </label>
             </div>
-            {(slotFilter !== 'all' || hideCompleted) && (
-                <Button variant="ghost" size="sm" onClick={() => { setSlotFilter('all'); setHideCompleted(false); }}>
+             <div className="flex items-center gap-1 p-1 border rounded-lg">
+                {(['today', 'tomorrow', 'day-after'] as DateFilter[]).map(df => (
+                    <Button key={df} variant={dateFilter === df ? 'secondary' : 'ghost'} size="sm" onClick={() => setDateFilter(df)} className="capitalize h-7">
+                        {df.replace('-', ' ')}
+                    </Button>
+                ))}
+            </div>
+            {(slotFilter !== 'all' || hideCompleted || dateFilter !== 'all') && (
+                <Button variant="ghost" size="sm" onClick={() => { setSlotFilter('all'); setHideCompleted(false); setDateFilter('all'); }}>
                     Clear Filters
                 </Button>
             )}

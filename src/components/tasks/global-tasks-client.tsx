@@ -18,6 +18,8 @@ import { useEffect } from 'react';
 import { Row } from '@tanstack/react-table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { isToday, isTomorrow, addDays } from 'date-fns';
+import { Checkbox } from '../ui/checkbox';
 
 interface GlobalTasksClientProps {
   projects: Project[];
@@ -25,14 +27,18 @@ interface GlobalTasksClientProps {
   templates: TaskTemplate[];
 }
 
+type DateFilter = 'all' | 'today' | 'tomorrow' | 'day-after';
+
+
 export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksClientProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [memberProfiles, setMemberProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [hideCompleted, setHideCompleted] = useState(false);
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
 
   const projectMembers: ProjectMember[] = useMemo(() => {
     const allMembers: ProjectMember[] = [];
@@ -123,28 +129,64 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
     return () => unsubscribeLeads();
   }, []);
 
+  const filteredTasks = useMemo(() => {
+    let filtered = [...tasks];
+    
+    if (dateFilter !== 'all') {
+        filtered = filtered.filter(task => {
+            if (!task.dueDate) return false;
+            const dueDate = new Date(task.dueDate);
+            if (dateFilter === 'today') return isToday(dueDate);
+            if (dateFilter === 'tomorrow') return isTomorrow(dueDate);
+            if (dateFilter === 'day-after') return isToday(addDays(new Date(), -2)); // Simplified logic
+            return true;
+        });
+    }
+
+    if (hideCompleted) {
+        const taskMap = new Map(filtered.map(t => [t.id, t]));
+        const hasIncompleteSubtasks = (taskId: string): boolean => {
+            const subtasks = filtered.filter(t => t.parentTaskId === taskId);
+            return subtasks.some(st => !st.completed || hasIncompleteSubtasks(st.id));
+        };
+
+        return filtered.filter(task => {
+             if (task.parentTaskId) {
+                let current = task;
+                while (current.parentTaskId) {
+                    const parent = taskMap.get(current.parentTaskId);
+                    if (!parent) return true;
+                    if (parent.completed && !hasIncompleteSubtasks(parent.id)) return false;
+                    current = parent;
+                }
+            }
+            return !task.completed || hasIncompleteSubtasks(task.id);
+        });
+    }
+    
+    return filtered;
+  }, [tasks, hideCompleted, dateFilter]);
+
   const hierarchicalTasksByProject = useMemo(() => {
     const groupedByProject: { [key: string]: Task[] } = {};
     for (const project of projects) {
         groupedByProject[project.id] = [];
     }
 
-    const taskMap = new Map(tasks.map(t => [t.id, { ...t, subRows: [] as Task[] }]));
+    const taskMap = new Map(filteredTasks.map(t => [t.id, { ...t, subRows: [] as Task[] }]));
 
-    for (const task of tasks) {
+    for (const task of filteredTasks) {
         if (groupedByProject[task.projectId]) {
+            const currentTask = taskMap.get(task.id);
             if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
-                const parent = taskMap.get(task.parentTaskId);
-                if(parent) {
-                    parent.subRows.push(taskMap.get(task.id)!);
-                }
+                taskMap.get(task.parentTaskId)!.subRows.push(currentTask!);
             } else {
-                groupedByProject[task.projectId].push(taskMap.get(task.id)!);
+                groupedByProject[task.projectId].push(currentTask!);
             }
         }
     }
     return groupedByProject;
-  }, [projects, tasks]);
+  }, [projects, filteredTasks]);
 
   const defaultAccordionValues = useMemo(() => projects.filter(p => (hierarchicalTasksByProject[p.id] || []).length > 0).map(p => p.id), [projects, hierarchicalTasksByProject]);
 
@@ -158,29 +200,51 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
 
   return (
     <>
-      <div className="flex justify-end items-center gap-4 mb-4">
-        <Button size="sm" variant="outline" onClick={handleGenerateTodaysTasks} disabled={isGenerating}>
-            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Generate Today's Tasks
-        </Button>
-        <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <PlusCircle className="mr-2 h-4 w-4" /> New Task
+      <div className="flex justify-between items-center gap-4 mb-4">
+        <div className='flex items-center gap-2'>
+            <div className="flex items-center space-x-2">
+                <Checkbox id="hide-completed-global" checked={hideCompleted} onCheckedChange={(checked) => setHideCompleted(checked as boolean)} />
+                <label htmlFor="hide-completed-global" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Hide completed
+                </label>
+            </div>
+            <div className="flex items-center gap-1 p-1 border rounded-lg">
+                {(['today', 'tomorrow', 'day-after'] as DateFilter[]).map(df => (
+                    <Button key={df} variant={dateFilter === df ? 'secondary' : 'ghost'} size="sm" onClick={() => setDateFilter(df)} className="capitalize h-7">
+                        {df.replace('-', ' ')}
+                    </Button>
+                ))}
+            </div>
+             {(hideCompleted || dateFilter !== 'all') && (
+                <Button variant="ghost" size="sm" onClick={() => { setHideCompleted(false); setDateFilter('all'); }}>
+                    Clear Filters
+                </Button>
+            )}
+        </div>
+        <div className='flex items-center gap-2'>
+            <Button size="sm" variant="outline" onClick={handleGenerateTodaysTasks} disabled={isGenerating}>
+                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Generate Today's Tasks
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Global Task</DialogTitle>
-            </DialogHeader>
-            <TaskForm 
-              projects={projects} 
-              leads={leads}
-              members={projectMembers}
-              closeForm={() => setIsTaskFormOpen(false)} 
-            />
-          </DialogContent>
-        </Dialog>
+            <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm">
+                <PlusCircle className="mr-2 h-4 w-4" /> New Task
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                <DialogTitle>Create New Global Task</DialogTitle>
+                </DialogHeader>
+                <TaskForm 
+                projects={projects} 
+                leads={leads}
+                members={projectMembers}
+                closeForm={() => setIsTaskFormOpen(false)} 
+                />
+            </DialogContent>
+            </Dialog>
+        </div>
       </div>
 
       <Card>
