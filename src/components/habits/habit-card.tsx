@@ -60,7 +60,7 @@ export function HabitCard({ habit, log, streak, onLog, onDelete }: HabitCardProp
                         <TooltipTrigger>
                             <div className='flex items-center gap-1 text-orange-400'>
                                 <Flame className='h-5 w-5'/>
-                                <span className='font-bold text-lg'>{streak}</span>
+                                <span className='font-bold text-lg'>{log?.count || 0}</span>
                             </div>
                         </TooltipTrigger>
                         <TooltipContent>
