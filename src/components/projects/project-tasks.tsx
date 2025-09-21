@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useMemo, useState } from "react";
 import { Project, Task, Lead, TaskTemplateSlot } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, History } from "lucide-react";
 import { DataTable } from "../ui/data-table";
 import { getTaskColumns } from "./task-columns";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
@@ -34,6 +35,7 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
     const [slotFilter, setSlotFilter] = useState<TaskTemplateSlot | 'all'>('all');
     const [hideCompleted, setHideCompleted] = useState(false);
     const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+    const [showArchived, setShowArchived] = useState(false);
 
     const handleStar = async (id: string, starred: boolean) => {
         try {
@@ -56,6 +58,20 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
         }
     }
 
+    const handleArchiveSelected = async (ids: string[]) => {
+        const batch = writeBatch(db);
+        ids.forEach(id => {
+            batch.update(doc(db, 'tasks', id), { archived: true, updatedAt: serverTimestamp() });
+        });
+        try {
+            await batch.commit();
+            toast({ title: "Success", description: `${ids.length} task(s) archived.`});
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Could not archive selected tasks."})
+        }
+    }
+
+
     const handlePostponeSelected = async (ids: string[]) => {
         const batch = writeBatch(db);
         const nextDay = addDays(new Date(), 1);
@@ -74,7 +90,7 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
     const taskColumns = useMemo(() => getTaskColumns({ leads }, handleStar), [leads]);
 
     const filteredTasks = useMemo(() => {
-        let filtered = [...tasks];
+        let filtered = tasks.filter(task => showArchived ? task.archived : !task.archived);
 
         if (slotFilter !== 'all') {
             filtered = filtered.filter(task => task.slot === slotFilter);
@@ -115,7 +131,7 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
         }
 
         return filtered;
-    }, [tasks, slotFilter, hideCompleted, dateFilter]);
+    }, [tasks, slotFilter, hideCompleted, dateFilter, showArchived]);
 
     const hierarchicalTasks = useMemo(() => {
         const taskMap = new Map(filteredTasks.map(t => [t.id, { ...t, subRows: [] as Task[] }]));
@@ -176,17 +192,23 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
                             <CardTitle>Tasks</CardTitle>
                             <CardDescription>All tasks associated with the &quot;{project.name}&quot; project.</CardDescription>
                         </div>
-                        <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
-                            <DialogTrigger asChild>
-                                <Button size="sm"><PlusCircle className="mr-2"/> Add Task</Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Add New Task</DialogTitle>
-                                </DialogHeader>
-                                <TaskForm projectId={project.id} leads={leads} members={project.members} closeForm={() => setIsTaskFormOpen(false)} />
-                            </DialogContent>
-                        </Dialog>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setShowArchived(!showArchived)}>
+                                <History className="mr-2 h-4 w-4" />
+                                {showArchived ? 'View Active Tasks' : 'View History'}
+                            </Button>
+                            <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
+                                <DialogTrigger asChild>
+                                    <Button size="sm"><PlusCircle className="mr-2"/> Add Task</Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Add New Task</DialogTitle>
+                                    </DialogHeader>
+                                    <TaskForm projectId={project.id} leads={leads} members={project.members} closeForm={() => setIsTaskFormOpen(false)} />
+                                </DialogContent>
+                            </Dialog>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -197,6 +219,7 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
                         getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
                         onDeleteSelected={handleDeleteSelected}
                         onPostponeSelected={handlePostponeSelected}
+                        onArchiveSelected={handleArchiveSelected}
                     />
                 </CardContent>
             </Card>

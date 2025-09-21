@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -7,7 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { DataTable } from '@/components/ui/data-table';
 import { getTaskColumns } from '@/components/projects/task-columns';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Loader2, History } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/projects/task-form';
 import { Card, CardContent } from '@/components/ui/card';
@@ -38,6 +39,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   const [isGenerating, setIsGenerating] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [showArchived, setShowArchived] = useState(false);
 
   const projectMembers: ProjectMember[] = useMemo(() => {
     const allMembers: ProjectMember[] = [];
@@ -66,6 +68,19 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
       } catch (error) {
           toast({ variant: 'destructive', title: "Error", description: "Could not delete selected tasks."})
       }
+  }
+
+  const handleArchiveSelected = async (ids: string[]) => {
+    const batch = writeBatch(db);
+    ids.forEach(id => {
+        batch.update(doc(db, 'tasks', id), { archived: true, updatedAt: serverTimestamp() });
+    });
+    try {
+        await batch.commit();
+        toast({ title: "Success", description: `${ids.length} task(s) archived.`});
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Error", description: "Could not archive selected tasks."})
+    }
   }
 
   const handlePostponeSelected = async (ids: string[]) => {
@@ -144,7 +159,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   }, []);
 
   const filteredTasks = useMemo(() => {
-    let filtered = [...tasks];
+    let filtered = tasks.filter(task => showArchived ? task.archived : !task.archived);
     
     if (dateFilter !== 'all') {
         filtered = filtered.filter(task => {
@@ -179,7 +194,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
     }
     
     return filtered;
-  }, [tasks, hideCompleted, dateFilter]);
+  }, [tasks, hideCompleted, dateFilter, showArchived]);
 
   const hierarchicalTasksByProject = useMemo(() => {
     const groupedByProject: { [key: string]: Task[] } = {};
@@ -236,6 +251,10 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
             )}
         </div>
         <div className='flex items-center gap-2'>
+            <Button size="sm" variant="outline" onClick={() => setShowArchived(!showArchived)}>
+                <History className="mr-2 h-4 w-4" />
+                {showArchived ? 'View Active Tasks' : 'View History'}
+            </Button>
             <Button size="sm" variant="outline" onClick={handleGenerateTodaysTasks} disabled={isGenerating}>
                 {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Generate Today's Tasks
@@ -286,6 +305,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
                                 getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
                                 onDeleteSelected={handleDeleteSelected}
                                 onPostponeSelected={handlePostponeSelected}
+                                onArchiveSelected={handleArchiveSelected}
                             />
                         </div>
                     </AccordionContent>

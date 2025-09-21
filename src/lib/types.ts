@@ -74,6 +74,7 @@ export interface Task {
     dueDate?: Date;
     assigneeUid?: string;
     starred?: boolean;
+    archived?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
