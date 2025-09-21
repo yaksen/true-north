@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, deleteDoc, doc, getDocs, increment, query, serverTimestamp, setDoc, updateDoc, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { format, subDays, isToday, isYesterday } from 'date-fns';
+import { format, subDays, isToday, isYesterday, parseISO } from 'date-fns';
 import { HabitCard } from './habit-card';
 import { Button } from '../ui/button';
 import { PlusCircle, RotateCcw } from 'lucide-react';
@@ -39,34 +39,44 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
     }, [logs]);
 
     const calculateStreak = (habitId: string) => {
-        const habitLogs = (logsByHabit[habitId] || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const habitLogs = (logsByHabit[habitId] || [])
+            .map(log => ({...log, parsedDate: parseISO(log.date)}))
+            .sort((a, b) => b.parsedDate.getTime() - a.parsedDate.getTime());
+    
         if (habitLogs.length === 0) return 0;
         
         let streak = 0;
         let currentDate = new Date();
-
-        // Check if today's or yesterday's log is the most recent one
-        const mostRecentLogDate = new Date(habitLogs[0].date);
-
-        if (isToday(mostRecentLogDate) || isYesterday(mostRecentLogDate)) {
-             streak = 1;
-             currentDate = mostRecentLogDate;
-
-             for (let i = 1; i < habitLogs.length; i++) {
-                const prevDate = new Date(habitLogs[i].date);
-                const expectedPrevDate = subDays(currentDate, 1);
-                
-                if (format(prevDate, 'yyyy-MM-dd') === format(expectedPrevDate, 'yyyy-MM-dd')) {
-                    streak++;
-                    currentDate = prevDate;
-                } else {
-                    break; // Streak is broken
-                }
+    
+        const mostRecentLogDate = habitLogs[0].parsedDate;
+    
+        if (isToday(mostRecentLogDate)) {
+            streak = 1;
+            currentDate = mostRecentLogDate;
+        } else if (isYesterday(mostRecentLogDate)) {
+            streak = 1;
+            currentDate = mostRecentLogDate;
+        } else {
+            // No log today or yesterday, so streak is 0
+            return 0;
+        }
+    
+        for (let i = 1; i < habitLogs.length; i++) {
+            const prevLogDate = habitLogs[i].parsedDate;
+            const expectedPrevDate = subDays(currentDate, 1);
+            
+            if (format(prevLogDate, 'yyyy-MM-dd') === format(expectedPrevDate, 'yyyy-MM-dd')) {
+                streak++;
+                currentDate = prevLogDate;
+            } else {
+                // Streak is broken if there's a gap
+                break;
             }
         }
         
         return streak;
     };
+    
 
     const handleLogHabit = async (habit: Habit, todayLog: HabitLog | undefined) => {
         if (!user) return;
