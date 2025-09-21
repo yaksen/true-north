@@ -46,7 +46,7 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
         if (habitLogs.length === 0) return 0;
         
         let streak = 0;
-        let currentDate = new Date();
+        let currentDate: Date;
     
         const mostRecentLogDate = habitLogs[0].parsedDate;
     
@@ -209,6 +209,7 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
                             key={habit.id} 
                             habit={habit}
                             log={todayLog}
+                            allLogs={logsByHabit[habit.id] || []}
                             streak={streak}
                             onLog={handleLogHabit}
                             onDelete={handleDeleteHabit}

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -25,17 +24,19 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { HabitForm } from './habit-form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { StreakCalendar } from './streak-calendar';
 
 
 interface HabitCardProps {
   habit: Habit;
   log: HabitLog | undefined;
+  allLogs: HabitLog[];
   streak: number;
   onLog: (habit: Habit, log: HabitLog | undefined) => void;
   onDelete: (habitId: string) => void;
 }
 
-export function HabitCard({ habit, log, streak, onLog, onDelete }: HabitCardProps) {
+export function HabitCard({ habit, log, allLogs, streak, onLog, onDelete }: HabitCardProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const progress = habit.target > 0 ? ((log?.count || 0) / habit.target) * 100 : 0;
   
@@ -64,7 +65,10 @@ export function HabitCard({ habit, log, streak, onLog, onDelete }: HabitCardProp
                             </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>{streak > 0 ? `${streak}-day streak!` : 'No streak yet. Keep going!'}</p>
+                            <div className='flex flex-col gap-2 p-2'>
+                                <p className='font-semibold text-center'>{streak > 0 ? `${streak}-day streak!` : 'No streak yet. Keep going!'}</p>
+                                <StreakCalendar habit={habit} logs={allLogs} />
+                            </div>
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>

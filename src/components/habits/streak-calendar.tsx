@@ -5,7 +5,7 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { Habit, HabitLog } from '@/lib/types';
 import { useMemo } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface StreakCalendarProps {
     habit: Habit;
@@ -15,8 +15,8 @@ interface StreakCalendarProps {
 export function StreakCalendar({ habit, logs }: StreakCalendarProps) {
     const completedDays = useMemo(() => {
         return logs
-            .filter(log => log.habitId === habit.id && log.count >= log.target)
-            .map(log => new Date(log.date));
+            .filter(log => log.habitId === habit.id && log.count >= (log.target || 1))
+            .map(log => parseISO(log.date));
     }, [habit, logs]);
     
     return (
