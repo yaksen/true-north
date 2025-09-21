@@ -10,6 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '..
 import { Button } from '../ui/button';
 import { Download } from 'lucide-react';
 import { Badge } from '../ui/badge';
+import { cn } from '@/lib/utils';
 
 interface HabitLogbookProps {
   habits: Habit[];
@@ -97,7 +98,7 @@ export function HabitLogbook({ habits, logs }: HabitLogbookProps) {
                                         <div className="flex items-center gap-2">
                                             <span className="text-lg">{habit.emoji}</span>
                                             <span className="font-medium">{habit.name}</span>
-                                            <Badge variant={habit.type === 'good' ? 'default' : 'destructive'} className='capitalize'>{habit.type}</Badge>
+                                            <Badge variant={habit.type === 'good' ? 'default' : 'destructive'} className={cn('capitalize', habit.type === 'good' && 'bg-green-500/80')}>{habit.type}</Badge>
                                         </div>
                                         <span className="text-sm text-muted-foreground">
                                             Logged {log.count} time(s)
@@ -114,5 +115,6 @@ export function HabitLogbook({ habits, logs }: HabitLogbookProps) {
     </div>
   );
 }
+
 
 
