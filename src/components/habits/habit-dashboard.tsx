@@ -175,9 +175,18 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
 
     return (
         <div className='space-y-6'>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-start">
                 <HabitStats habits={habits} logs={logs} />
-                <div className='flex gap-2'>
+                <div className='flex flex-col gap-2 items-stretch'>
+                    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                        <DialogTrigger asChild>
+                            <Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Habit</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader><DialogTitle>Create New Habit</DialogTitle></DialogHeader>
+                            <HabitForm closeForm={() => setIsFormOpen(false)} />
+                        </DialogContent>
+                    </Dialog>
                     <Dialog open={isLogbookOpen} onOpenChange={setIsLogbookOpen}>
                         <DialogTrigger asChild>
                             <Button variant="outline" size="sm"><BookOpen className="mr-2 h-4 w-4" /> View All Records</Button>
@@ -205,16 +214,6 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-
-                    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                        <DialogTrigger asChild>
-                            <Button><PlusCircle className="mr-2 h-4 w-4" /> New Habit</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader><DialogTitle>Create New Habit</DialogTitle></DialogHeader>
-                            <HabitForm closeForm={() => setIsFormOpen(false)} />
-                        </DialogContent>
-                    </Dialog>
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
