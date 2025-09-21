@@ -182,10 +182,6 @@ export const getPartnerColumns = (dependencies: ColumnDependencies): ColumnDef<P
         cell: ({ row }) => <Badge variant="outline">{row.getValue("roleInProject")}</Badge>,
     },
     {
-        accessorKey: "contactName",
-        header: "Contact",
-    },
-    {
         id: "contactDetails",
         header: "Contact Details",
         cell: ({ row }) => {
