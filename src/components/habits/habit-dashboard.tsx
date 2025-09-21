@@ -11,10 +11,12 @@ import { db } from '@/lib/firebase';
 import { format, subDays, isToday, isYesterday } from 'date-fns';
 import { HabitCard } from './habit-card';
 import { Button } from '../ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, RotateCcw } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { HabitForm } from './habit-form';
 import { HabitStats } from './habit-stats';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+
 
 // Helper to get today's date as a YYYY-MM-DD string
 const getTodayDateString = () => format(new Date(), 'yyyy-MM-dd');
@@ -128,19 +130,65 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
         }
     };
 
+    const handleResetStats = async () => {
+        if (!user) return;
+        
+        try {
+            const batch = writeBatch(db);
+            const logsQuery = query(collection(db, 'habitLogs'), where('userId', '==', user.uid));
+            const logsSnapshot = await getDocs(logsQuery);
+            
+            if (logsSnapshot.empty) {
+                toast({ description: 'No logs to reset.' });
+                return;
+            }
+
+            logsSnapshot.forEach(logDoc => {
+                batch.delete(logDoc.ref);
+            });
+            
+            await batch.commit();
+
+            toast({ title: 'Stats Reset', description: 'Your habit tracking history has been cleared.' });
+        } catch (error) {
+            console.error("Error resetting stats:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not reset habit stats.' });
+        }
+    };
+
     return (
         <div className='space-y-6'>
             <div className="flex justify-between items-center">
                 <HabitStats habits={habits} logs={logs} />
-                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogTrigger asChild>
-                        <Button><PlusCircle className="mr-2 h-4 w-4" /> New Habit</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader><DialogTitle>Create New Habit</DialogTitle></DialogHeader>
-                        <HabitForm closeForm={() => setIsFormOpen(false)} />
-                    </DialogContent>
-                </Dialog>
+                <div className='flex gap-2'>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm"><RotateCcw className="mr-2 h-4 w-4" /> Reset All</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This will permanently delete all your habit logs, resetting your streaks and stats. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleResetStats}>Reset Stats</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+
+                    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                        <DialogTrigger asChild>
+                            <Button><PlusCircle className="mr-2 h-4 w-4" /> New Habit</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader><DialogTitle>Create New Habit</DialogTitle></DialogHeader>
+                            <HabitForm closeForm={() => setIsFormOpen(false)} />
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {habits.map(habit => {
