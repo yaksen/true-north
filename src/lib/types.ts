@@ -15,6 +15,8 @@ export type PaymentMethod = 'cash' | 'bank transfer' | 'online' | 'other';
 export type WalletTransactionType = 'add' | 'expense';
 export type TaskTemplateSlot = 'morning' | 'midday' | 'night';
 export type VaultItemType = 'note' | 'link' | 'prompt';
+export type HabitType = 'good' | 'bad';
+export type HabitFrequency = 'daily' | 'weekly';
 
 export interface UserProfile {
     id: string;
@@ -433,4 +435,26 @@ export interface VaultItem {
     examples?: string;
     instructions?: string;
     outputFormat?: string;
+}
+
+export interface Habit {
+    id: string;
+    userId: string;
+    name: string;
+    emoji: string;
+    type: HabitType;
+    frequency: HabitFrequency;
+    target: number; // e.g. 3 times a day. 0 for unlimited.
+    color: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface HabitLog {
+    id: string;
+    habitId: string;
+    userId: string;
+    date: string; // YYYY-MM-DD
+    count: number;
+    target: number;
 }

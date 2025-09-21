@@ -17,6 +17,7 @@ import {
   Vault,
   DatabaseZap,
   Link2,
+  Flame,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -138,6 +139,7 @@ export default function DashboardLayout({
     { href: '/dashboard/tasks', icon: ListChecks, label: 'Tasks' },
     { href: '/dashboard/finance', icon: CircleDollarSign, label: 'Finance' },
     { href: '/dashboard/expenses', icon: Wallet, label: 'Expenses' },
+    { href: '/dashboard/habits', icon: Flame, label: 'Habits' },
     { href: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
     { href: '/dashboard/vault', icon: Vault, label: 'Vault' },
   ];
