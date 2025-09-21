@@ -135,27 +135,21 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
   // Update price when discount changes
   useEffect(() => {
     const calculatedPrice = basePrice * (1 - (discountPercentage / 100));
-    // Only update if the change is significant to avoid infinite loops with rounding
-    if (Math.abs(calculatedPrice - finalPrice) > 0.01) {
-        form.setValue('price', parseFloat(calculatedPrice.toFixed(2)));
-    }
-  }, [discountPercentage, basePrice, form, finalPrice]);
+    form.setValue('price', parseFloat(calculatedPrice.toFixed(2)));
+  }, [discountPercentage, basePrice, form]);
 
-  // Update discount when price changes
+  // Update discount when price is manually changed
   useEffect(() => {
     if (basePrice > 0) {
         const calculatedDiscount = (1 - (finalPrice / basePrice)) * 100;
-        // Only update if the change is significant
+        // Check if the change is significant to avoid flicker
         if (Math.abs(calculatedDiscount - discountPercentage) > 0.1) {
             form.setValue('discountPercentage', parseFloat(calculatedDiscount.toFixed(1)));
         }
-    } else if (finalPrice > 0) {
-        // If there's a price but no base price, it's 100% markup
-        form.setValue('discountPercentage', -Infinity); // Or handle as an edge case
-    } else {
+    } else if (finalPrice === 0) {
         form.setValue('discountPercentage', 0);
     }
-  }, [finalPrice, basePrice, form, discountPercentage]);
+  }, [finalPrice, basePrice, form]);
 
 
   async function onSubmit(values: PackageFormValues) {
