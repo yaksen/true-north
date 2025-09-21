@@ -19,16 +19,12 @@ export function HabitStats({ habits, logs }: HabitStatsProps) {
         const goodLogs = logs.filter(log => goodHabits.some(h => h.id === log.habitId));
         const badLogs = logs.filter(log => badHabits.some(h => h.id === log.habitId));
 
-        const goodHabitPossible = goodLogs.reduce((sum, log) => sum + log.target, 0);
-        const goodHabitActual = goodLogs.reduce((sum, log) => sum + log.count, 0);
-        const successRate = goodHabitPossible > 0 ? (goodHabitActual / goodHabitPossible) * 100 : 0;
-        
-        const badHabitSlips = badLogs.reduce((sum, log) => sum + log.count, 0);
-        // Failure rate could be defined in many ways. Here, we'll just show total slip-ups.
+        const totalCompletions = goodLogs.reduce((sum, log) => sum + log.count, 0);
+        const totalSlips = badLogs.reduce((sum, log) => sum + log.count, 0);
         
         return {
-            successRate,
-            totalSlips: badHabitSlips,
+            totalCompletions,
+            totalSlips,
             activeHabits: habits.length,
         };
     }, [habits, logs]);
@@ -46,11 +42,11 @@ export function HabitStats({ habits, logs }: HabitStatsProps) {
             </Card>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+                    <CardTitle className="text-sm font-medium">Total Completions</CardTitle>
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold text-green-400">{stats.successRate.toFixed(1)}%</div>
+                    <div className="text-2xl font-bold text-green-400">{stats.totalCompletions}</div>
                 </CardContent>
             </Card>
             <Card>
