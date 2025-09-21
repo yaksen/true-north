@@ -172,7 +172,7 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
       </CardContent>
       <div className="flex flex-col gap-2 p-6 pt-0">
         <div className='text-center text-sm text-muted-foreground'>
-            {!isGoalReached && <p>{formatCurrency(currentRevenue)} / {formatCurrency(convertedGoal)}</p>}
+            {!isGoalReached && <p>{formatCurrency(currentRevenue)}</p>}
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
