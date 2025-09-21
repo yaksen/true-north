@@ -1,21 +1,22 @@
 import type { Metadata } from 'next';
-import { Roboto, Space_Grotesk } from 'next/font/google';
+import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/hooks/use-auth';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { CurrencyProvider } from '@/context/CurrencyContext';
 
-const fontSans = Roboto({
+const fontSans = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
-  weight: ['400', '500', '700'],
+  display: 'swap',
 });
 
 const fontHeadline = Space_Grotesk({
   subsets: ['latin'],
   variable: '--font-headline',
   weight: ['700'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
