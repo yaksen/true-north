@@ -155,7 +155,18 @@ export const financeColumns = (onStar: (id: string, starred: boolean) => void, d
       header: "Type",
       cell: ({ row }) => {
         const type = row.getValue("type") as 'income' | 'expense';
-        return <Badge variant={type === 'income' ? 'default' : 'secondary'} className="capitalize">{type}</Badge>
+        return (
+            <Badge 
+                variant={type === 'income' ? 'default' : 'destructive'} 
+                className={cn(
+                    "capitalize",
+                    type === 'income' && "bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30",
+                    type === 'expense' && "bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30"
+                )}
+            >
+                {type}
+            </Badge>
+        )
       }
     },
     {
@@ -173,3 +184,4 @@ export const financeColumns = (onStar: (id: string, starred: boolean) => void, d
       cell: ({ row }) => <ActionsCell finance={row.original} />,
     },
   ];
+
