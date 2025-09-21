@@ -142,16 +142,21 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
         }
     };
 
-    const handleResetStats = async () => {
+    const handleResetToday = async () => {
         if (!user) return;
         
         try {
+            const todayDateString = getTodayDateString();
             const batch = writeBatch(db);
-            const logsQuery = query(collection(db, 'habitLogs'), where('userId', '==', user.uid));
+            const logsQuery = query(
+                collection(db, 'habitLogs'), 
+                where('userId', '==', user.uid),
+                where('date', '==', todayDateString)
+            );
             const logsSnapshot = await getDocs(logsQuery);
             
             if (logsSnapshot.empty) {
-                toast({ description: 'No logs to reset.' });
+                toast({ description: "No logs to reset for today." });
                 return;
             }
 
@@ -161,10 +166,10 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
             
             await batch.commit();
 
-            toast({ title: 'Stats Reset', description: 'Your habit tracking history has been cleared.' });
+            toast({ title: "Today's Logs Reset", description: 'Your habit logs for today have been cleared.' });
         } catch (error) {
-            console.error("Error resetting stats:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not reset habit stats.' });
+            console.error("Error resetting today's stats:", error);
+            toast({ variant: 'destructive', title: 'Error', description: "Could not reset today's habit logs." });
         }
     };
 
@@ -185,18 +190,18 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm"><RotateCcw className="mr-2 h-4 w-4" /> Reset All</Button>
+                            <Button variant="outline" size="sm"><RotateCcw className="mr-2 h-4 w-4" /> Reset Today</Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                This will permanently delete all your habit logs, resetting your streaks and stats. This action cannot be undone.
+                                This will permanently delete all your habit logs for today. This action cannot be undone.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleResetStats}>Reset Stats</AlertDialogAction>
+                                <AlertDialogAction onClick={handleResetToday}>Reset Today's Logs</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
