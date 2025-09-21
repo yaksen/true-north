@@ -229,8 +229,8 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
 
   return (
     <>
-      <div className="flex justify-between items-center gap-4 mb-4">
-        <div className='flex items-center gap-2'>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+        <div className='flex items-center gap-2 flex-wrap'>
              <div className="flex items-center space-x-2">
                 <Checkbox id="hide-completed-global" checked={hideCompleted} onCheckedChange={(checked) => setHideCompleted(checked as boolean)} />
                 <label htmlFor="hide-completed-global" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -250,7 +250,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
                 </Button>
             )}
         </div>
-        <div className='flex items-center gap-2'>
+        <div className='flex items-center gap-2 self-end'>
             <Button size="sm" variant="outline" onClick={() => setShowArchived(!showArchived)}>
                 <History className="mr-2 h-4 w-4" />
                 {showArchived ? 'View Active Tasks' : 'View History'}
