@@ -50,15 +50,15 @@ export default function WalletPage() {
       }
     });
 
-    const projectsQuery = query(collection(db, 'projects'), where('members', 'array-contains', user.uid));
+    const projectsQuery = query(collection(db, 'projects'), where('memberUids', 'array-contains', user.uid));
     const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
         setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
     });
 
 
     return () => {
-      unsubscribeWallet();
-      unsubscribeProjects();
+      if (unsubscribeWallet) unsubscribeWallet();
+      if (unsubscribeProjects) unsubscribeProjects();
     };
   }, [user]);
 
