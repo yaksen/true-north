@@ -37,10 +37,17 @@ interface HabitCardProps {
 export function HabitCard({ habit, log, streak, onLog, onDelete }: HabitCardProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const progress = habit.target > 0 ? ((log?.count || 0) / habit.target) * 100 : 0;
-  const isComplete = habit.target > 0 && progress >= 100;
+  
+  // For good habits, complete when you hit the target. For bad habits, you can always log a slip-up.
+  const isComplete = habit.type === 'good' && habit.target > 0 && progress >= 100;
 
   const cardColorClass = habit.type === 'good' ? 'border-green-500/20 hover:border-green-500/50' : 'border-red-500/20 hover:border-red-500/50';
   const buttonColorClass = habit.type === 'good' ? 'bg-green-500/80 hover:bg-green-500/90' : 'bg-red-500/80 hover:bg-red-500/90';
+  
+  const buttonText = habit.type === 'good'
+    ? (isComplete ? "Target Reached" : "Log Completion")
+    : "Logged a Slip-up";
+
 
   return (
     <Card className={cn("flex flex-col justify-between", cardColorClass)}>
@@ -105,7 +112,7 @@ export function HabitCard({ habit, log, streak, onLog, onDelete }: HabitCardProp
       </CardContent>
       <CardFooter>
         <Button onClick={() => onLog(habit, log)} className={cn("w-full", buttonColorClass)} disabled={isComplete}>
-            {isComplete ? "Target Reached" : "Log Completion"}
+            {buttonText}
         </Button>
       </CardFooter>
     </Card>
