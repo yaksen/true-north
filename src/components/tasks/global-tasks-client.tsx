@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -8,7 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { DataTable } from '@/components/ui/data-table';
 import { getTaskColumns } from '@/components/projects/task-columns';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, History } from 'lucide-react';
+import { PlusCircle, Loader2, History, Archive } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/projects/task-form';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,6 +36,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [showArchived, setShowArchived] = useState(false);
@@ -145,6 +145,29 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
     }
   };
 
+  const handleArchiveAllCompleted = async () => {
+    const completedTaskIds = tasks.filter(t => t.completed && !t.archived).map(t => t.id);
+    if (completedTaskIds.length === 0) {
+        toast({ description: "No completed tasks to archive." });
+        return;
+    }
+    
+    setIsArchiving(true);
+    const batch = writeBatch(db);
+    completedTaskIds.forEach(id => {
+        batch.update(doc(db, 'tasks', id), { archived: true, updatedAt: serverTimestamp() });
+    });
+
+    try {
+        await batch.commit();
+        toast({ title: "Success", description: `${completedTaskIds.length} completed task(s) archived.`});
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Error", description: "Could not archive completed tasks."})
+    } finally {
+        setIsArchiving(false);
+    }
+  }
+
   const taskColumns = useMemo(() => getTaskColumns({ leads }, handleStar), [leads]);
 
   useEffect(() => {
@@ -229,7 +252,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
 
   return (
     <>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+      <div className="flex flex-col gap-4 mb-4">
         <div className='flex items-center gap-2 flex-wrap'>
              <div className="flex items-center space-x-2">
                 <Checkbox id="hide-completed-global" checked={hideCompleted} onCheckedChange={(checked) => setHideCompleted(checked as boolean)} />
@@ -258,6 +281,10 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
             <Button size="sm" variant="outline" onClick={handleGenerateTodaysTasks} disabled={isGenerating}>
                 {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Generate Today's Tasks
+            </Button>
+             <Button size="sm" variant="outline" onClick={handleArchiveAllCompleted} disabled={isArchiving}>
+                {isArchiving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Archive className="mr-2 h-4 w-4" />}
+                Archive All Completed
             </Button>
             <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
             <DialogTrigger asChild>
@@ -323,3 +350,5 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
     </>
   );
 }
+
+  
