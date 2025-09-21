@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -89,7 +90,10 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
             if (habit.type === 'good') {
                 toast({ title: 'Great job!', description: `You've logged "${habit.name}".` });
             } else {
-                toast({ title: 'Slip-up recorded.', description: `Logged a fallback for "${habit.name}".` });
+                toast({
+                    title: 'Slip-up Recorded',
+                    description: `Logged a fallback for "${habit.name}".`,
+                });
             }
 
         } catch (error) {

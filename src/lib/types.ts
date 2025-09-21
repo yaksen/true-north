@@ -446,6 +446,8 @@ export interface Habit {
     frequency: HabitFrequency;
     target: number; // e.g. 3 times a day. 0 for unlimited.
     color: string;
+    reward?: string;
+    punishment?: string;
     createdAt: Date;
     updatedAt: Date;
 }

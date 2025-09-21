@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -13,7 +14,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
-import { Flame, Edit, Trash2 } from 'lucide-react';
+import { Flame, Edit, Trash2, Trophy, ShieldAlert } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import {
     Tooltip,
@@ -38,7 +39,6 @@ export function HabitCard({ habit, log, streak, onLog, onDelete }: HabitCardProp
   const [isEditOpen, setIsEditOpen] = useState(false);
   const progress = habit.target > 0 ? ((log?.count || 0) / habit.target) * 100 : 0;
   
-  // For good habits, complete when you hit the target. For bad habits, you can always log a slip-up.
   const isComplete = habit.type === 'good' && habit.target > 0 && progress >= 100;
 
   const cardColorClass = habit.type === 'good' ? 'border-green-500/20 hover:border-green-500/50' : 'border-red-500/20 hover:border-red-500/50';
@@ -99,7 +99,13 @@ export function HabitCard({ habit, log, streak, onLog, onDelete }: HabitCardProp
         </div>
         <CardTitle>{habit.name}</CardTitle>
         <CardDescription>
-            {habit.target > 0 ? `Target: ${habit.target} times ${habit.frequency}`: `Track as you go`}
+            {isComplete && habit.reward ? (
+                 <span className='text-primary font-semibold flex items-center gap-1'><Trophy className='h-4 w-4' /> {habit.reward}</span>
+            ) : habit.type === 'bad' && habit.punishment ? (
+                <span className='text-muted-foreground flex items-center gap-1'><ShieldAlert className='h-4 w-4' /> {habit.punishment}</span>
+            ) : (
+                habit.target > 0 ? `Target: ${habit.target} times ${habit.frequency}`: `Track as you go`
+            )}
         </CardDescription>
       </CardHeader>
       <CardContent>

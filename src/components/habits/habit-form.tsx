@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -32,6 +33,8 @@ const formSchema = z.object({
   frequency: z.enum(['daily', 'weekly']),
   target: z.number().min(0),
   color: z.string().min(1, 'Color is required.'),
+  reward: z.string().optional(),
+  punishment: z.string().optional(),
 });
 
 type HabitFormValues = z.infer<typeof formSchema>;
@@ -55,6 +58,8 @@ export function HabitForm({ habit, closeForm }: HabitFormProps) {
       frequency: 'daily',
       target: 1,
       color: '#4ade80',
+      reward: '',
+      punishment: '',
     },
   });
 
@@ -84,6 +89,7 @@ export function HabitForm({ habit, closeForm }: HabitFormProps) {
   };
 
   const frequency = form.watch('frequency');
+  const habitType = form.watch('type');
 
   return (
     <Form {...form}>
@@ -109,6 +115,13 @@ export function HabitForm({ habit, closeForm }: HabitFormProps) {
             <FormMessage />
             </FormItem>
         )} />
+        
+        {habitType === 'good' ? (
+             <FormField control={form.control} name="reward" render={({ field }) => (<FormItem><FormLabel>Reward (Optional)</FormLabel><FormControl><Input placeholder="e.g. Watch one episode of a show" {...field} /></FormControl><FormMessage /></FormItem>)} />
+        ) : (
+            <FormField control={form.control} name="punishment" render={({ field }) => (<FormItem><FormLabel>Punishment (Optional)</FormLabel><FormControl><Input placeholder="e.g. No dessert tonight" {...field} /></FormControl><FormMessage /></FormItem>)} />
+        )}
+
          <FormField control={form.control} name="frequency" render={({ field }) => (
             <FormItem className="space-y-3"><FormLabel>Frequency</FormLabel>
                  <FormControl>
