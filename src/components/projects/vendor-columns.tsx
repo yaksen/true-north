@@ -182,10 +182,6 @@ export const getVendorColumns = (dependencies: ColumnDependencies): ColumnDef<Ve
         cell: ({ row }) => <Badge variant="outline">{row.getValue("serviceType")}</Badge>,
     },
     {
-        accessorKey: "contactName",
-        header: "Contact",
-    },
-    {
         id: "contactDetails",
         header: "Contact Details",
         cell: ({ row }) => {
@@ -239,3 +235,5 @@ export const getVendorColumns = (dependencies: ColumnDependencies): ColumnDef<Ve
       cell: ({ row }) => <ActionsCell vendor={row.original} dependencies={dependencies} />,
     },
   ];
+
+    
