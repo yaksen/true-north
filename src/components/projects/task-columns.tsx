@@ -179,7 +179,17 @@ export const getTaskColumns = (dependencies: ColumnDependencies, onStar: (id: st
       header: "Slot",
       cell: ({ row }) => {
         const slot = row.getValue("slot") as TaskTemplateSlot;
-        return <Badge variant="outline" className="capitalize">{slot}</Badge>
+        return <Badge 
+            variant="outline" 
+            className={cn(
+                "capitalize",
+                slot === 'morning' && "bg-amber-500/20 text-amber-500 border-amber-500/30",
+                slot === 'midday' && "bg-sky-500/20 text-sky-500 border-sky-500/30",
+                slot === 'night' && "bg-indigo-500/20 text-indigo-400 border-indigo-500/30"
+            )}
+        >
+            {slot}
+        </Badge>
       }
     },
     {
@@ -204,3 +214,4 @@ export const getTaskColumns = (dependencies: ColumnDependencies, onStar: (id: st
         cell: ({ row }) => <ActionsCell task={row.original} leads={dependencies.leads} />,
     },
   ];
+
