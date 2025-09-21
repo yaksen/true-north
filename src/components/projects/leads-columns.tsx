@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Lead, LeadStatus, Package, Service, Project, Channel } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon, Edit, Trash2, Facebook, Instagram, CaseUpper, Star } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon, Edit, Trash2, Facebook, Instagram, CaseUpper, Star, QrCode } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -22,6 +22,7 @@ import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { logActivity } from "@/lib/activity-log";
 import { cn } from "@/lib/utils";
+import { QrCodeModal } from "../qr-code-modal";
 
 interface ColumnDependencies {
     project: Project;
@@ -36,6 +37,7 @@ const ActionsCell: React.FC<{ lead: Lead, dependencies: ColumnDependencies }> = 
     const [isFinanceOpen, setIsFinanceOpen] = useState(false);
     const [isTaskOpen, setIsTaskOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isQrOpen, setIsQrOpen] = useState(false);
 
     const handleDelete = async () => {
         if (!user) return;
@@ -59,6 +61,9 @@ const ActionsCell: React.FC<{ lead: Lead, dependencies: ColumnDependencies }> = 
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => setIsQrOpen(true)}>
+                        <QrCode className="mr-2 h-4 w-4" /> Show QR Code
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
                         <Edit className="mr-2 h-4 w-4" /> Edit Lead
                     </DropdownMenuItem>
@@ -118,6 +123,13 @@ const ActionsCell: React.FC<{ lead: Lead, dependencies: ColumnDependencies }> = 
                     <LeadForm lead={lead} projectId={dependencies.project.id} channels={dependencies.channels} closeForm={() => setIsEditOpen(false)} />
                 </DialogContent>
             </Dialog>
+            
+            <QrCodeModal 
+                isOpen={isQrOpen}
+                setIsOpen={setIsQrOpen}
+                contact={{...lead, type: 'lead'}}
+                organization={dependencies.project.name}
+            />
         </>
     );
 };

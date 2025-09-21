@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Vendor, Channel } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star, Mail, Phone, Link as LinkIcon, Linkedin, Twitter, Github, Facebook, Instagram, CaseUpper } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star, Mail, Phone, Link as LinkIcon, Linkedin, Twitter, Github, Facebook, Instagram, CaseUpper, QrCode } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -20,6 +20,7 @@ import { Checkbox } from "../ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import Link from "next/link";
+import { QrCodeModal } from "../qr-code-modal";
 
 interface ColumnDependencies {
     channels: Channel[];
@@ -35,6 +36,7 @@ const ActionsCell: React.FC<ActionsCellProps> = ({ vendor, dependencies }) => {
     const { toast } = useToast();
     const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isQrOpen, setIsQrOpen] = useState(false);
 
     const handleDelete = async () => {
         if (!user) return;
@@ -58,6 +60,9 @@ const ActionsCell: React.FC<ActionsCellProps> = ({ vendor, dependencies }) => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => setIsQrOpen(true)}>
+                        <QrCode className="mr-2 h-4 w-4" /> Show QR Code
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
                         <Edit className="mr-2 h-4 w-4"/> Edit Vendor
                     </DropdownMenuItem>
@@ -90,6 +95,11 @@ const ActionsCell: React.FC<ActionsCellProps> = ({ vendor, dependencies }) => {
                     <VendorForm vendor={vendor} projectId={vendor.projectId} channels={dependencies.channels} closeForm={() => setIsEditOpen(false)} />
                 </DialogContent>
             </Dialog>
+            <QrCodeModal 
+                isOpen={isQrOpen}
+                setIsOpen={setIsQrOpen}
+                contact={{...vendor, type: 'vendor'}}
+            />
         </>
     );
 };
