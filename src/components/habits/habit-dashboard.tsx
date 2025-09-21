@@ -11,11 +11,12 @@ import { db } from '@/lib/firebase';
 import { format, subDays, isToday, isYesterday, parseISO } from 'date-fns';
 import { HabitCard } from './habit-card';
 import { Button } from '../ui/button';
-import { PlusCircle, RotateCcw } from 'lucide-react';
+import { PlusCircle, RotateCcw, BookOpen } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { HabitForm } from './habit-form';
 import { HabitStats } from './habit-stats';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { HabitLogbook } from './habit-logbook';
 
 
 // Helper to get today's date as a YYYY-MM-DD string
@@ -25,6 +26,7 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
     const { user } = useAuth();
     const { toast } = useToast();
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isLogbookOpen, setIsLogbookOpen] = useState(false);
     
     // Group logs by habitId for quick lookup
     const logsByHabit = useMemo(() => {
@@ -171,6 +173,16 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
             <div className="flex justify-between items-center">
                 <HabitStats habits={habits} logs={logs} />
                 <div className='flex gap-2'>
+                    <Dialog open={isLogbookOpen} onOpenChange={setIsLogbookOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="sm"><BookOpen className="mr-2 h-4 w-4" /> View All Records</Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                            <DialogHeader><DialogTitle>Habit Logbook</DialogTitle></DialogHeader>
+                            <HabitLogbook habits={habits} logs={logs} />
+                        </DialogContent>
+                    </Dialog>
+
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="outline" size="sm"><RotateCcw className="mr-2 h-4 w-4" /> Reset All</Button>
