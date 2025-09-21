@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from './button';
 import { Input } from './input';
-import { ChevronDown, FileDown, Star, Trash2 } from 'lucide-react';
+import { ChevronDown, FileDown, Star, Trash2, ArrowRight } from 'lucide-react';
 import { ScrollArea } from './scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './alert-dialog';
 
@@ -45,6 +45,7 @@ interface DataTableProps<TData, TValue> {
   toolbar?: React.ReactNode;
   getSubRows?: (row: Row<TData>) => TData[] | undefined;
   onDeleteSelected?: (selectedIds: string[]) => Promise<void>;
+  onPostponeSelected?: (selectedIds: string[]) => Promise<void>;
 }
 
 export function DataTable<TData extends {id: string, starred?: boolean} , TValue>({
@@ -53,6 +54,7 @@ export function DataTable<TData extends {id: string, starred?: boolean} , TValue
   toolbar,
   getSubRows,
   onDeleteSelected,
+  onPostponeSelected,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -171,6 +173,14 @@ export function DataTable<TData extends {id: string, starred?: boolean} , TValue
     });
   }
 
+  const handlePostpone = () => {
+    if (!onPostponeSelected) return;
+    const selectedIds = table.getFilteredSelectedRowModel().rows.map(row => row.original.id);
+    onPostponeSelected(selectedIds).then(() => {
+        table.resetRowSelection();
+    });
+  }
+
   const isRowSelected = table.getFilteredSelectedRowModel().rows.length > 0;
   const hasData = table.getFilteredRowModel().rows.length > 0;
 
@@ -196,6 +206,12 @@ export function DataTable<TData extends {id: string, starred?: boolean} , TValue
                 <Button variant={showStarred ? "secondary" : "outline"} size="icon" onClick={() => setShowStarred(!showStarred)} className='h-9 w-9'>
                     <Star className="h-4 w-4" />
                 </Button>
+                 {onPostponeSelected && (
+                     <Button variant="outline" size="sm" disabled={!isRowSelected} onClick={handlePostpone} className='h-9'>
+                        <ArrowRight className='mr-2 h-4 w-4' />
+                        Postpone ({table.getFilteredSelectedRowModel().rows.length})
+                    </Button>
+                )}
                 {onDeleteSelected && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>

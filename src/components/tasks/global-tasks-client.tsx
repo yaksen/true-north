@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -67,6 +66,21 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
       } catch (error) {
           toast({ variant: 'destructive', title: "Error", description: "Could not delete selected tasks."})
       }
+  }
+
+  const handlePostponeSelected = async (ids: string[]) => {
+    const batch = writeBatch(db);
+    const nextDay = addDays(new Date(), 1);
+    ids.forEach(id => {
+        const taskRef = doc(db, 'tasks', id);
+        batch.update(taskRef, { dueDate: nextDay, updatedAt: serverTimestamp() });
+    });
+    try {
+        await batch.commit();
+        toast({ title: "Success", description: `${ids.length} task(s) postponed to tomorrow.`});
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Error", description: "Could not postpone selected tasks."})
+    }
   }
 
   const handleGenerateTodaysTasks = async () => {
@@ -155,7 +169,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
                 let current = task;
                 while (current.parentTaskId) {
                     const parent = taskMap.get(current.parentTaskId);
-                    if (!parent) return true;
+                    if (!parent) return true; // Orphaned, show it
                     if (parent.completed && !hasIncompleteSubtasks(parent.id)) return false;
                     current = parent;
                 }
@@ -271,6 +285,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
                                 data={projectTasks}
                                 getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
                                 onDeleteSelected={handleDeleteSelected}
+                                onPostponeSelected={handlePostponeSelected}
                             />
                         </div>
                     </AccordionContent>

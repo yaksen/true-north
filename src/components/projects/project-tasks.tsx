@@ -13,7 +13,7 @@ import { TaskForm } from "./task-form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Row } from "@tanstack/react-table";
 import { Checkbox } from "../ui/checkbox";
-import { doc, writeBatch, updateDoc } from "firebase/firestore";
+import { doc, writeBatch, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { isToday, isTomorrow, addDays } from "date-fns";
@@ -53,6 +53,21 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
             toast({ title: "Success", description: `${ids.length} task(s) deleted.`});
         } catch (error) {
             toast({ variant: 'destructive', title: "Error", description: "Could not delete selected tasks."})
+        }
+    }
+
+    const handlePostponeSelected = async (ids: string[]) => {
+        const batch = writeBatch(db);
+        const nextDay = addDays(new Date(), 1);
+        ids.forEach(id => {
+            const taskRef = doc(db, 'tasks', id);
+            batch.update(taskRef, { dueDate: nextDay, updatedAt: serverTimestamp() });
+        });
+        try {
+            await batch.commit();
+            toast({ title: "Success", description: `${ids.length} task(s) postponed to tomorrow.`});
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Could not postpone selected tasks."})
         }
     }
     
@@ -181,6 +196,7 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
                         toolbar={<Toolbar />} 
                         getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
                         onDeleteSelected={handleDeleteSelected}
+                        onPostponeSelected={handlePostponeSelected}
                     />
                 </CardContent>
             </Card>
