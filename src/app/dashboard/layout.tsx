@@ -18,6 +18,7 @@ import {
   DatabaseZap,
   Link2,
   Flame,
+  CreditCard,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -138,7 +139,7 @@ export default function DashboardLayout({
     { href: '/dashboard/billing', icon: ReceiptText, label: 'Billing' },
     { href: '/dashboard/tasks', icon: ListChecks, label: 'Tasks' },
     { href: '/dashboard/finance', icon: CircleDollarSign, label: 'Finance' },
-    { href: '/dashboard/expenses', icon: Wallet, label: 'Expenses' },
+    { href: '/dashboard/expenses', icon: CreditCard, label: 'Expenses' },
     { href: '/dashboard/habits', icon: Flame, label: 'Habits' },
     { href: '/dashboard/diary', icon: BookText, label: 'Diary' },
     { href: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
