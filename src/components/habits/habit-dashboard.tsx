@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import type { Habit, HabitLog } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, doc, increment, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDocs, increment, query, serverTimestamp, setDoc, updateDoc, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format, subDays, isToday, isYesterday } from 'date-fns';
 import { HabitCard } from './habit-card';
@@ -98,6 +98,32 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
         }
     };
     
+    const handleDeleteHabit = async (habitId: string) => {
+        if (!user) return;
+
+        try {
+            const batch = writeBatch(db);
+
+            // 1. Delete the habit document itself
+            const habitRef = doc(db, 'habits', habitId);
+            batch.delete(habitRef);
+
+            // 2. Query for all logs associated with this habit and delete them
+            const logsQuery = query(collection(db, 'habitLogs'), where('habitId', '==', habitId));
+            const logsSnapshot = await getDocs(logsQuery);
+            logsSnapshot.forEach(logDoc => {
+                batch.delete(logDoc.ref);
+            });
+            
+            await batch.commit();
+            
+            toast({ title: 'Habit Deleted', description: 'The habit and all its logs have been removed.'});
+        } catch (error) {
+            console.error("Error deleting habit:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the habit.' });
+        }
+    };
+
     return (
         <div className='space-y-6'>
             <div className="flex justify-between items-center">
@@ -123,6 +149,7 @@ export function HabitDashboard({ habits, logs }: { habits: Habit[], logs: HabitL
                             log={todayLog}
                             streak={streak}
                             onLog={handleLogHabit}
+                            onDelete={handleDeleteHabit}
                         />
                     )
                 })}

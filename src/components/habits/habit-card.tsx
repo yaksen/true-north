@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import type { Habit, HabitLog } from '@/lib/types';
 import {
   Card,
@@ -12,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
-import { Flame, Repeat } from 'lucide-react';
+import { Flame, Edit, Trash2 } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import {
     Tooltip,
@@ -20,6 +21,9 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { HabitForm } from './habit-form';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 
 
 interface HabitCardProps {
@@ -27,10 +31,11 @@ interface HabitCardProps {
   log: HabitLog | undefined;
   streak: number;
   onLog: (habit: Habit, log: HabitLog | undefined) => void;
+  onDelete: (habitId: string) => void;
 }
 
-export function HabitCard({ habit, log, streak, onLog }: HabitCardProps) {
-
+export function HabitCard({ habit, log, streak, onLog, onDelete }: HabitCardProps) {
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const progress = habit.target > 0 ? ((log?.count || 0) / habit.target) * 100 : 0;
   const isComplete = habit.target > 0 && progress >= 100;
 
@@ -41,21 +46,49 @@ export function HabitCard({ habit, log, streak, onLog }: HabitCardProps) {
     <Card className={cn("flex flex-col justify-between", cardColorClass)}>
       <CardHeader>
         <div className='flex justify-between items-start'>
-            <span className="text-3xl">{habit.emoji}</span>
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger>
-                        <div className='flex items-center gap-1 text-orange-400'>
-                            <Flame className='h-5 w-5'/>
-                            <span className='font-bold text-lg'>{streak}</span>
-                        </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>{streak > 0 ? `${streak}-day streak!` : 'No streak yet. Keep going!'}</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
+            <div className='flex items-center gap-2'>
+                <span className="text-3xl">{habit.emoji}</span>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <div className='flex items-center gap-1 text-orange-400'>
+                                <Flame className='h-5 w-5'/>
+                                <span className='font-bold text-lg'>{streak}</span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{streak > 0 ? `${streak}-day streak!` : 'No streak yet. Keep going!'}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </div>
 
+            <div className="flex items-center">
+                <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader><DialogTitle>Edit Habit</DialogTitle></DialogHeader>
+                        <HabitForm habit={habit} closeForm={() => setIsEditOpen(false)} />
+                    </DialogContent>
+                </Dialog>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>This will permanently delete the habit and all its logs. This action cannot be undone.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDelete(habit.id)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
         </div>
         <CardTitle>{habit.name}</CardTitle>
         <CardDescription>
