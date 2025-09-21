@@ -56,6 +56,7 @@ export interface Project {
   emoji?: string;
   parentProjectId?: string;
   starred?: boolean;
+  hiddenTabs?: string[];
   createdAt: Date;
   updatedAt: Date;
   timezone?: string;
@@ -444,7 +445,7 @@ export interface Habit {
     emoji: string;
     type: HabitType;
     frequency: HabitFrequency;
-    target: number; // e.g. 3 times a day. 0 for unlimited.
+    target: number; // e.g., 3 times a day. 0 for unlimited.
     color: string;
     reward?: string;
     punishment?: string;

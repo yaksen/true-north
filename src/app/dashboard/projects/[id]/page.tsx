@@ -33,6 +33,22 @@ function toDate(timestamp: any): Date | undefined {
     return timestamp; // Already a Date object
 }
 
+const allProjectTabs = [
+    { value: 'dashboard', label: 'Dashboard' },
+    { value: 'leads', label: 'Leads' },
+    { value: 'channels', label: 'Channels' },
+    { value: 'vendors', label: 'Vendors' },
+    { value: 'partners', label: 'Partners' },
+    { value: 'products', label: 'P&S' },
+    { value: 'billing', label: 'Billing' },
+    { value: 'finance', label: 'Finance' },
+    { value: 'tasks', label: 'Tasks' },
+    { value: 'templates', label: 'Templates' },
+    { value: 'workspace', label: 'Workspace' },
+    { value: 'reports', label: 'Reports' },
+    { value: 'settings', label: 'Settings' },
+];
+
 
 export default function ProjectDetailPage() {
   const { user } = useAuth();
@@ -157,6 +173,8 @@ export default function ProjectDetailPage() {
       </div>
     );
   }
+  
+  const visibleTabs = allProjectTabs.filter(tab => !project.hiddenTabs?.includes(tab.value));
 
   return (
     <div className="flex flex-col gap-6">
@@ -165,21 +183,9 @@ export default function ProjectDetailPage() {
         <Tabs defaultValue="dashboard" className="w-full">
             <div className='overflow-x-auto'>
                 <TabsList className="min-w-max">
-                    <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                    <TabsTrigger value="leads">Leads</TabsTrigger>
-                    <TabsTrigger value="channels">Channels</TabsTrigger>
-                    <TabsTrigger value="vendors">Vendors</TabsTrigger>
-                    <TabsTrigger value="partners">Partners</TabsTrigger>
-                    <TabsTrigger value="products">P&S</TabsTrigger>
-                    <TabsTrigger value="billing">Billing</TabsTrigger>
-                    <TabsTrigger value="finance">Finance</TabsTrigger>
-                    <TabsTrigger value="tasks">Tasks</TabsTrigger>
-                    <TabsTrigger value="templates">Templates</TabsTrigger>
-                    <TabsTrigger value="workspace">
-                        Workspace
-                    </TabsTrigger>
-                    <TabsTrigger value="reports">Reports</TabsTrigger>
-                    <TabsTrigger value="settings">Settings</TabsTrigger>
+                   {visibleTabs.map(tab => (
+                        <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+                   ))}
                 </TabsList>
             </div>
             <TabsContent value="dashboard">

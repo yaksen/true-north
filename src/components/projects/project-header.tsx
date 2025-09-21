@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import type { Project } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, Lock } from 'lucide-react';
+import { ArrowLeft, Edit, Lock, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -16,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { useState } from 'react';
 import { ProjectForm } from './project-form';
+import { CustomizeTabsDialog } from './customize-tabs-dialog';
 
 interface ProjectHeaderProps {
   project: Project;
@@ -25,6 +27,7 @@ interface ProjectHeaderProps {
 export function ProjectHeader({ project, allProjects }: ProjectHeaderProps) {
   const router = useRouter();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-4">
@@ -33,21 +36,38 @@ export function ProjectHeader({ project, allProjects }: ProjectHeaderProps) {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Projects
         </Button>
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogTrigger asChild>
-                <Button size="sm" variant="outline">
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit Project
-                </Button>
-            </DialogTrigger>
-            <DialogContent className='max-w-2xl'>
-                <DialogHeader>
-                    <DialogTitle>Edit Project</DialogTitle>
-                    <DialogDescription>Update the details of your project.</DialogDescription>
-                </DialogHeader>
-                <ProjectForm project={project} allProjects={allProjects} closeForm={() => setIsEditDialogOpen(false)} />
-            </DialogContent>
-        </Dialog>
+        <div className='flex items-center gap-2'>
+            <Dialog open={isCustomizeOpen} onOpenChange={setIsCustomizeOpen}>
+                <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                        <Settings className="mr-2 h-4 w-4" />
+                        Customize
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Customize Project View</DialogTitle>
+                        <DialogDescription>Select the tabs you want to see for this project.</DialogDescription>
+                    </DialogHeader>
+                    <CustomizeTabsDialog project={project} closeDialog={() => setIsCustomizeOpen(false)} />
+                </DialogContent>
+            </Dialog>
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit Project
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className='max-w-2xl'>
+                    <DialogHeader>
+                        <DialogTitle>Edit Project</DialogTitle>
+                        <DialogDescription>Update the details of your project.</DialogDescription>
+                    </DialogHeader>
+                    <ProjectForm project={project} allProjects={allProjects} closeForm={() => setIsEditDialogOpen(false)} />
+                </DialogContent>
+            </Dialog>
+        </div>
       </div>
       <div>
         <div className='flex flex-col md:flex-row md:items-center md:gap-x-4 gap-y-2'>
