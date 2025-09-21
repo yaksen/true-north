@@ -96,12 +96,13 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <GoalTracker 
-            currentRevenue={globalSummary.totalRevenue} 
+            currentValue={globalSummary.totalPL} 
             goal={settings?.revenueGoal} 
             goalCurrency={settings?.goalCurrency}
             goalReward={settings?.goalReward}
             goalRewardEmoji={settings?.goalRewardEmoji}
-            currency={globalSummary.currency} 
+            currency={globalSummary.currency}
+            title="Profit/Loss Goal" 
         />
         <SummaryCards summary={globalSummary} />
       </div>

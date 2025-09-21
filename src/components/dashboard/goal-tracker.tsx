@@ -20,12 +20,13 @@ import { CurrencyInput } from '../ui/currency-input';
 import { Input } from '../ui/input';
 
 interface GoalTrackerProps {
-  currentRevenue: number;
+  currentValue: number;
   goal?: number;
   goalCurrency?: CurrencyCode;
   goalReward?: string;
   goalRewardEmoji?: string;
   currency: string;
+  title: string;
 }
 
 const chartConfig = {
@@ -54,7 +55,7 @@ const convert = (amount: number, from: string, to: string) => {
 };
 
 
-export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR', goalReward, goalRewardEmoji, currency }: GoalTrackerProps) {
+export function GoalTracker({ currentValue, goal = 10000, goalCurrency = 'LKR', goalReward, goalRewardEmoji, currency, title }: GoalTrackerProps) {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,7 +88,7 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
     return new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact' }).format(amount);
   };
 
-  const progress = convertedGoal > 0 ? Math.min((currentRevenue / convertedGoal) * 100, 100) : 0;
+  const progress = convertedGoal > 0 ? Math.min((currentValue / convertedGoal) * 100, 100) : 0;
   const isGoalReached = progress >= 100;
   const chartData = [{ name: 'revenue', value: progress, fill: 'hsl(var(--primary))' }];
 
@@ -100,10 +101,10 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
             goalReward: values.goalReward,
             goalRewardEmoji: values.goalRewardEmoji,
         }, { merge: true });
-        toast({ title: 'Success', description: 'Revenue goal updated!' });
+        toast({ title: 'Success', description: 'Goal updated!' });
         setIsDialogOpen(false);
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not update revenue goal.'});
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not update goal.'});
     } finally {
         setIsSubmitting(false);
     }
@@ -112,7 +113,7 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Revenue Goal</CardTitle>
+        <CardTitle>{title}</CardTitle>
         <CardDescription>
           {isGoalReached ? (
             <span className="font-semibold text-primary">{goalRewardEmoji} {goalReward || 'Goal Reached!'}</span>
@@ -172,7 +173,7 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
       </CardContent>
       <div className="flex flex-col gap-2 p-6 pt-0">
         <div className='text-center text-sm text-muted-foreground'>
-            {!isGoalReached && <p>{formatCurrency(currentRevenue)}</p>}
+            <p>{formatCurrency(currentValue)}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -180,7 +181,7 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
             </DialogTrigger>
             <DialogContent className='max-w-md'>
                 <DialogHeader>
-                    <DialogTitle>Set Monthly Revenue Goal</DialogTitle>
+                    <DialogTitle>Set Monthly Goal</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -189,7 +190,7 @@ export function GoalTracker({ currentRevenue, goal = 10000, goalCurrency = 'LKR'
                             name="revenueGoal"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Revenue Goal</FormLabel>
+                                <FormLabel>Goal Value</FormLabel>
                                 <FormControl>
                                     <CurrencyInput
                                         value={field.value}
