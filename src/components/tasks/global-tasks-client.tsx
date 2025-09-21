@@ -231,14 +231,14 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
     <>
       <div className="flex justify-between items-center gap-4 mb-4">
         <div className='flex items-center gap-2'>
-            <div className="flex items-center space-x-2">
+             <div className="flex items-center space-x-2">
                 <Checkbox id="hide-completed-global" checked={hideCompleted} onCheckedChange={(checked) => setHideCompleted(checked as boolean)} />
                 <label htmlFor="hide-completed-global" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                     Hide completed
                 </label>
             </div>
             <div className="flex items-center gap-1 p-1 border rounded-lg">
-                {(['today', 'tomorrow', 'day-after'] as DateFilter[]).map(df => (
+                {(['all', 'today', 'tomorrow', 'day-after'] as DateFilter[]).map(df => (
                     <Button key={df} variant={dateFilter === df ? 'secondary' : 'ghost'} size="sm" onClick={() => setDateFilter(df)} className="capitalize h-7">
                         {df.replace('-', ' ')}
                     </Button>
