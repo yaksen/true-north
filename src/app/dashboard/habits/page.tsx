@@ -21,12 +21,15 @@ export default function HabitsPage() {
     
     const habitsQuery = query(collection(db, `habits`), where('userId', '==', user.uid));
     const unsubscribeHabits = onSnapshot(habitsQuery, (snapshot) => {
-      setHabits(snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data(),
-        createdAt: doc.data().createdAt.toDate(),
-        updatedAt: doc.data().updatedAt.toDate(),
-      } as Habit)));
+      setHabits(snapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+            id: doc.id, 
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+            updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+        } as Habit;
+    }));
       setLoading(false);
     });
 
