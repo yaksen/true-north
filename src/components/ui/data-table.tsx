@@ -101,23 +101,54 @@ export function DataTable<TData extends {id: string, starred?: boolean} , TValue
   });
 
   const handleExport = () => {
-    const selectedRows = table.getFilteredSelectedRowModel().rows;
-    if (selectedRows.length === 0) {
-        alert("Please select rows to export.");
+    const rowsToExport = table.getFilteredSelectedRowModel().rows.length > 0
+      ? table.getFilteredSelectedRowModel().rows
+      : table.getFilteredRowModel().rows;
+
+    if (rowsToExport.length === 0) {
+        alert("No data to export.");
         return;
     }
 
-    const headers = columns.map(col => (col as any).accessorKey).filter(Boolean).join(',');
+    const headers = columns
+      .map(col => (col as any).accessorKey || col.id)
+      .filter(key => key && key !== 'select' && key !== 'actions' && key !== 'star')
+      .join(',');
+
     const csvContent = [
         headers,
-        ...selectedRows.map(row => 
-            columns.map(col => {
-                const key = (col as any).accessorKey;
-                if (!key) return '';
-                const value = row.original[key as keyof TData];
-                if (Array.isArray(value)) return `"${value.join(', ')}"`;
-                return `"${value}"`;
-            }).filter(val => val !== '""').join(',')
+        ...rowsToExport.map(row => 
+            columns
+                .map(col => {
+                    const key = (col as any).accessorKey || col.id;
+                    if (!key || key === 'select' || key === 'actions' || key === 'star') return null;
+
+                    let value = (row.original as any)[key];
+
+                    if (typeof (col as any).cell === 'function') {
+                        const cellValue = (col as any).cell({ row });
+                        if (typeof cellValue === 'string' || typeof cellValue === 'number') {
+                            value = cellValue;
+                        } else {
+                            // Attempt to get a primitive value from rendered component
+                            value = (cellValue as React.ReactElement)?.props?.children ?? (row.original as any)[key];
+                        }
+                    }
+
+                    if (value === null || value === undefined) value = '';
+                    if (value instanceof Date) value = value.toISOString();
+                    
+                    if (Array.isArray(value)) {
+                        return `"${value.map(v => typeof v === 'object' ? JSON.stringify(v) : v).join(', ')}"`;
+                    }
+                    if (typeof value === 'object') {
+                        return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
+                    }
+                    
+                    return `"${String(value).replace(/"/g, '""')}"`;
+                })
+                .filter(val => val !== null)
+                .join(',')
         )
     ].join('\n');
 
@@ -141,6 +172,7 @@ export function DataTable<TData extends {id: string, starred?: boolean} , TValue
   }
 
   const isRowSelected = table.getFilteredSelectedRowModel().rows.length > 0;
+  const hasData = table.getFilteredRowModel().rows.length > 0;
 
   if (!table) {
     return null; // or a loading indicator
@@ -186,7 +218,7 @@ export function DataTable<TData extends {id: string, starred?: boolean} , TValue
                         </AlertDialogContent>
                     </AlertDialog>
                 )}
-                <Button variant="outline" size="sm" onClick={handleExport} disabled={!isRowSelected} className='h-9'>
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={!hasData} className='h-9'>
                     <FileDown className='mr-2 h-4 w-4' />
                     Export
                 </Button>
