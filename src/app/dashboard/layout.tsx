@@ -140,6 +140,7 @@ export default function DashboardLayout({
     { href: '/dashboard/finance', icon: CircleDollarSign, label: 'Finance' },
     { href: '/dashboard/expenses', icon: Wallet, label: 'Expenses' },
     { href: '/dashboard/habits', icon: Flame, label: 'Habits' },
+    { href: '/dashboard/diary', icon: BookText, label: 'Diary' },
     { href: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
     { href: '/dashboard/vault', icon: Vault, label: 'Vault' },
   ];

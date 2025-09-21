@@ -462,3 +462,13 @@ export interface HabitLog {
     count: number;
     target: number;
 }
+
+export interface DiaryEntry {
+    id: string;
+    userId: string;
+    date: string; // YYYY-MM-DD
+    title: string;
+    content: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
