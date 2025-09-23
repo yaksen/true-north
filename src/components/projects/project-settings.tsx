@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -239,30 +238,31 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Troubleshooting API Connections</AlertDialogTitle>
                             <AlertDialogDescription>
-                                If the "Test Connection" fails, please verify the following in your Google Cloud Console for project <b className="text-primary">{process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}</b>:
+                                If the &quot;Test Connection&quot; fails, please verify the following in your Google Cloud Console for project <b className="text-primary">{process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}</b>.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <div className="text-sm space-y-4">
                             <div>
-                                <h4 className="font-semibold">1. Enable the APIs</h4>
+                                <h4 className="font-semibold">1. APIs & Services</h4>
                                 <ul className="list-disc list-inside text-muted-foreground">
-                                    <li>Enable the <b className="text-foreground">Google Drive API</b>.</li>
-                                    <li>Enable the <b className="text-foreground">Google People API</b>.</li>
+                                    <li>Ensure the <b className="text-foreground">Google Drive API</b> is ENABLED.</li>
+                                    <li>Ensure the <b className="text-foreground">Google People API</b> is ENABLED.</li>
                                 </ul>
                             </div>
                              <div>
-                                <h4 className="font-semibold">2. Configure OAuth Consent Screen</h4>
+                                <h4 className="font-semibold">2. OAuth Consent Screen</h4>
                                 <ul className="list-disc list-inside text-muted-foreground">
                                     <li>Set Publishing status to <b className="text-foreground">In production</b>.</li>
-                                    <li>Add the necessary scopes: `.../auth/drive.readonly` and `.../auth/contacts.readonly`.</li>
+                                    <li>Under Scopes, ensure you have added `.../auth/drive.readonly` and `.../auth/contacts.readonly`.</li>
                                     <li>Add your email address as a Test User if the app is not yet published.</li>
                                 </ul>
                             </div>
-                             <div>
-                                <h4 className="font-semibold">3. Check API Key Restrictions</h4>
+                            <div>
+                                <h4 className="font-semibold">3. Credentials</h4>
                                 <ul className="list-disc list-inside text-muted-foreground">
-                                    <li>Ensure your API key has no restrictions, or is correctly restricted to your domain.</li>
-                                    <li>Verify the key is enabled for the Drive and People APIs.</li>
+                                    <li>Verify you are using an <b className="text-foreground">OAuth 2.0 Client ID</b> for Web applications.</li>
+                                    <li>The Client ID must match: <b className='text-primary text-xs'>41964003868-3fnl6kgb6aejeju7q994erlragjfmcj4.apps.googleusercontent.com</b></li>
+                                    <li>Ensure your API key has no restrictions, or is correctly restricted to your application&apos;s domain.</li>
                                 </ul>
                             </div>
                         </div>
@@ -370,5 +370,3 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     </div>
   );
 }
-
-    
