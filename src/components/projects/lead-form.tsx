@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -14,14 +13,16 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2, PlusCircle, Trash2, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { Loader2, PlusCircle, Trash2, Sparkles, Image as ImageIcon, Mic, StopCircle } from 'lucide-react';
+import { useState, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { logActivity } from '@/lib/activity-log';
 import { v4 as uuidv4 } from 'uuid';
 import { extractLeadDetails, type ExtractLeadDetailsOutput } from '@/ai/flows/extract-lead-details-flow';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Separator } from '../ui/separator';
+import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 const leadStatuses = ['new', 'contacted', 'qualified', 'lost', 'converted'] as const;
 const socialPlatforms = ['LinkedIn', 'Twitter', 'GitHub', 'Facebook', 'Instagram', 'TikTok', 'Website'];
@@ -57,6 +58,11 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
   const [isExtracting, setIsExtracting] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiImage, setAiImage] = useState<File | null>(null);
+  const [pastedImage, setPastedImage] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(formSchema),
@@ -75,7 +81,7 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
       socials: [],
       notes: '',
       status: 'new',
-      channelId: channels[channels.length - 1]?.id || '',
+      channelId: channels.length > 0 ? channels[channels.length - 1].id : '',
     },
   });
 
@@ -87,10 +93,28 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
       setAiImage(event.target.files[0]);
+      const reader = new FileReader();
+      reader.onload = (e) => setPastedImage(e.target?.result as string);
+      reader.readAsDataURL(event.target.files[0]);
+    }
+  };
+
+  const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = event.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+            const blob = items[i].getAsFile();
+            if (blob) {
+                setAiImage(blob);
+                const reader = new FileReader();
+                reader.onload = (e) => setPastedImage(e.target?.result as string);
+                reader.readAsDataURL(blob);
+            }
+        }
     }
   };
   
-  const fileToDataUri = (file: File): Promise<string> => {
+  const fileToDataUri = (file: File | Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
@@ -99,12 +123,43 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
     });
   }
 
+  const startRecording = async () => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        audioChunksRef.current = [];
+        
+        mediaRecorderRef.current.ondataavailable = event => {
+            audioChunksRef.current.push(event.data);
+        };
+
+        mediaRecorderRef.current.onstop = () => {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            setAudioBlob(audioBlob);
+        };
+        
+        mediaRecorderRef.current.start();
+        setIsRecording(true);
+    } catch (error) {
+        console.error("Error accessing microphone:", error);
+        toast({ variant: 'destructive', title: 'Microphone Error', description: 'Could not access the microphone.' });
+    }
+  };
+
+  const stopRecording = () => {
+      if (mediaRecorderRef.current && isRecording) {
+          mediaRecorderRef.current.stop();
+          setIsRecording(false);
+      }
+  };
+
+
   const handleExtractDetails = async () => {
-    if (!aiPrompt && !aiImage) {
+    if (!aiPrompt && !aiImage && !audioBlob) {
         toast({
             variant: 'destructive',
             title: 'No Input Provided',
-            description: 'Please provide some text or an image for the AI to process.'
+            description: 'Please provide some text, an image, or a recording for the AI to process.'
         });
         return;
     }
@@ -112,10 +167,12 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
     setIsExtracting(true);
     try {
         const imageDataUri = aiImage ? await fileToDataUri(aiImage) : undefined;
+        const audioDataUri = audioBlob ? await fileToDataUri(audioBlob) : undefined;
         
         const extractedData: ExtractLeadDetailsOutput = await extractLeadDetails({
             prompt: aiPrompt,
-            imageDataUri: imageDataUri
+            imageDataUri: imageDataUri,
+            audioDataUri: audioDataUri,
         });
 
         if (extractedData.name) form.setValue('name', extractedData.name);
@@ -359,7 +416,7 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
                     AI Assistant
                 </CardTitle>
                 <CardDescription>
-                    Paste text or upload an image (like a business card) to automatically fill the form.
+                    Use text, an image, or a voice note to automatically fill the form.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -370,13 +427,36 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
                         placeholder="Paste an email signature, notes from a meeting, or details about a lead..."
                         value={aiPrompt}
                         onChange={(e) => setAiPrompt(e.target.value)}
-                        className="h-32"
+                        className="h-24"
                     />
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="ai-image">Image (e.g., Business Card)</Label>
-                    <Input id="ai-image" type="file" accept="image/*" onChange={handleFileChange} />
+                <div className="space-y-2">
+                    <Label>Image (e.g., Business Card)</Label>
+                    <div onPaste={handlePaste} className="relative flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary">
+                        {pastedImage ? (
+                            <Image src={pastedImage} alt="Pasted preview" layout="fill" objectFit="contain" className='rounded-lg' />
+                        ) : (
+                            <div className="text-center text-muted-foreground">
+                                <ImageIcon className='mx-auto h-8 w-8' />
+                                <p>Click to upload or paste an image</p>
+                            </div>
+                        )}
+                        <Input id="ai-image" type="file" accept="image/*" onChange={handleFileChange} className='absolute inset-0 w-full h-full opacity-0 cursor-pointer' />
+                    </div>
                 </div>
+                 <div className="space-y-2">
+                    <Label>Voice Note</Label>
+                    <div className='flex items-center gap-2'>
+                        <Button type='button' onClick={isRecording ? stopRecording : startRecording} variant={isRecording ? 'destructive' : 'outline'} size='icon'>
+                           {isRecording ? <StopCircle /> : <Mic />}
+                        </Button>
+                        {audioBlob && (
+                            <audio src={URL.createObjectURL(audioBlob)} controls className='w-full h-10'/>
+                        )}
+                        {isRecording && <p className='text-sm text-muted-foreground animate-pulse'>Recording...</p>}
+                    </div>
+                </div>
+
                 <Button className='w-full' onClick={handleExtractDetails} disabled={isExtracting}>
                     {isExtracting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Extract Details
@@ -386,5 +466,3 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
     </div>
   );
 }
-
-    

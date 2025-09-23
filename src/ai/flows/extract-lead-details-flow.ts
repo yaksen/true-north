@@ -11,8 +11,9 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const ExtractLeadDetailsInputSchema = z.object({
-  prompt: z.string().describe('Unstructured text containing lead information. Can be from an email, a note, or transcribed from an image.'),
+  prompt: z.string().describe('Unstructured text containing lead information. Can be from an email, a note, or transcribed from an image or audio.'),
   imageDataUri: z.string().optional().describe("A photo of a business card or contact info, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
+  audioDataUri: z.string().optional().describe("An audio recording of lead information, as a data URI that must include a MIME type and use Base64 encoding."),
 });
 export type ExtractLeadDetailsInput = z.infer<typeof ExtractLeadDetailsInputSchema>;
 
@@ -33,9 +34,9 @@ const prompt = ai.definePrompt({
   name: 'extractLeadDetailsPrompt',
   input: { schema: ExtractLeadDetailsInputSchema },
   output: { schema: ExtractLeadDetailsOutputSchema },
-  prompt: `You are an expert data entry assistant. Your task is to extract contact information from the provided text and/or image. Identify the person's full name, email address, phone number, and any social media URLs.
+  prompt: `You are an expert data entry assistant. Your task is to extract contact information from the provided text, image, and/or audio. Identify the person's full name, email address, phone number, and any social media URLs.
 
-If an image is provided, it is likely a business card or screenshot. Prioritize the information from the image if it's available. Use the text prompt for additional context or information that might not be in the image.
+If an image or audio is provided, prioritize information from it. Use the text prompt for additional context.
 
 Extract all social media links you can find. For each link, identify the platform (e.g., LinkedIn, Twitter, GitHub, Website).
 
@@ -46,6 +47,12 @@ Data:
 [Image Content]
 {{media url=imageDataUri}}
 [End Image Content]
+{{/if}}
+
+{{#if audioDataUri}}
+[Audio Content]
+{{media url=audioDataUri}}
+[End Audio Content]
 {{/if}}
 
 [Text Content]
