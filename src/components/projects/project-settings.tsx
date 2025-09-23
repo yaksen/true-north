@@ -181,7 +181,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           if (type === 'drive') {
               url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
           } else {
-              url = `https://people.googleapis.com/v1/people/me/connections?personFields=names&pageSize=5&key=${apiKey}`;
+              url = `https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses&pageSize=5&key=${apiKey}`;
           }
           
           const response = await fetch(url, {
@@ -203,7 +203,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           if (type === 'drive') {
               items = data.files?.map((file: any) => file.name) || [];
           } else {
-              items = data.connections?.map((person: any) => person.names?.[0]?.displayName || 'Unnamed Contact') || [];
+              items = data.connections?.map((person: any) => person.names?.[0]?.displayName || person.emailAddresses?.[0]?.value || 'Unnamed Contact') || [];
           }
           setTestResult({type, items});
 
@@ -281,7 +281,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Troubleshooting API Connections</AlertDialogTitle>
                         <AlertDialogDescription>
-                            If the &quot;Test Connection&quot; fails, please verify the following in your Google Cloud Console for project <b className="text-primary">{process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}</b>.
+                            If a `403 Forbidden` error occurs, please verify the following in your Google Cloud Console for project <b className="text-primary">{process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}</b>.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <div className="text-sm space-y-4">
@@ -417,6 +417,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     </div>
   );
 }
+
 
 
 
