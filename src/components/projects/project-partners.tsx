@@ -62,7 +62,7 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
               <DialogTrigger asChild>
                 <Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Partner</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-4xl">
                 <DialogHeader>
                   <DialogTitle>Add New Partner</DialogTitle>
                 </DialogHeader>

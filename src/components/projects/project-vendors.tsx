@@ -62,7 +62,7 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
               <DialogTrigger asChild>
                 <Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Vendor</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-4xl">
                 <DialogHeader>
                   <DialogTitle>Add New Vendor</DialogTitle>
                 </DialogHeader>
