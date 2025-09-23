@@ -3,14 +3,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Project, ProjectMember } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { Project } from '@/lib/types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { logActivity } from '@/lib/activity-log';
 import { MembersList } from './members-list';
-import { Loader2, Trash2, UserPlus } from 'lucide-react';
+import { Loader2, Trash2, UserPlus, File, User as UserIcon } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,10 +21,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteDoc, doc, updateDoc, arrayUnion, getDocs, collection, query, where } from 'firebase/firestore';
+import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { MemberForm } from './member-form';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 function GoogleDriveIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -59,8 +60,10 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
 
   const [isDriveConnecting, setIsDriveConnecting] = useState(false);
   const [isContactsConnecting, setIsContactsConnecting] = useState(false);
-  const [isDriveConnected, setIsDriveConnected] = useState(false);
-  const [isContactsConnected, setIsContactsConnected] = useState(false);
+  const [driveAccessToken, setDriveAccessToken] = useState<string | null>(null);
+  const [contactsAccessToken, setContactsAccessToken] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<string[] | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
 
   const isOwner = user?.uid === project.ownerUid;
 
@@ -72,9 +75,6 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'projects', project.id));
-      // Note: logging activity for a deleted project might fail or be orphaned.
-      // Consider a different logging strategy for deletions.
-      
       toast({ title: 'Success', description: 'Project has been permanently deleted.' });
       router.push('/dashboard/projects');
     } catch (error) {
@@ -84,24 +84,83 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     }
   }
 
-  const handleConnectDrive = async () => {
-    setIsDriveConnecting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsDriveConnected(true);
-    setIsDriveConnecting(false);
-    toast({ title: 'Success', description: 'Google Drive connected.' });
+  const handleConnect = async (type: 'drive' | 'contacts') => {
+    const provider = new GoogleAuthProvider();
+    if (type === 'drive') {
+      setIsDriveConnecting(true);
+      provider.addScope('https://www.googleapis.com/auth/drive.readonly');
+    } else {
+      setIsContactsConnecting(true);
+      provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
+    }
+
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        if (type === 'drive') {
+          setDriveAccessToken(credential.accessToken);
+        } else {
+          setContactsAccessToken(credential.accessToken);
+        }
+        toast({ title: 'Success', description: `Successfully connected to Google ${type === 'drive' ? 'Drive' : 'Contacts'}.` });
+      } else {
+        throw new Error('No access token received.');
+      }
+    } catch (error) {
+      console.error(`Google ${type} connection error:`, error);
+      toast({ variant: 'destructive', title: 'Connection Failed', description: `Could not connect to Google ${type === 'drive' ? 'Drive' : 'Contacts'}.` });
+    } finally {
+      setIsDriveConnecting(false);
+      setIsContactsConnecting(false);
+    }
   };
 
-  const handleConnectContacts = async () => {
-    setIsContactsConnecting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsContactsConnected(true);
-    setIsContactsConnecting(false);
-    toast({ title: 'Success', description: 'Google Contacts connected.' });
-  };
+  const testConnection = async (type: 'drive' | 'contacts') => {
+      const token = type === 'drive' ? driveAccessToken : contactsAccessToken;
+      if (!token) {
+          toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to the service first.' });
+          return;
+      }
+      setIsTesting(true);
+      setTestResult(null);
 
+      try {
+          let url = '';
+          if (type === 'drive') {
+              url = 'https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)';
+          } else {
+              url = 'https://people.googleapis.com/v1/people/me/connections?personFields=names&pageSize=5';
+          }
+          
+          const response = await fetch(url, {
+              headers: { 'Authorization': `Bearer ${token}` }
+          });
+
+          if (!response.ok) {
+              throw new Error(`API call failed with status: ${response.status}`);
+          }
+          
+          const data = await response.json();
+
+          if (type === 'drive') {
+              setTestResult(data.files.map((file: any) => file.name));
+          } else {
+              setTestResult(data.connections.map((person: any) => person.names[0].displayName));
+          }
+
+      } catch (error) {
+          console.error(`Test connection error for ${type}:`, error);
+          toast({ variant: 'destructive', title: 'Test Failed', description: 'Could not fetch test data.' });
+          // If token is expired, clear it to force re-login
+          if ((error as Error).message.includes('401') || (error as Error).message.includes('403')) {
+            if (type === 'drive') setDriveAccessToken(null);
+            else setContactsAccessToken(null);
+          }
+      } finally {
+          setIsTesting(false);
+      }
+  };
 
   return (
     <div className="grid gap-6 mt-4 max-w-4xl mx-auto">
@@ -144,10 +203,15 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                         <p className="text-sm text-muted-foreground">Sync reports and files.</p>
                     </div>
                 </div>
-                {isDriveConnected ? (
-                  <Button variant="secondary" disabled>Connected</Button>
+                {driveAccessToken ? (
+                  <div className='flex gap-2'>
+                    <Button variant="secondary" onClick={() => testConnection('drive')} disabled={isTesting}>
+                      {isTesting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
+                    </Button>
+                     <Button variant="outline" onClick={() => setDriveAccessToken(null)}>Disconnect</Button>
+                  </div>
                 ) : (
-                  <Button variant="outline" onClick={handleConnectDrive} disabled={isDriveConnecting}>
+                  <Button variant="outline" onClick={() => handleConnect('drive')} disabled={isDriveConnecting}>
                       {isDriveConnecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Connect
                   </Button>
@@ -161,15 +225,33 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                         <p className="text-sm text-muted-foreground">Import contacts as leads.</p>
                     </div>
                 </div>
-                {isContactsConnected ? (
-                    <Button variant="secondary" disabled>Connected</Button>
+                {contactsAccessToken ? (
+                    <div className='flex gap-2'>
+                        <Button variant="secondary" onClick={() => testConnection('contacts')} disabled={isTesting}>
+                          {isTesting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
+                        </Button>
+                        <Button variant="outline" onClick={() => setContactsAccessToken(null)}>Disconnect</Button>
+                    </div>
                 ) : (
-                    <Button variant="outline" onClick={handleConnectContacts} disabled={isContactsConnecting}>
+                    <Button variant="outline" onClick={() => handleConnect('contacts')} disabled={isContactsConnecting}>
                         {isContactsConnecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Connect
                     </Button>
                 )}
             </div>
+            {testResult && (
+                <div className='p-4 bg-muted rounded-lg'>
+                    <h4 className='font-semibold text-sm mb-2'>Test Results:</h4>
+                    <ul className='space-y-1 text-sm text-muted-foreground'>
+                        {testResult.map((item, index) => (
+                            <li key={index} className='flex items-center gap-2'>
+                                {driveAccessToken && !contactsAccessToken ? <File className='h-4 w-4' /> : <UserIcon className='h-4 w-4' />}
+                                {item}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
         </CardContent>
       </Card>
       
