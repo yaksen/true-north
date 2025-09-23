@@ -23,7 +23,6 @@ import { db } from "@/lib/firebase";
 import { logActivity } from "@/lib/activity-log";
 import { cn } from "@/lib/utils";
 import { QrCodeModal } from "../qr-code-modal";
-import { createGoogleContact } from "@/app/actions/google-contacts";
 
 
 interface ColumnDependencies {
@@ -40,7 +39,6 @@ const ActionsCell: React.FC<{ lead: Lead, dependencies: ColumnDependencies }> = 
     const [isTaskOpen, setIsTaskOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isQrOpen, setIsQrOpen] = useState(false);
-    const [isSavingContact, setIsSavingContact] = useState(false);
 
     const handleDelete = async () => {
         if (!user) return;
@@ -53,37 +51,6 @@ const ActionsCell: React.FC<{ lead: Lead, dependencies: ColumnDependencies }> = 
         }
     };
     
-    const handleSaveToContacts = async () => {
-        if (!dependencies.project.googleContactsAccessToken) {
-            toast({
-                variant: 'destructive',
-                title: 'Not Connected',
-                description: 'Please connect to Google Contacts in project settings first.'
-            });
-            return;
-        }
-
-        setIsSavingContact(true);
-        try {
-            await createGoogleContact({
-                accessToken: dependencies.project.googleContactsAccessToken,
-                name: lead.name,
-                email: lead.email,
-                phone: lead.phone,
-            });
-            toast({ title: 'Success', description: `${lead.name} saved to Google Contacts.`});
-        } catch (error: any) {
-            console.error(error);
-            toast({
-                variant: 'destructive',
-                title: 'Failed to Save Contact',
-                description: error.message || 'An unknown error occurred.'
-            });
-        } finally {
-            setIsSavingContact(false);
-        }
-    };
-
 
     return (
         <>
@@ -123,10 +90,6 @@ const ActionsCell: React.FC<{ lead: Lead, dependencies: ColumnDependencies }> = 
                     </AlertDialog>
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={handleSaveToContacts} disabled={isSavingContact}>
-                        {isSavingContact ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ContactIcon className="mr-2 h-4 w-4" />}
-                        Save to Google Contacts
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setIsFinanceOpen(true)}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Log Finance
                     </DropdownMenuItem>
