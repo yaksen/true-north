@@ -61,8 +61,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   
-  // States are now initialized from the project prop
-  const [apiKey, setApiKey] = useState(project.googleApiKey || '');
+  const [apiKey, setApiKey] = useState(project.googleApiKey || process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '');
   const [tokens, setTokens] = useState({
       drive: project.googleDriveAccessToken || null,
       contacts: project.googleContactsAccessToken || null,
@@ -73,7 +72,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
-    setApiKey(project.googleApiKey || '');
+    setApiKey(project.googleApiKey || process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '');
     setTokens({
       drive: project.googleDriveAccessToken || null,
       contacts: project.googleContactsAccessToken || null,
@@ -196,21 +195,21 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                   // Token expired or revoked, disconnect it
                   await handleDisconnect(type);
               }
-              throw new Error(`API call failed with status: ${response.status}`);
+              throw new Error(`API call failed with status: ${response.status}. Check console for details.`);
           }
           
           const data = await response.json();
           let items: string[] = [];
           if (type === 'drive') {
-              items = data.files.map((file: any) => file.name);
+              items = data.files?.map((file: any) => file.name) || [];
           } else {
               items = data.connections?.map((person: any) => person.names?.[0]?.displayName || 'Unnamed Contact') || [];
           }
           setTestResult({type, items});
 
-      } catch (error) {
+      } catch (error: any) {
           console.error(`Test connection error for ${type}:`, error);
-          toast({ variant: 'destructive', title: 'Test Failed', description: 'Could not fetch test data. Your token might have expired. Please try disconnecting and reconnecting.' });
+          toast({ variant: 'destructive', title: 'Test Failed', description: error.message || 'Could not fetch test data. Your token might have expired. Please try disconnecting and reconnecting.' });
       } finally {
           setIsTesting(false);
       }
@@ -306,7 +305,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                             <ul className="list-disc list-inside text-muted-foreground">
                                 <li>Verify you are using an <b className="text-foreground">OAuth 2.0 Client ID</b> for Web applications.</li>
                                 <li>The Client ID must match: <b className='text-primary text-xs'>41964003868-3fnl6kgb6aejeju7q994erlragjfmcj4.apps.googleusercontent.com</b></li>
-                                <li>Ensure your API key has no restrictions, or is correctly restricted to your application&apos;s domain.</li>
+                                <li>Ensure your API key has no restrictions, or is correctly restricted to your application's domain.</li>
                             </ul>
                         </div>
                     </div>
@@ -365,14 +364,18 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
             {testResult && (
                 <div className='p-4 bg-muted rounded-lg'>
                     <h4 className='font-semibold text-sm mb-2'>Test Results (First {testResult.items.length} items):</h4>
-                    <ul className='space-y-1 text-sm text-muted-foreground'>
-                        {testResult.items.map((item, index) => (
-                            <li key={index} className='flex items-center gap-2'>
-                                {testResult.type === 'drive' ? <File className='h-4 w-4' /> : <UserIcon className='h-4 w-4' />}
-                                {item}
-                            </li>
-                        ))}
-                    </ul>
+                    {testResult.items.length > 0 ? (
+                        <ul className='space-y-1 text-sm text-muted-foreground'>
+                            {testResult.items.map((item, index) => (
+                                <li key={index} className='flex items-center gap-2'>
+                                    {testResult.type === 'drive' ? <File className='h-4 w-4' /> : <UserIcon className='h-4 w-4' />}
+                                    {item}
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">No items found. This could be because your Google Drive or Contacts list is empty, or due to permission settings.</p>
+                    )}
                 </div>
             )}
         </CardContent>
@@ -414,5 +417,6 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     </div>
   );
 }
+
 
 
