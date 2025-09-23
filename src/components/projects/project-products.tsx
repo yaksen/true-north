@@ -216,7 +216,7 @@ export function ProjectProducts({ project, categories, services, products, packa
           </Dialog>
           <Dialog open={isProductFormOpen} onOpenChange={setIsProductFormOpen}>
             <DialogTrigger asChild><Button size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> Product</Button></DialogTrigger>
-            <DialogContent><DialogHeader><DialogTitle>Create New Product</DialogTitle></DialogHeader><ProductForm project={project} categories={categories} closeForm={() => setIsProductFormOpen(false)} /></DialogContent>
+            <DialogContent className='max-w-4xl'><DialogHeader><DialogTitle>Create New Product</DialogTitle></DialogHeader><ProductForm project={project} categories={categories} closeForm={() => setIsProductFormOpen(false)} /></DialogContent>
           </Dialog>
           <Dialog open={isPackageFormOpen} onOpenChange={setIsPackageFormOpen}>
             <DialogTrigger asChild><Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> Package</Button></DialogTrigger>
