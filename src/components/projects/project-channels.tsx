@@ -89,7 +89,7 @@ export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
                             <DialogTrigger asChild>
                                 <Button size="sm"><PlusCircle className="mr-2"/> Add Channel</Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="max-w-4xl">
                                 <DialogHeader>
                                     <DialogTitle>Add New Channel</DialogTitle>
                                 </DialogHeader>

@@ -13,11 +13,15 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { logActivity } from '@/lib/activity-log';
 import { v4 as uuidv4 } from 'uuid';
+import { extractChannelDetails, type ExtractChannelDetailsOutput } from '@/ai/flows/extract-channel-details-flow';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Label } from '../ui/label';
+
 
 const channelStatuses = ['new', 'active', 'inactive', 'closed'] as const;
 const channelPlatforms = ['Instagram', 'Facebook', 'Twitter', 'LinkedIn', 'Website', 'Referral', 'Other'];
@@ -44,6 +48,9 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiImage, setAiImage] = useState<File | null>(null);
 
   const form = useForm<ChannelFormValues>({
     resolver: zodResolver(formSchema),
@@ -60,6 +67,64 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
       status: 'new',
     },
   });
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setAiImage(event.target.files[0]);
+    }
+  };
+  
+  const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const handleExtractDetails = async () => {
+    if (!aiPrompt && !aiImage) {
+        toast({
+            variant: 'destructive',
+            title: 'No Input Provided',
+            description: 'Please provide some text or an image for the AI to process.'
+        });
+        return;
+    }
+
+    setIsExtracting(true);
+    try {
+        const imageDataUri = aiImage ? await fileToDataUri(aiImage) : undefined;
+        
+        const extractedData: ExtractChannelDetailsOutput = await extractChannelDetails({
+            prompt: aiPrompt,
+            imageDataUri: imageDataUri
+        });
+
+        if (extractedData.name) form.setValue('name', extractedData.name);
+        if (extractedData.platform && channelPlatforms.includes(extractedData.platform)) {
+          form.setValue('platform', extractedData.platform);
+        }
+        if (extractedData.url) form.setValue('url', extractedData.url);
+
+        toast({
+            title: 'Details Extracted',
+            description: 'The AI has filled the form with the extracted details. Please review them.'
+        });
+
+    } catch (error) {
+        console.error('Error extracting channel details:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Extraction Failed',
+            description: 'The AI could not extract details. Please try again.'
+        });
+    } finally {
+        setIsExtracting(false);
+    }
+};
+
 
   async function onSubmit(values: ChannelFormValues) {
     if (!user) {
@@ -94,111 +159,144 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+    <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+        <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Channel Name</FormLabel>
+                    <FormControl>
+                        <Input placeholder="e.g. Summer Campaign Website" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                    control={form.control}
+                    name="sku"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>SKU</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Auto-generated SKU" {...field} readOnly />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="platform"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Platform</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Platform" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {channelPlatforms.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="url"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>URL</FormLabel>
+                            <FormControl>
+                                <Input placeholder="https://example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+
+            <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            {channelStatuses.map(status => (
+                                <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
             <FormField
             control={form.control}
-            name="name"
+            name="notes"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Channel Name</FormLabel>
+                <FormLabel>Notes</FormLabel>
                 <FormControl>
-                    <Input placeholder="e.g. Summer Campaign Website" {...field} />
+                    <Textarea placeholder="Internal notes about the channel..." {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
             )}
             />
-            <FormField
-                control={form.control}
-                name="sku"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>SKU</FormLabel>
-                    <FormControl>
-                        <Input placeholder="Auto-generated SKU" {...field} readOnly />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-             <FormField
-                control={form.control}
-                name="platform"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Platform</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Platform" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {channelPlatforms.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="url"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>URL</FormLabel>
-                        <FormControl>
-                            <Input placeholder="https://example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-        </div>
-
-        <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                    <SelectContent>
-                        {channelStatuses.map(status => (
-                            <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <FormMessage />
-                </FormItem>
-            )}
-        />
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notes</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Internal notes about the channel..." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {channel ? 'Update' : 'Create'} Channel
-          </Button>
-        </div>
-      </form>
-    </Form>
+            
+            <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {channel ? 'Update' : 'Create'} Channel
+            </Button>
+            </div>
+        </form>
+        </Form>
+        <Card className='h-fit'>
+            <CardHeader>
+                <CardTitle className='flex items-center gap-2'>
+                    <Sparkles className='h-5 w-5 text-primary' />
+                    AI Assistant
+                </CardTitle>
+                <CardDescription>
+                    Paste text or upload an image to automatically fill the form.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="ai-prompt">Text or Prompt</Label>
+                    <Textarea
+                        id="ai-prompt"
+                        placeholder="e.g., 'Our main blog at example.com/blog' or paste channel info..."
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        className="h-32"
+                    />
+                </div>
+                    <div className="space-y-2">
+                    <Label htmlFor="ai-image">Image</Label>
+                    <Input id="ai-image" type="file" accept="image/*" onChange={handleFileChange} />
+                </div>
+                <Button className='w-full' onClick={handleExtractDetails} disabled={isExtracting}>
+                    {isExtracting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Extract Details
+                </Button>
+            </CardContent>
+        </Card>
+    </div>
   );
 }
