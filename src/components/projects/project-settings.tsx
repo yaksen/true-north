@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Project, ProjectMember } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { MembersList } from './members-list';
@@ -69,7 +69,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
 
   const [isConnecting, setIsConnecting] = useState<'drive' | 'contacts' | null>(null);
   const [testResult, setTestResult] = useState<{type: 'drive' | 'contacts', items: string[]} | null>(null);
-  const [isTesting, setIsTesting] = useState(false);
+  const [testingConnection, setTestingConnection] = useState<'drive' | 'contacts' | null>(null);
 
   useEffect(() => {
     setApiKey(project.googleApiKey || process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '');
@@ -173,7 +173,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         });
         return;
       }
-      setIsTesting(true);
+      setTestingConnection(type);
       setTestResult(null);
 
       try {
@@ -182,7 +182,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
               url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
           } else {
               const personFields = encodeURIComponent('names,emailAddresses');
-              url = `https://people.googleapis.com/v1/people/me/connections?personFields=${personFields}&key=${apiKey}`;
+              url = `https://people.googleapis.com/v1/people/me?personFields=names&key=${apiKey}`;
           }
           
           const response = await fetch(url, {
@@ -204,7 +204,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           if (type === 'drive') {
               items = data.files?.map((file: any) => file.name) || [];
           } else {
-              items = data.connections?.map((person: any) => person.names?.[0]?.displayName).filter(Boolean) || [];
+              items = data.names?.map((name: any) => name.displayName).filter(Boolean) || [];
           }
           setTestResult({type, items});
 
@@ -212,7 +212,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           console.error(`Test connection error for ${type}:`, error);
           toast({ variant: 'destructive', title: 'Test Failed', description: error.message || 'Could not fetch test data. Your token might have expired. Please try disconnecting and reconnecting.' });
       } finally {
-          setIsTesting(false);
+          setTestingConnection(null);
       }
   };
 
@@ -328,8 +328,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                 </div>
                 {tokens.drive ? (
                   <div className='flex gap-2'>
-                    <Button variant="secondary" onClick={() => testConnection('drive')} disabled={isTesting}>
-                      {isTesting && isConnecting !== 'drive' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
+                    <Button variant="secondary" onClick={() => testConnection('drive')} disabled={testingConnection !== null}>
+                      {testingConnection === 'drive' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
                     </Button>
                      <Button variant="outline" onClick={() => handleDisconnect('drive')}>Disconnect</Button>
                   </div>
@@ -350,8 +350,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                 </div>
                 {tokens.contacts ? (
                     <div className='flex gap-2'>
-                        <Button variant="secondary" onClick={() => testConnection('contacts')} disabled={isTesting}>
-                          {isTesting && isConnecting !== 'contacts' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
+                        <Button variant="secondary" onClick={() => testConnection('contacts')} disabled={testingConnection !== null}>
+                          {testingConnection === 'contacts' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
                         </Button>
                         <Button variant="outline" onClick={() => handleDisconnect('contacts')}>Disconnect</Button>
                     </div>
