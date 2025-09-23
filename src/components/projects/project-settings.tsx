@@ -181,8 +181,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           if (type === 'drive') {
               url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
           } else {
-              const personFields = encodeURIComponent('names,emailAddresses');
-              url = `https://people.googleapis.com/v1/people/me?personFields=names&key=${apiKey}`;
+              url = `https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses&key=${apiKey}`;
           }
           
           const response = await fetch(url, {
