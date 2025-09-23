@@ -88,7 +88,7 @@ export function ProjectProducts({ project, categories, services, products, packa
 
   const categoryColumns = useMemo(() => getCategoriesColumns(handleStar('categories')), []);
   const serviceColumns = useMemo(() => getServicesColumns({ categories, project, onStar: handleStar('services') }, displayCurrency), [categories, project, displayCurrency]);
-  const productColumns = useMemo(() => getProductsColumns({ categories, onStar: handleStar('products') }, displayCurrency), [categories, displayCurrency]);
+  const productColumns = useMemo(() => getProductsColumns({ categories, project, onStar: handleStar('products') }, displayCurrency), [categories, project, displayCurrency]);
 
 
   const filteredServices = useMemo(() => {

@@ -2,7 +2,7 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Product, Category } from "@/lib/types";
+import { Product, Category, Project } from "@/lib/types";
 import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -21,6 +21,7 @@ import { Checkbox } from "../ui/checkbox";
 interface ColumnDependencies {
     categories: Category[];
     onStar: (id: string, starred: boolean) => void;
+    project: Project;
 }
 
 // Mock conversion rates - replace with a real API call in a real app
@@ -37,7 +38,7 @@ const ActionsCell: React.FC<{ product: Product, dependencies: Omit<ColumnDepende
     const { toast } = useToast();
     const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const { categories } = dependencies;
+    const { categories, project } = dependencies;
 
     const handleDelete = async () => {
         if (!user) return;
@@ -76,7 +77,7 @@ const ActionsCell: React.FC<{ product: Product, dependencies: Omit<ColumnDepende
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent>
                     <DialogHeader><DialogTitle>Edit Product</DialogTitle></DialogHeader>
-                    <ProductForm product={product} categories={categories} closeForm={() => setIsEditOpen(false)} />
+                    <ProductForm product={product} project={project} categories={categories} closeForm={() => setIsEditOpen(false)} />
                 </DialogContent>
             </Dialog>
         </>
