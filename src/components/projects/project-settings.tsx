@@ -68,8 +68,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   });
 
   const [isConnecting, setIsConnecting] = useState<'drive' | 'contacts' | null>(null);
-  const [testResult, setTestResult] = useState<{type: 'drive' | 'contacts', items: string[]} | null>(null);
-  const [testingConnection, setTestingConnection] = useState<'drive' | 'contacts' | null>(null);
+  const [testResult, setTestResult] = useState<{type: 'drive' | 'contacts', items: string[], title: string} | null>(null);
+  const [testingConnection, setTestingConnection] = useState<string | null>(null);
 
   useEffect(() => {
     setApiKey(project.googleApiKey || process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '');
@@ -159,8 +159,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     }
   };
 
-  const testConnection = async (type: 'drive' | 'contacts') => {
-      const token = tokens[type];
+  const testConnection = async (testType: string) => {
+      const token = tokens.contacts;
       if (!token) {
           toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to the service first.' });
           return;
@@ -173,42 +173,67 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         });
         return;
       }
-      setTestingConnection(type);
+      setTestingConnection(testType);
       setTestResult(null);
 
+      let url = '';
+      let title = '';
+
+      switch(testType) {
+        case 'contacts-profile':
+            url = `https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses`;
+            title = 'Test 1: Fetched User Profile';
+            break;
+        case 'contacts-connections':
+            url = `https://people.googleapis.com/v1/people/me/connections?resourceName=people/me`;
+            title = 'Test 2: Listed Connections';
+            break;
+        case 'contacts-connections-fields':
+            url = `https://people.googleapis.com/v1/people/me/connections?resourceName=people/me&personFields=names,emailAddresses`;
+            title = 'Test 3: Listed Connections with Fields';
+            break;
+        case 'drive':
+             url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
+             title = 'Test: Fetched Drive Files';
+             break;
+        default:
+            toast({ variant: 'destructive', title: 'Invalid test type' });
+            setTestingConnection(null);
+            return;
+      }
+
+
       try {
-          let url = '';
-          if (type === 'drive') {
-              url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
-          } else {
-              url = `https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses&key=${apiKey}`;
-          }
-          
           const response = await fetch(url, {
-              headers: { 'Authorization': `Bearer ${token}` }
+              headers: { 
+                  'Authorization': `Bearer ${testType.startsWith('contacts') ? tokens.contacts : tokens.drive}`,
+                  'Accept': 'application/json',
+              }
           });
 
           if (!response.ok) {
               const errorData = await response.json();
-              console.error('API Error:', errorData);
+              console.error(`API Error for ${testType}:`, errorData);
               if (response.status === 401 || response.status === 403) {
-                  // Token expired or revoked, disconnect it
-                  await handleDisconnect(type);
+                  await handleDisconnect(testType.startsWith('contacts') ? 'contacts' : 'drive');
               }
               throw new Error(`API call failed with status: ${response.status}. Check console for details.`);
           }
           
           const data = await response.json();
           let items: string[] = [];
-          if (type === 'drive') {
+
+          if (testType === 'drive') {
               items = data.files?.map((file: any) => file.name) || [];
-          } else {
-              items = data.names?.map((name: any) => name.displayName).filter(Boolean) || [];
+          } else if (testType === 'contacts-profile') {
+              items = data.names?.map((name: any) => name.displayName).filter(Boolean) || ["Profile loaded"];
+          } else if (testType.startsWith('contacts-connections')) {
+              items = data.connections?.map((c: any) => c.names?.[0]?.displayName).filter(Boolean) || ["No contacts found, but connection is OK."];
           }
-          setTestResult({type, items});
+          setTestResult({type: 'contacts', items, title});
 
       } catch (error: any) {
-          console.error(`Test connection error for ${type}:`, error);
+          console.error(`Test connection error for ${testType}:`, error);
           toast({ variant: 'destructive', title: 'Test Failed', description: error.message || 'Could not fetch test data. Your token might have expired. Please try disconnecting and reconnecting.' });
       } finally {
           setTestingConnection(null);
@@ -296,7 +321,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                             <h4 className="font-semibold">2. OAuth Consent Screen</h4>
                             <ul className="list-disc list-inside text-muted-foreground">
                                 <li>Set Publishing status to <b className="text-foreground">In production</b>.</li>
-                                <li>Under Scopes, ensure you have added `.../auth/drive.readonly` and `.../auth/contacts.readonly`.</li>
+                                <li>Under Scopes, ensure you have added `.../auth/drive.readonly` and `.../auth/contacts`.</li>
                                 <li>Add your email address as a Test User if the app is not yet published.</li>
                             </ul>
                         </div>
@@ -348,11 +373,19 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                     </div>
                 </div>
                 {tokens.contacts ? (
-                    <div className='flex gap-2'>
-                        <Button variant="secondary" onClick={() => testConnection('contacts')} disabled={testingConnection !== null}>
-                          {testingConnection === 'contacts' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
-                        </Button>
-                        <Button variant="outline" onClick={() => handleDisconnect('contacts')}>Disconnect</Button>
+                    <div className='flex flex-col gap-2 items-end'>
+                         <div className='flex gap-2'>
+                            <Button variant="secondary" size="sm" onClick={() => testConnection('contacts-profile')} disabled={testingConnection !== null}>
+                                {testingConnection === 'contacts-profile' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test 1 (Profile)
+                            </Button>
+                             <Button variant="secondary" size="sm" onClick={() => testConnection('contacts-connections')} disabled={testingConnection !== null}>
+                                {testingConnection === 'contacts-connections' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test 2 (List)
+                            </Button>
+                            <Button variant="secondary" size="sm" onClick={() => testConnection('contacts-connections-fields')} disabled={testingConnection !== null}>
+                                {testingConnection === 'contacts-connections-fields' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test 3 (List w/ Fields)
+                            </Button>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => handleDisconnect('contacts')}>Disconnect</Button>
                     </div>
                 ) : (
                     <Button variant="outline" onClick={() => handleConnect('contacts')} disabled={isConnecting === 'contacts'}>
@@ -363,7 +396,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
             </div>
             {testResult && (
                 <div className='p-4 bg-muted rounded-lg'>
-                    <h4 className='font-semibold text-sm mb-2'>Test Results:</h4>
+                    <h4 className='font-semibold text-sm mb-2'>{testResult.title}</h4>
                     {testResult.items.length > 0 ? (
                         <ul className='space-y-1 text-sm text-muted-foreground'>
                             {testResult.items.map((item, index) => (
@@ -417,3 +450,4 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     </div>
   );
 }
+
