@@ -21,7 +21,7 @@ export async function createGoogleContact(input: CreateContactInput) {
     phoneNumbers: phone ? [{ value: phone }] : [],
   };
 
-  const url = 'https://people.googleapis.com/v1/people:createContact?personFields=names,emailAddresses,phoneNumbers';
+  const url = 'https://people.googleapis.com/v1/people:createContact';
 
   try {
     const response = await fetch(url, {
