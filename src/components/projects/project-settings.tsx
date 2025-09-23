@@ -223,55 +223,55 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
 
       <Card>
         <CardHeader>
-            <div className="flex justify-between items-center">
-              <div>
-                <CardTitle>Integrations</CardTitle>
-                <CardDescription>Connect third-party apps to streamline your workflow.</CardDescription>
-              </div>
-               <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                            <HelpCircle className="h-5 w-5 text-muted-foreground" />
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Troubleshooting API Connections</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                If the &quot;Test Connection&quot; fails, please verify the following in your Google Cloud Console for project <b className="text-primary">{process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}</b>.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <div className="text-sm space-y-4">
-                            <div>
-                                <h4 className="font-semibold">1. APIs & Services</h4>
-                                <ul className="list-disc list-inside text-muted-foreground">
-                                    <li>Ensure the <b className="text-foreground">Google Drive API</b> is ENABLED.</li>
-                                    <li>Ensure the <b className="text-foreground">Google People API</b> is ENABLED.</li>
-                                </ul>
-                            </div>
-                             <div>
-                                <h4 className="font-semibold">2. OAuth Consent Screen</h4>
-                                <ul className="list-disc list-inside text-muted-foreground">
-                                    <li>Set Publishing status to <b className="text-foreground">In production</b>.</li>
-                                    <li>Under Scopes, ensure you have added `.../auth/drive.readonly` and `.../auth/contacts.readonly`.</li>
-                                    <li>Add your email address as a Test User if the app is not yet published.</li>
-                                </ul>
-                            </div>
-                            <div>
-                                <h4 className="font-semibold">3. Credentials</h4>
-                                <ul className="list-disc list-inside text-muted-foreground">
-                                    <li>Verify you are using an <b className="text-foreground">OAuth 2.0 Client ID</b> for Web applications.</li>
-                                    <li>The Client ID must match: <b className='text-primary text-xs'>41964003868-3fnl6kgb6aejeju7q994erlragjfmcj4.apps.googleusercontent.com</b></li>
-                                    <li>Ensure your API key has no restrictions, or is correctly restricted to your application&apos;s domain.</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Close</AlertDialogCancel>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Integrations</CardTitle>
+              <CardDescription>Connect third-party apps to streamline your workflow.</CardDescription>
             </div>
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                        <HelpCircle className="h-5 w-5 text-muted-foreground" />
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Troubleshooting API Connections</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            If the &quot;Test Connection&quot; fails, please verify the following in your Google Cloud Console for project <b className="text-primary">{process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}</b>.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="text-sm space-y-4">
+                        <div>
+                            <h4 className="font-semibold">1. APIs & Services</h4>
+                            <ul className="list-disc list-inside text-muted-foreground">
+                                <li>Ensure the <b className="text-foreground">Google Drive API</b> is ENABLED.</li>
+                                <li>Ensure the <b className="text-foreground">Google People API</b> is ENABLED.</li>
+                            </ul>
+                        </div>
+                          <div>
+                            <h4 className="font-semibold">2. OAuth Consent Screen</h4>
+                            <ul className="list-disc list-inside text-muted-foreground">
+                                <li>Set Publishing status to <b className="text-foreground">In production</b>.</li>
+                                <li>Under Scopes, ensure you have added `.../auth/drive.readonly` and `.../auth/contacts.readonly`.</li>
+                                <li>Add your email address as a Test User if the app is not yet published.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold">3. Credentials</h4>
+                            <ul className="list-disc list-inside text-muted-foreground">
+                                <li>Verify you are using an <b className="text-foreground">OAuth 2.0 Client ID</b> for Web applications.</li>
+                                <li>The Client ID must match: <b className='text-primary text-xs'>41964003868-3fnl6kgb6aejeju7q994erlragjfmcj4.apps.googleusercontent.com</b></li>
+                                <li>Ensure your API key has no restrictions, or is correctly restricted to your application&apos;s domain.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Close</AlertDialogCancel>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="flex items-center justify-between rounded-lg border p-3">
