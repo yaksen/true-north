@@ -21,12 +21,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteDoc, doc } from 'firebase/firestore';
+import { deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { MemberForm } from './member-form';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
 function GoogleDriveIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -57,6 +59,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '');
 
   const [isDriveConnecting, setIsDriveConnecting] = useState(false);
   const [isContactsConnecting, setIsContactsConnecting] = useState(false);
@@ -128,9 +131,9 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
       try {
           let url = '';
           if (type === 'drive') {
-              url = 'https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)';
+              url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
           } else {
-              url = 'https://people.googleapis.com/v1/people/me/connections?personFields=names&pageSize=5';
+              url = `https://people.googleapis.com/v1/people/me/connections?personFields=names&pageSize=5&key=${apiKey}`;
           }
           
           const response = await fetch(url, {
@@ -188,6 +191,26 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           <MembersList project={project} />
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+            <CardTitle>API Keys</CardTitle>
+            <CardDescription>Manage API keys for third-party integrations.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="google-api-key">Google Cloud API Key</Label>
+                <Input 
+                    id="google-api-key" 
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Enter your Google Cloud API Key"
+                />
+            </div>
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader>
