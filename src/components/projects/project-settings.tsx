@@ -57,6 +57,11 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
 
+  const [isDriveConnecting, setIsDriveConnecting] = useState(false);
+  const [isContactsConnecting, setIsContactsConnecting] = useState(false);
+  const [isDriveConnected, setIsDriveConnected] = useState(false);
+  const [isContactsConnected, setIsContactsConnected] = useState(false);
+
   const isOwner = user?.uid === project.ownerUid;
 
   async function handleDeleteProject() {
@@ -78,6 +83,25 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
       setIsDeleting(false);
     }
   }
+
+  const handleConnectDrive = async () => {
+    setIsDriveConnecting(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsDriveConnected(true);
+    setIsDriveConnecting(false);
+    toast({ title: 'Success', description: 'Google Drive connected.' });
+  };
+
+  const handleConnectContacts = async () => {
+    setIsContactsConnecting(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsContactsConnected(true);
+    setIsContactsConnecting(false);
+    toast({ title: 'Success', description: 'Google Contacts connected.' });
+  };
+
 
   return (
     <div className="grid gap-6 mt-4 max-w-4xl mx-auto">
@@ -120,7 +144,14 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                         <p className="text-sm text-muted-foreground">Sync reports and files.</p>
                     </div>
                 </div>
-                <Button variant="outline">Connect</Button>
+                {isDriveConnected ? (
+                  <Button variant="secondary" disabled>Connected</Button>
+                ) : (
+                  <Button variant="outline" onClick={handleConnectDrive} disabled={isDriveConnecting}>
+                      {isDriveConnecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Connect
+                  </Button>
+                )}
             </div>
             <div className="flex items-center justify-between rounded-lg border p-3">
                 <div className="flex items-center gap-4">
@@ -130,7 +161,14 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                         <p className="text-sm text-muted-foreground">Import contacts as leads.</p>
                     </div>
                 </div>
-                <Button variant="outline">Connect</Button>
+                {isContactsConnected ? (
+                    <Button variant="secondary" disabled>Connected</Button>
+                ) : (
+                    <Button variant="outline" onClick={handleConnectContacts} disabled={isContactsConnecting}>
+                        {isContactsConnecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Connect
+                    </Button>
+                )}
             </div>
         </CardContent>
       </Card>
