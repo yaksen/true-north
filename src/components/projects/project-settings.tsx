@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Project } from '@/lib/types';
+import { Project, ProjectMember } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { useAuth } from '@/hooks/use-auth';
@@ -59,13 +59,11 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
-  const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '');
+  const [apiKey, setApiKey] = useState('');
 
-  const [isDriveConnecting, setIsDriveConnecting] = useState(false);
-  const [isContactsConnecting, setIsContactsConnecting] = useState(false);
-  const [driveAccessToken, setDriveAccessToken] = useState<string | null>(null);
-  const [contactsAccessToken, setContactsAccessToken] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<string[] | null>(null);
+  const [isConnecting, setIsConnecting] = useState<'drive' | 'contacts' | null>(null);
+  const [tokens, setTokens] = useState<{drive: string | null, contacts: string | null}>({ drive: null, contacts: null });
+  const [testResult, setTestResult] = useState<{type: 'drive' | 'contacts', items: string[]} | null>(null);
   const [isTesting, setIsTesting] = useState(false);
 
   const isOwner = user?.uid === project.ownerUid;
@@ -90,22 +88,17 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const handleConnect = async (type: 'drive' | 'contacts') => {
     const provider = new GoogleAuthProvider();
     if (type === 'drive') {
-      setIsDriveConnecting(true);
       provider.addScope('https://www.googleapis.com/auth/drive.readonly');
     } else {
-      setIsContactsConnecting(true);
       provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
     }
-
+    
+    setIsConnecting(type);
     try {
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (credential?.accessToken) {
-        if (type === 'drive') {
-          setDriveAccessToken(credential.accessToken);
-        } else {
-          setContactsAccessToken(credential.accessToken);
-        }
+        setTokens(prev => ({...prev, [type]: credential.accessToken}));
         toast({ title: 'Success', description: `Successfully connected to Google ${type === 'drive' ? 'Drive' : 'Contacts'}.` });
       } else {
         throw new Error('No access token received.');
@@ -114,13 +107,12 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
       console.error(`Google ${type} connection error:`, error);
       toast({ variant: 'destructive', title: 'Connection Failed', description: `Could not connect to Google ${type === 'drive' ? 'Drive' : 'Contacts'}.` });
     } finally {
-      setIsDriveConnecting(false);
-      setIsContactsConnecting(false);
+      setIsConnecting(null);
     }
   };
 
   const testConnection = async (type: 'drive' | 'contacts') => {
-      const token = type === 'drive' ? driveAccessToken : contactsAccessToken;
+      const token = tokens[type];
       if (!token) {
           toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to the service first.' });
           return;
@@ -155,20 +147,19 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           }
           
           const data = await response.json();
-
+          let items: string[] = [];
           if (type === 'drive') {
-              setTestResult(data.files.map((file: any) => file.name));
+              items = data.files.map((file: any) => file.name);
           } else {
-              setTestResult(data.connections.map((person: any) => person.names[0].displayName));
+              items = data.connections.map((person: any) => person.names[0].displayName);
           }
+          setTestResult({type, items});
 
       } catch (error) {
           console.error(`Test connection error for ${type}:`, error);
           toast({ variant: 'destructive', title: 'Test Failed', description: 'Could not fetch test data. Check your API key and permissions.' });
-          // If token is expired, clear it to force re-login
           if ((error as Error).message.includes('401') || (error as Error).message.includes('403')) {
-            if (type === 'drive') setDriveAccessToken(null);
-            else setContactsAccessToken(null);
+            setTokens(prev => ({...prev, [type]: null}));
           }
       } finally {
           setIsTesting(false);
@@ -282,16 +273,16 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                         <p className="text-sm text-muted-foreground">Sync reports and files.</p>
                     </div>
                 </div>
-                {driveAccessToken ? (
+                {tokens.drive ? (
                   <div className='flex gap-2'>
                     <Button variant="secondary" onClick={() => testConnection('drive')} disabled={isTesting}>
-                      {isTesting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
+                      {isTesting && isConnecting !== 'drive' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
                     </Button>
-                     <Button variant="outline" onClick={() => setDriveAccessToken(null)}>Disconnect</Button>
+                     <Button variant="outline" onClick={() => setTokens(p => ({...p, drive: null}))}>Disconnect</Button>
                   </div>
                 ) : (
-                  <Button variant="outline" onClick={() => handleConnect('drive')} disabled={isDriveConnecting}>
-                      {isDriveConnecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Button variant="outline" onClick={() => handleConnect('drive')} disabled={isConnecting === 'drive'}>
+                      {isConnecting === 'drive' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Connect
                   </Button>
                 )}
@@ -304,27 +295,27 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                         <p className="text-sm text-muted-foreground">Import contacts as leads.</p>
                     </div>
                 </div>
-                {contactsAccessToken ? (
+                {tokens.contacts ? (
                     <div className='flex gap-2'>
                         <Button variant="secondary" onClick={() => testConnection('contacts')} disabled={isTesting}>
-                          {isTesting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
+                          {isTesting && isConnecting !== 'contacts' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
                         </Button>
-                        <Button variant="outline" onClick={() => setContactsAccessToken(null)}>Disconnect</Button>
+                        <Button variant="outline" onClick={() => setTokens(p => ({...p, contacts: null}))}>Disconnect</Button>
                     </div>
                 ) : (
-                    <Button variant="outline" onClick={() => handleConnect('contacts')} disabled={isContactsConnecting}>
-                        {isContactsConnecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Button variant="outline" onClick={() => handleConnect('contacts')} disabled={isConnecting === 'contacts'}>
+                        {isConnecting === 'contacts' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Connect
                     </Button>
                 )}
             </div>
             {testResult && (
                 <div className='p-4 bg-muted rounded-lg'>
-                    <h4 className='font-semibold text-sm mb-2'>Test Results (First 5 items):</h4>
+                    <h4 className='font-semibold text-sm mb-2'>Test Results (First {testResult.items.length} items):</h4>
                     <ul className='space-y-1 text-sm text-muted-foreground'>
-                        {testResult.map((item, index) => (
+                        {testResult.items.map((item, index) => (
                             <li key={index} className='flex items-center gap-2'>
-                                {driveAccessToken && !contactsAccessToken ? <File className='h-4 w-4' /> : <UserIcon className='h-4 w-4' />}
+                                {testResult.type === 'drive' ? <File className='h-4 w-4' /> : <UserIcon className='h-4 w-4' />}
                                 {item}
                             </li>
                         ))}
@@ -370,3 +361,4 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     </div>
   );
 }
+
