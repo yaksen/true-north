@@ -116,6 +116,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
       provider.addScope('https://www.googleapis.com/auth/drive.readonly');
     } else {
       provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
+      provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
     }
     
     setIsConnecting(type);
@@ -182,7 +183,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
               url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
           } else {
               const personFields = 'names,emailAddresses';
-              url = `https://people.googleapis.com/v1/people/me/connections?personFields=${personFields}&pageSize=5&key=${apiKey}`;
+              url = `https://people.googleapis.com/v1/people/me?personFields=${personFields}&key=${apiKey}`;
           }
           
           const response = await fetch(url, {
@@ -204,7 +205,12 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           if (type === 'drive') {
               items = data.files?.map((file: any) => file.name) || [];
           } else {
-              items = data.connections?.map((person: any) => person.names?.[0]?.displayName || person.emailAddresses?.[0]?.value || 'Unnamed Contact') || [];
+              const userName = data.names?.[0]?.displayName;
+              if (userName) {
+                items = [`Successfully fetched profile: ${userName}`];
+              } else {
+                items = ["Successfully connected, but couldn't fetch profile name."];
+              }
           }
           setTestResult({type, items});
 
@@ -364,7 +370,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
             </div>
             {testResult && (
                 <div className='p-4 bg-muted rounded-lg'>
-                    <h4 className='font-semibold text-sm mb-2'>Test Results (First {testResult.items.length} items):</h4>
+                    <h4 className='font-semibold text-sm mb-2'>Test Results:</h4>
                     {testResult.items.length > 0 ? (
                         <ul className='space-y-1 text-sm text-muted-foreground'>
                             {testResult.items.map((item, index) => (
@@ -418,6 +424,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     </div>
   );
 }
+
 
 
 
