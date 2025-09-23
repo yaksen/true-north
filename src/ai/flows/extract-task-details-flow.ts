@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow for extracting task details from text.
@@ -13,6 +14,7 @@ import { z } from 'zod';
 const ExtractTaskDetailsInputSchema = z.object({
   prompt: z.string().describe('Unstructured text containing task information.'),
   imageDataUri: z.string().optional().describe("A photo of a note or screenshot, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
+  audioDataUri: z.string().optional().describe("An audio recording of task information, as a data URI that must include a MIME type and use Base64 encoding."),
 });
 export type ExtractTaskDetailsInput = z.infer<typeof ExtractTaskDetailsInputSchema>;
 
@@ -31,7 +33,7 @@ const prompt = ai.definePrompt({
   output: { schema: ExtractTaskDetailsOutputSchema },
   prompt: `You are an expert at parsing unstructured text and images to extract task information.
 
-If an image is provided, use it as the primary source. Use the text prompt for additional context.
+If an image or audio is provided, use it as the primary source. Use the text prompt for additional context.
 
 Extract the task title, a detailed description, the due date (in YYYY-MM-DD format), and the name of the assignee.
 
@@ -40,6 +42,12 @@ Data:
 [Image Content]
 {{media url=imageDataUri}}
 [End Image Content]
+{{/if}}
+
+{{#if audioDataUri}}
+[Audio Content]
+{{media url=audioDataUri}}
+[End Audio Content]
 {{/if}}
 
 [Text Content]
@@ -67,3 +75,5 @@ const extractTaskDetailsFlow = ai.defineFlow(
 export async function extractTaskDetails(input: ExtractTaskDetailsInput): Promise<ExtractTaskDetailsOutput> {
   return await extractTaskDetailsFlow(input);
 }
+
+    
