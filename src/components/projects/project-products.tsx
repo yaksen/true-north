@@ -220,7 +220,7 @@ export function ProjectProducts({ project, categories, services, products, packa
           </Dialog>
           <Dialog open={isPackageFormOpen} onOpenChange={setIsPackageFormOpen}>
             <DialogTrigger asChild><Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> Package</Button></DialogTrigger>
-            <DialogContent className='max-w-3xl'>
+            <DialogContent className='max-w-4xl'>
                 <DialogHeader><DialogTitle>{editingPackage ? "Edit" : "Create"} Package</DialogTitle></DialogHeader>
                 <PackageForm 
                     project={project} 
