@@ -69,7 +69,7 @@ export function VendorForm({ vendor, projectId, channels, closeForm }: VendorFor
       phone: '',
       socials: [],
       notes: '',
-      channelId: '',
+      channelId: channels[channels.length - 1]?.id || '',
     },
   });
 
