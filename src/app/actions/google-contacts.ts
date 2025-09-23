@@ -9,7 +9,7 @@ interface ServerActionResult {
     data?: any;
 }
 
-// 1. Search for a contact by email or phone
+// 1. Search for a contact by a query (email or phone)
 async function searchContact(query: string, accessToken: string): Promise<any> {
     const url = `https://people.googleapis.com/v1/people:searchContacts?query=${encodeURIComponent(query)}&readMask=emailAddresses,phoneNumbers`;
     const response = await fetch(url, {
@@ -65,14 +65,23 @@ export async function saveLeadToGoogleContacts(lead: Lead, accessToken: string):
     }
 
     try {
-        // Use email for query if available, otherwise phone
-        const query = lead.email || lead.phone!;
-        const searchResults = await searchContact(query, accessToken);
-
-        if (searchResults && searchResults.length > 0) {
-            return { success: false, message: 'A contact with this email or phone number already exists.' };
+        // Always check for phone number first if it exists
+        if (lead.phone) {
+            const phoneResults = await searchContact(lead.phone, accessToken);
+            if (phoneResults && phoneResults.length > 0) {
+                return { success: false, message: 'A contact with this phone number already exists.' };
+            }
         }
         
+        // If phone doesn't exist, check for email if it exists
+        if (lead.email) {
+            const emailResults = await searchContact(lead.email, accessToken);
+            if (emailResults && emailResults.length > 0) {
+                return { success: false, message: 'A contact with this email address already exists.' };
+            }
+        }
+        
+        // If no contact is found by either, create a new one
         const newContact = await createContact(lead, accessToken);
         return { success: true, message: `Contact "${newContact.names[0].displayName}" created successfully.`, data: newContact };
 
