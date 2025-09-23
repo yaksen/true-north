@@ -13,7 +13,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { logActivity } from '@/lib/activity-log';
@@ -21,7 +21,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { extractChannelDetails, type ExtractChannelDetailsOutput } from '@/ai/flows/extract-channel-details-flow';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Label } from '../ui/label';
-
+import Image from 'next/image';
 
 const channelStatuses = ['new', 'active', 'inactive', 'closed'] as const;
 const channelPlatforms = ['Instagram', 'Facebook', 'Twitter', 'LinkedIn', 'Website', 'Referral', 'Other'];
@@ -51,6 +51,7 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
   const [isExtracting, setIsExtracting] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiImage, setAiImage] = useState<File | null>(null);
+  const [pastedImage, setPastedImage] = useState<string | null>(null);
 
   const form = useForm<ChannelFormValues>({
     resolver: zodResolver(formSchema),
@@ -71,9 +72,27 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
       setAiImage(event.target.files[0]);
+      const reader = new FileReader();
+      reader.onload = (e) => setPastedImage(e.target?.result as string);
+      reader.readAsDataURL(event.target.files[0]);
     }
   };
   
+  const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = event.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+            const blob = items[i].getAsFile();
+            if (blob) {
+                setAiImage(blob);
+                const reader = new FileReader();
+                reader.onload = (e) => setPastedImage(e.target?.result as string);
+                reader.readAsDataURL(blob);
+            }
+        }
+    }
+  };
+
   const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -287,9 +306,19 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
                         className="h-32"
                     />
                 </div>
-                    <div className="space-y-2">
-                    <Label htmlFor="ai-image">Image</Label>
-                    <Input id="ai-image" type="file" accept="image/*" onChange={handleFileChange} />
+                <div className="space-y-2">
+                    <Label>Image (e.g., Screenshot)</Label>
+                    <div onPaste={handlePaste} className="relative flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary">
+                        {pastedImage ? (
+                            <Image src={pastedImage} alt="Pasted preview" layout="fill" objectFit="contain" className='rounded-lg' />
+                        ) : (
+                            <div className="text-center text-muted-foreground">
+                                <ImageIcon className='mx-auto h-8 w-8' />
+                                <p>Click to upload or paste an image</p>
+                            </div>
+                        )}
+                        <Input id="ai-image" type="file" accept="image/*" onChange={handleFileChange} className='absolute inset-0 w-full h-full opacity-0 cursor-pointer' />
+                    </div>
                 </div>
                 <Button className='w-full' onClick={handleExtractDetails} disabled={isExtracting}>
                     {isExtracting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -300,3 +329,5 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
     </div>
   );
 }
+
+    

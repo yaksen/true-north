@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -466,3 +467,5 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
     </div>
   );
 }
+
+    
