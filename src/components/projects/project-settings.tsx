@@ -181,7 +181,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           if (type === 'drive') {
               url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
           } else {
-              url = `https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses&pageSize=5&key=${apiKey}`;
+              const personFields = encodeURIComponent('names,emailAddresses');
+              url = `https://people.googleapis.com/v1/people/me/connections?personFields=${personFields}&pageSize=5&key=${apiKey}`;
           }
           
           const response = await fetch(url, {
@@ -417,6 +418,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     </div>
   );
 }
+
 
 
 
