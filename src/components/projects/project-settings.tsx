@@ -182,8 +182,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           if (type === 'drive') {
               url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
           } else {
-              const personFields = 'names,emailAddresses';
-              url = `https://people.googleapis.com/v1/people/me?personFields=${personFields}&key=${apiKey}`;
+              url = `https://people.googleapis.com/v1/people/me?key=${apiKey}`;
           }
           
           const response = await fetch(url, {
@@ -288,7 +287,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                     <AlertDialogHeader>
                         <DialogTitle>Troubleshooting API Connections</DialogTitle>
                         <AlertDialogDescription>
-                            If a `403 Forbidden` error occurs, please verify the following in your Google Cloud Console for project <b className="text-primary">{process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}</b>. A `400 Bad Request` may also indicate a permissions issue.
+                            If a `403 Forbidden` or `400 Bad Request` error occurs, please verify the following in your Google Cloud Console for project <b className="text-primary">{process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}</b>.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <div className="text-sm space-y-4">
@@ -296,7 +295,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                             <h4 className="font-semibold">1. APIs & Services</h4>
                             <ul className="list-disc list-inside text-muted-foreground">
                                 <li>Ensure the <b className="text-foreground">Google Drive API</b> is ENABLED.</li>
-                                <li>Ensure the <b className="text-foreground">Google People API</b> is ENABLED.</li>
+                                <li>Ensure the <b className="text-foreground">Google People API</b> is ENABLED. This is required for contacts.</li>
                             </ul>
                         </div>
                           <div>
@@ -424,10 +423,3 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     </div>
   );
 }
-
-
-
-
-
-
-
