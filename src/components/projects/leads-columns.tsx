@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
@@ -106,7 +107,7 @@ const ActionsCell: React.FC<{ lead: Lead, dependencies: ColumnDependencies }> = 
             </Dialog>
 
             <Dialog open={isTaskOpen} onOpenChange={setIsTaskOpen}>
-                <DialogContent>
+                <DialogContent className="max-w-4xl">
                     <DialogHeader>
                         <DialogTitle>Add Task for {lead.name}</DialogTitle>
                     </DialogHeader>

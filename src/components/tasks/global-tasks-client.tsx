@@ -292,7 +292,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
                 <PlusCircle className="mr-2 h-4 w-4" /> New Task
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className='max-w-4xl'>
                 <DialogHeader>
                 <DialogTitle>Create New Global Task</DialogTitle>
                 </DialogHeader>

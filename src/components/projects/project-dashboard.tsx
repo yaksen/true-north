@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Project, Task, Finance, Lead, Channel } from "@/lib/types";
@@ -149,7 +150,7 @@ export function ProjectDashboard({ project, tasks, finances, channels }: Project
                             <DialogTrigger asChild>
                                 <Button size="sm" variant="outline"><PlusCircle className="mr-2"/> Add Task</Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="max-w-4xl">
                                 <DialogHeader>
                                     <DialogTitle>Add New Task</DialogTitle>
                                 </DialogHeader>
