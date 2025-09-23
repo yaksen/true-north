@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import type { Project, Vendor, Channel } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Contact, Loader2 } from 'lucide-react';
 import { DataTable } from '../ui/data-table';
 import { getVendorColumns } from './vendor-columns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
@@ -13,6 +13,7 @@ import { VendorForm } from './vendor-form';
 import { doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { saveContactToGoogle } from '@/app/actions/google-contacts';
 
 interface ProjectVendorsProps {
   project: Project;
@@ -23,6 +24,7 @@ interface ProjectVendorsProps {
 export function ProjectVendors({ project, vendors, channels }: ProjectVendorsProps) {
   const { toast } = useToast();
   const [isVendorFormOpen, setIsVendorFormOpen] = useState(false);
+  const [isBulkSaving, setIsBulkSaving] = useState(false);
 
   const handleStar = async (id: string, starred: boolean) => {
     try {
@@ -45,7 +47,35 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
       }
   }
   
-  const vendorColumns = useMemo(() => getVendorColumns({ channels, onStar: handleStar }), [channels]);
+  const handleBulkSaveToContacts = async () => {
+    if (!project.googleContactsAccessToken) {
+        toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to Google Contacts in Project Settings first.'});
+        return;
+    }
+    setIsBulkSaving(true);
+    let successCount = 0;
+    let existCount = 0;
+    let failCount = 0;
+
+    for (const vendor of vendors) {
+        const result = await saveContactToGoogle(vendor, project.googleContactsAccessToken);
+        if (result.success) {
+            successCount++;
+        } else if (result.message.includes('already exists')) {
+            existCount++;
+        } else {
+            failCount++;
+        }
+    }
+
+    setIsBulkSaving(false);
+    toast({
+        title: 'Bulk Save Complete',
+        description: `${successCount} new contacts saved, ${existCount} already existed, and ${failCount} failed.`,
+    });
+  }
+
+  const vendorColumns = useMemo(() => getVendorColumns({ project, channels, onStar: handleStar }), [project, channels]);
 
   return (
     <div className="grid gap-6 mt-4">
@@ -58,17 +88,23 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
                 Manage all vendors associated with the &quot;{project.name}&quot; project.
               </CardDescription>
             </div>
-            <Dialog open={isVendorFormOpen} onOpenChange={setIsVendorFormOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Vendor</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                  <DialogTitle>Add New Vendor</DialogTitle>
-                </DialogHeader>
-                <VendorForm projectId={project.id} channels={channels} closeForm={() => setIsVendorFormOpen(false)} />
-              </DialogContent>
-            </Dialog>
+            <div className='flex items-center gap-2'>
+                <Button size="sm" variant="outline" onClick={handleBulkSaveToContacts} disabled={isBulkSaving || !project.googleContactsAccessToken}>
+                    {isBulkSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Contact className="mr-2 h-4 w-4" />}
+                    Save All to Contacts
+                </Button>
+                <Dialog open={isVendorFormOpen} onOpenChange={setIsVendorFormOpen}>
+                <DialogTrigger asChild>
+                    <Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Vendor</Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                    <DialogTitle>Add New Vendor</DialogTitle>
+                    </DialogHeader>
+                    <VendorForm projectId={project.id} channels={channels} closeForm={() => setIsVendorFormOpen(false)} />
+                </DialogContent>
+                </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

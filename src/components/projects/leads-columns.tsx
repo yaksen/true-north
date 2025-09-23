@@ -23,7 +23,7 @@ import { db } from "@/lib/firebase";
 import { logActivity } from "@/lib/activity-log";
 import { cn } from "@/lib/utils";
 import { QrCodeModal } from "../qr-code-modal";
-import { saveLeadToGoogleContacts } from "@/app/actions/google-contacts";
+import { saveContactToGoogle } from "@/app/actions/google-contacts";
 
 
 interface ColumnDependencies {
@@ -60,7 +60,7 @@ const ActionsCell: React.FC<{ lead: Lead, dependencies: ColumnDependencies }> = 
       }
       setIsSavingContact(true);
       try {
-        const result = await saveLeadToGoogleContacts(lead, dependencies.project.googleContactsAccessToken);
+        const result = await saveContactToGoogle(lead, dependencies.project.googleContactsAccessToken);
         if (result.success) {
           toast({ title: 'Success', description: result.message });
         } else {

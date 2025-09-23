@@ -1,7 +1,9 @@
 
 'use server';
 
-import { Lead } from '@/lib/types';
+import { Lead, Vendor, Partner } from '@/lib/types';
+
+type Contact = Lead | Vendor | Partner;
 
 interface ServerActionResult {
     success: boolean;
@@ -30,15 +32,15 @@ async function searchContact(query: string, accessToken: string): Promise<any> {
 }
 
 // 2. Create a contact
-async function createContact(lead: Lead, accessToken: string): Promise<any> {
+async function createContact(contact: Contact, accessToken: string): Promise<any> {
     const url = 'https://people.googleapis.com/v1/people:createContact';
     
     const contactData = {
-        names: [{ givenName: `${lead.name} - ${lead.sku || lead.id}` }],
-        ...(lead.email && { emailAddresses: [{ value: lead.email }] }),
-        ...(lead.phone && { phoneNumbers: [{ value: lead.phone }] }),
-        ...(lead.socials && lead.socials.length > 0 && { 
-            urls: lead.socials.map(social => ({ 
+        names: [{ givenName: `${contact.name} - ${contact.sku || contact.id}` }],
+        ...(contact.email && { emailAddresses: [{ value: contact.email }] }),
+        ...(contact.phone && { phoneNumbers: [{ value: contact.phone }] }),
+        ...(contact.socials && contact.socials.length > 0 && { 
+            urls: contact.socials.map(social => ({ 
                 value: social.url, 
                 type: social.platform,
                 formattedType: social.platform,
@@ -66,30 +68,30 @@ async function createContact(lead: Lead, accessToken: string): Promise<any> {
 }
 
 // Main server action
-export async function saveLeadToGoogleContacts(lead: Lead, accessToken: string): Promise<ServerActionResult> {
-    if (!lead.email && !lead.phone) {
-        return { success: false, message: 'Lead must have an email or phone number to be saved.' };
+export async function saveContactToGoogle(contact: Contact, accessToken: string): Promise<ServerActionResult> {
+    if (!contact.email && !contact.phone) {
+        return { success: false, message: 'Contact must have an email or phone number to be saved.' };
     }
 
     try {
         // Always check for phone number first if it exists
-        if (lead.phone) {
-            const phoneResults = await searchContact(lead.phone, accessToken);
+        if (contact.phone) {
+            const phoneResults = await searchContact(contact.phone, accessToken);
             if (phoneResults && phoneResults.length > 0) {
                 return { success: false, message: 'A contact with this phone number already exists.' };
             }
         }
         
         // If phone doesn't exist, check for email if it exists
-        if (lead.email) {
-            const emailResults = await searchContact(lead.email, accessToken);
+        if (contact.email) {
+            const emailResults = await searchContact(contact.email, accessToken);
             if (emailResults && emailResults.length > 0) {
                 return { success: false, message: 'A contact with this email address already exists.' };
             }
         }
         
         // If no contact is found by either, create a new one
-        const newContact = await createContact(lead, accessToken);
+        const newContact = await createContact(contact, accessToken);
         return { success: true, message: `Contact "${newContact.names[0].displayName}" created successfully.`, data: newContact };
 
     } catch (error: any) {

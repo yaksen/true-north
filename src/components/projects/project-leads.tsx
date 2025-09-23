@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { saveLeadToGoogleContacts } from "@/app/actions/google-contacts";
+import { saveContactToGoogle } from "@/app/actions/google-contacts";
 
 interface ProjectLeadsProps {
     project: Project;
@@ -71,7 +71,7 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
         let failCount = 0;
 
         for (const lead of filteredLeads) {
-            const result = await saveLeadToGoogleContacts(lead, project.googleContactsAccessToken);
+            const result = await saveContactToGoogle(lead, project.googleContactsAccessToken);
             if (result.success) {
                 successCount++;
             } else if (result.message.includes('already exists')) {

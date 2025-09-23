@@ -2,10 +2,10 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Vendor, Channel } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star, Mail, Phone, Link as LinkIcon, Linkedin, Twitter, Github, Facebook, Instagram, CaseUpper, QrCode } from "lucide-react";
+import { Vendor, Channel, Project } from "@/lib/types";
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Star, Mail, Phone, Link as LinkIcon, Linkedin, Twitter, Github, Facebook, Instagram, CaseUpper, QrCode, Save, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { deleteDoc, doc } from "firebase/firestore";
@@ -19,10 +19,12 @@ import { logActivity } from "@/lib/activity-log";
 import { Checkbox } from "../ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
-import Link from "next/link";
+import Link from 'next/link';
 import { QrCodeModal } from "../qr-code-modal";
+import { saveContactToGoogle } from "@/app/actions/google-contacts";
 
 interface ColumnDependencies {
+    project: Project;
     channels: Channel[];
     onStar: (id: string, starred: boolean) => void;
 }
@@ -37,6 +39,7 @@ const ActionsCell: React.FC<ActionsCellProps> = ({ vendor, dependencies }) => {
     const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isQrOpen, setIsQrOpen] = useState(false);
+    const [isSavingContact, setIsSavingContact] = useState(false);
 
     const handleDelete = async () => {
         if (!user) return;
@@ -49,6 +52,26 @@ const ActionsCell: React.FC<ActionsCellProps> = ({ vendor, dependencies }) => {
         }
     };
     
+    const handleSaveToContacts = async () => {
+        if (!dependencies.project.googleContactsAccessToken) {
+          toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to Google Contacts in Project Settings first.'});
+          return;
+        }
+        setIsSavingContact(true);
+        try {
+          const result = await saveContactToGoogle(vendor, dependencies.project.googleContactsAccessToken);
+          if (result.success) {
+            toast({ title: 'Success', description: result.message });
+          } else {
+            toast({ variant: 'destructive', title: 'Failed', description: result.message });
+          }
+        } catch (error: any) {
+          toast({ variant: 'destructive', title: 'Error', description: error.message || 'An unexpected error occurred.' });
+        } finally {
+          setIsSavingContact(false);
+        }
+    }
+
     return (
         <>
             <DropdownMenu>
@@ -85,6 +108,11 @@ const ActionsCell: React.FC<ActionsCellProps> = ({ vendor, dependencies }) => {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSaveToContacts} disabled={isSavingContact}>
+                        {isSavingContact ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                         Save to Google Contacts
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
