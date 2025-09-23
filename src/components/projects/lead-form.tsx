@@ -75,7 +75,7 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
       socials: [],
       notes: '',
       status: 'new',
-      channelId: '',
+      channelId: channels[channels.length - 1]?.id || '',
     },
   });
 
@@ -313,7 +313,7 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
                         render={({ field }) => (
                             <FormItem>
                             <FormLabel>From</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
+                            <Select onValueChange={field.onChange} value={field.value || ''}>
                                 <FormControl><SelectTrigger><SelectValue placeholder="Select a channel..." /></SelectTrigger></FormControl>
                                 <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
@@ -386,3 +386,5 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
     </div>
   );
 }
+
+    
