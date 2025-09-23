@@ -92,7 +92,7 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
                             <DialogTrigger asChild>
                                 <Button size="sm"><PlusCircle className="mr-2"/> Add Lead</Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="max-w-4xl">
                                 <DialogHeader>
                                     <DialogTitle>Add New Lead</DialogTitle>
                                 </DialogHeader>

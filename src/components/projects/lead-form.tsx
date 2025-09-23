@@ -183,172 +183,174 @@ export function LeadForm({ lead, projectId, channels, closeForm }: LeadFormProps
 
   return (
     <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-        <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+        <div className='space-y-4'>
+            <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g. John Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="sku"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>SKU</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Auto-generated SKU" {...field} readOnly />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g. john@example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Phone</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="+1 234 567 890" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <div>
+                    <FormLabel>Social Links</FormLabel>
+                    <div className="space-y-2 mt-2">
+                        {fields.map((field, index) => (
+                            <div key={field.id} className="flex items-center gap-2">
+                                <FormField
+                                    control={form.control}
+                                    name={`socials.${index}.platform`}
+                                    render={({ field }) => (
+                                        <FormItem className="w-1/3">
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Platform" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {socialPlatforms.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name={`socials.${index}.url`}
+                                    render={({ field }) => (
+                                        <Input {...field} placeholder="URL" className="flex-1"/>
+                                    )}
+                                />
+                                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                    <Trash2 className="h-4 w-4 text-destructive"/>
+                                </Button>
+                            </div>
+                        ))}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => append({ platform: 'Website', url: '' })}
+                        >
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Social Link
+                        </Button>
+                    </div>
+                </div>
+                <div className='grid grid-cols-2 gap-4'>
+                    <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Status</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    {leadStatuses.map(status => (
+                                        <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="channelId"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>From</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select a channel..." /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    {channels.map(channel => (
+                                        <SelectItem key={channel.id} value={channel.id}>{channel.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
                 <FormField
                 control={form.control}
-                name="name"
+                name="notes"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>Notes</FormLabel>
                     <FormControl>
-                        <Input placeholder="e.g. John Doe" {...field} />
+                        <Textarea placeholder="Initial notes about the lead..." {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}
                 />
-                <FormField
-                    control={form.control}
-                    name="sku"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>SKU</FormLabel>
-                        <FormControl>
-                            <Input placeholder="Auto-generated SKU" {...field} readOnly />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g. john@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Phone</FormLabel>
-                            <FormControl>
-                                <Input placeholder="+1 234 567 890" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
-
-            <div>
-                <FormLabel>Social Links</FormLabel>
-                <div className="space-y-2 mt-2">
-                    {fields.map((field, index) => (
-                        <div key={field.id} className="flex items-center gap-2">
-                            <FormField
-                                control={form.control}
-                                name={`socials.${index}.platform`}
-                                render={({ field }) => (
-                                    <FormItem className="w-1/3">
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Platform" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {socialPlatforms.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name={`socials.${index}.url`}
-                                render={({ field }) => (
-                                    <Input {...field} placeholder="URL" className="flex-1"/>
-                                )}
-                            />
-                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
-                                <Trash2 className="h-4 w-4 text-destructive"/>
-                            </Button>
-                        </div>
-                    ))}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => append({ platform: 'Website', url: '' })}
-                    >
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Social Link
-                    </Button>
+                
+                <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {lead ? 'Update' : 'Create'} Lead
+                </Button>
                 </div>
-            </div>
-            <div className='grid grid-cols-2 gap-4'>
-                <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Status</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent>
-                                {leadStatuses.map(status => (
-                                    <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="channelId"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>From</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select a channel..." /></SelectTrigger></FormControl>
-                            <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                {channels.map(channel => (
-                                    <SelectItem key={channel.id} value={channel.id}>{channel.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
-            <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Notes</FormLabel>
-                <FormControl>
-                    <Textarea placeholder="Initial notes about the lead..." {...field} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-            
-            <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {lead ? 'Update' : 'Create'} Lead
-            </Button>
-            </div>
-        </form>
-        </Form>
+            </form>
+            </Form>
+        </div>
 
         <Card className='h-fit'>
             <CardHeader>
