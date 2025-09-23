@@ -115,8 +115,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     if (type === 'drive') {
       provider.addScope('https://www.googleapis.com/auth/drive.readonly');
     } else {
-      provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
-      provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
+      provider.addScope('https://www.googleapis.com/auth/contacts');
     }
     
     setIsConnecting(type);
@@ -182,7 +181,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           if (type === 'drive') {
               url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
           } else {
-              url = `https://people.googleapis.com/v1/people/me?key=${apiKey}`;
+              url = `https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses&key=${apiKey}`;
           }
           
           const response = await fetch(url, {
