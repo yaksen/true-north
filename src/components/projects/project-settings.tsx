@@ -159,8 +159,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     }
   };
 
-  const testConnection = async (testType: string) => {
-      const token = tokens.contacts;
+  const testConnection = async (testType: 'drive' | 'contacts') => {
+      const token = testType === 'drive' ? tokens.drive : tokens.contacts;
       if (!token) {
           toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to the service first.' });
           return;
@@ -179,34 +179,19 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
       let url = '';
       let title = '';
 
-      switch(testType) {
-        case 'contacts-profile':
-            url = `https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses`;
-            title = 'Test 1: Fetched User Profile';
-            break;
-        case 'contacts-connections':
-            url = `https://people.googleapis.com/v1/people/me/connections?resourceName=people/me`;
-            title = 'Test 2: Listed Connections';
-            break;
-        case 'contacts-connections-fields':
-            url = `https://people.googleapis.com/v1/people/me/connections?resourceName=people/me&personFields=names,emailAddresses`;
-            title = 'Test 3: Listed Connections with Fields';
-            break;
-        case 'drive':
-             url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
-             title = 'Test: Fetched Drive Files';
-             break;
-        default:
-            toast({ variant: 'destructive', title: 'Invalid test type' });
-            setTestingConnection(null);
-            return;
+      if (testType === 'drive') {
+        url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
+        title = 'Test: Fetched Drive Files';
+      } else { // contacts
+        url = `https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses`;
+        title = 'Test: Fetched User Profile';
       }
 
 
       try {
           const response = await fetch(url, {
               headers: { 
-                  'Authorization': `Bearer ${testType.startsWith('contacts') ? tokens.contacts : tokens.drive}`,
+                  'Authorization': `Bearer ${token}`,
                   'Accept': 'application/json',
               }
           });
@@ -215,7 +200,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
               const errorData = await response.json();
               console.error(`API Error for ${testType}:`, errorData);
               if (response.status === 401 || response.status === 403) {
-                  await handleDisconnect(testType.startsWith('contacts') ? 'contacts' : 'drive');
+                  await handleDisconnect(testType);
               }
               throw new Error(`API call failed with status: ${response.status}. Check console for details.`);
           }
@@ -225,12 +210,10 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
 
           if (testType === 'drive') {
               items = data.files?.map((file: any) => file.name) || [];
-          } else if (testType === 'contacts-profile') {
-              items = data.names?.map((name: any) => name.displayName).filter(Boolean) || ["Profile loaded"];
-          } else if (testType.startsWith('contacts-connections')) {
-              items = data.connections?.map((c: any) => c.names?.[0]?.displayName).filter(Boolean) || ["No contacts found, but connection is OK."];
+          } else { // contacts
+              items = data.names?.map((name: any) => name.displayName).filter(Boolean) || ["Profile loaded successfully."];
           }
-          setTestResult({type: 'contacts', items, title});
+          setTestResult({type: testType, items, title});
 
       } catch (error: any) {
           console.error(`Test connection error for ${testType}:`, error);
@@ -373,18 +356,10 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                     </div>
                 </div>
                 {tokens.contacts ? (
-                    <div className='flex flex-col gap-2 items-end'>
-                         <div className='flex gap-2'>
-                            <Button variant="secondary" size="sm" onClick={() => testConnection('contacts-profile')} disabled={testingConnection !== null}>
-                                {testingConnection === 'contacts-profile' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test 1 (Profile)
-                            </Button>
-                             <Button variant="secondary" size="sm" onClick={() => testConnection('contacts-connections')} disabled={testingConnection !== null}>
-                                {testingConnection === 'contacts-connections' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test 2 (List)
-                            </Button>
-                            <Button variant="secondary" size="sm" onClick={() => testConnection('contacts-connections-fields')} disabled={testingConnection !== null}>
-                                {testingConnection === 'contacts-connections-fields' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test 3 (List w/ Fields)
-                            </Button>
-                        </div>
+                    <div className='flex items-center gap-2'>
+                        <Button variant="secondary" onClick={() => testConnection('contacts')} disabled={testingConnection !== null}>
+                            {testingConnection === 'contacts' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => handleDisconnect('contacts')}>Disconnect</Button>
                     </div>
                 ) : (
@@ -450,4 +425,3 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     </div>
   );
 }
-
