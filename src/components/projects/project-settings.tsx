@@ -27,6 +27,25 @@ import { db } from '@/lib/firebase';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { MemberForm } from './member-form';
 
+function GoogleDriveIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="24" height="24" {...props}>
+            <path fill="#4285F4" d="M336 448H176l-64-112h320z"/>
+            <path fill="#34A853" d="M112 336l-64-112 152-272 64 112z"/>
+            <path fill="#FBBC05" d="M152 48l152 272H400l64-112z"/>
+        </svg>
+    )
+}
+
+function GoogleContactsIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="24" height="24" {...props}>
+            <path fill="#4285F4" d="M368 96a96 96 0 1 0-192 0 96 96 0 0 0 192 0zm-96 32c-35.3 0-64-28.7-64-64s28.7-64 64-64 64 28.7 64 64-28.7 64-64 64z"/>
+            <path fill="#4285F4" d="M272 256h-32c-61.9 0-112 50.1-112 112v64h368v-64c0-61.9-50.1-112-112-112h-32v-32h32c79.5 0 144 64.5 144 144v80H96v-80c0-79.5 64.5-144 144-144h32v32z"/>
+        </svg>
+    )
+}
+
 interface ProjectSettingsProps {
   project: Project;
 }
@@ -84,6 +103,35 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         </CardHeader>
         <CardContent>
           <MembersList project={project} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+            <CardTitle>Integrations</CardTitle>
+            <CardDescription>Connect third-party apps to streamline your workflow.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center gap-4">
+                    <GoogleDriveIcon />
+                    <div>
+                        <p className="font-semibold">Google Drive</p>
+                        <p className="text-sm text-muted-foreground">Sync reports and files.</p>
+                    </div>
+                </div>
+                <Button variant="outline">Connect</Button>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center gap-4">
+                    <GoogleContactsIcon />
+                    <div>
+                        <p className="font-semibold">Google Contacts</p>
+                        <p className="text-sm text-muted-foreground">Import contacts as leads.</p>
+                    </div>
+                </div>
+                <Button variant="outline">Connect</Button>
+            </div>
         </CardContent>
       </Card>
       
