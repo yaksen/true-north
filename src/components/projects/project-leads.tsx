@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Project, Lead, LeadStatus, Package, Service, Channel } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
-import { PlusCircle, SlidersHorizontal } from "lucide-react";
+import { PlusCircle, SlidersHorizontal, Contact, Loader2 } from "lucide-react";
 import { DataTable } from "../ui/data-table";
 import { getLeadsColumns } from "./leads-columns";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { saveLeadToGoogleContacts } from "@/app/actions/google-contacts";
 
 interface ProjectLeadsProps {
     project: Project;
@@ -29,6 +30,7 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
     const { toast } = useToast();
     const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
+    const [isBulkSaving, setIsBulkSaving] = useState(false);
     
     const handleStar = async (id: string, starred: boolean) => {
         try {
@@ -57,6 +59,34 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
         if (statusFilter === 'all') return leads;
         return leads.filter(lead => lead.status === statusFilter);
     }, [leads, statusFilter]);
+
+    const handleBulkSaveToContacts = async () => {
+        if (!project.googleContactsAccessToken) {
+            toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to Google Contacts in Project Settings first.'});
+            return;
+        }
+        setIsBulkSaving(true);
+        let successCount = 0;
+        let existCount = 0;
+        let failCount = 0;
+
+        for (const lead of filteredLeads) {
+            const result = await saveLeadToGoogleContacts(lead, project.googleContactsAccessToken);
+            if (result.success) {
+                successCount++;
+            } else if (result.message.includes('already exists')) {
+                existCount++;
+            } else {
+                failCount++;
+            }
+        }
+
+        setIsBulkSaving(false);
+        toast({
+            title: 'Bulk Save Complete',
+            description: `${successCount} new contacts saved, ${existCount} already existed, and ${failCount} failed.`,
+        });
+    }
 
     const Toolbar = () => (
         <div className="flex items-center gap-2">
@@ -88,17 +118,23 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
                             <CardTitle>Leads</CardTitle>
                             <CardDescription>All leads associated with the &quot;{project.name}&quot; project.</CardDescription>
                         </div>
-                        <Dialog open={isLeadFormOpen} onOpenChange={setIsLeadFormOpen}>
-                            <DialogTrigger asChild>
-                                <Button size="sm"><PlusCircle className="mr-2"/> Add Lead</Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-4xl">
-                                <DialogHeader>
-                                    <DialogTitle>Add New Lead</DialogTitle>
-                                </DialogHeader>
-                                <LeadForm projectId={project.id} channels={channels} closeForm={() => setIsLeadFormOpen(false)} />
-                            </DialogContent>
-                        </Dialog>
+                        <div className='flex items-center gap-2'>
+                            <Button size="sm" variant="outline" onClick={handleBulkSaveToContacts} disabled={isBulkSaving || !project.googleContactsAccessToken}>
+                                {isBulkSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Contact className="mr-2 h-4 w-4" />}
+                                Save All to Contacts
+                            </Button>
+                            <Dialog open={isLeadFormOpen} onOpenChange={setIsLeadFormOpen}>
+                                <DialogTrigger asChild>
+                                    <Button size="sm"><PlusCircle className="mr-2"/> Add Lead</Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-4xl">
+                                    <DialogHeader>
+                                        <DialogTitle>Add New Lead</DialogTitle>
+                                    </DialogHeader>
+                                    <LeadForm projectId={project.id} channels={channels} closeForm={() => setIsLeadFormOpen(false)} />
+                                </DialogContent>
+                            </Dialog>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
