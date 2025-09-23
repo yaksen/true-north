@@ -69,7 +69,7 @@ export function PartnerForm({ partner, projectId, channels, closeForm }: Partner
       phone: '',
       socials: [],
       notes: '',
-      channelId: '',
+      channelId: channels[channels.length - 1]?.id || '',
     },
   });
 
@@ -252,7 +252,7 @@ export function PartnerForm({ partner, projectId, channels, closeForm }: Partner
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>From</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select a channel..." /></SelectTrigger></FormControl>
                         <SelectContent>
                             <SelectItem value="none">None</SelectItem>
