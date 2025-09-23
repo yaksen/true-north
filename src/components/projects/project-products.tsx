@@ -208,7 +208,7 @@ export function ProjectProducts({ project, categories, services, products, packa
         <div className="flex gap-2">
           <Dialog open={isCategoryFormOpen} onOpenChange={setIsCategoryFormOpen}>
             <DialogTrigger asChild><Button size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> Category</Button></DialogTrigger>
-            <DialogContent><DialogHeader><DialogTitle>Create New Category</DialogTitle></DialogHeader><CategoryForm projectId={project.id} closeForm={() => setIsCategoryFormOpen(false)} /></DialogContent>
+            <DialogContent className='max-w-4xl'><DialogHeader><DialogTitle>Create New Category</DialogTitle></DialogHeader><CategoryForm projectId={project.id} closeForm={() => setIsCategoryFormOpen(false)} /></DialogContent>
           </Dialog>
           <Dialog open={isServiceFormOpen} onOpenChange={setIsServiceFormOpen}>
             <DialogTrigger asChild><Button size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> Service</Button></DialogTrigger>

@@ -12,11 +12,14 @@ import type { Category } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/lib/activity-log';
 import { v4 as uuidv4 } from 'uuid';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Label } from '../ui/label';
+import { extractCategoryDetails, type ExtractCategoryDetailsOutput } from '@/ai/flows/extract-category-details-flow';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -36,6 +39,9 @@ export function CategoryForm({ category, projectId, closeForm }: CategoryFormPro
   const { toast } = useToast();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiImage, setAiImage] = useState<File | null>(null);
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(formSchema),
@@ -45,6 +51,60 @@ export function CategoryForm({ category, projectId, closeForm }: CategoryFormPro
       notes: '',
     },
   });
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setAiImage(event.target.files[0]);
+    }
+  };
+  
+  const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const handleExtractDetails = async () => {
+    if (!aiPrompt && !aiImage) {
+        toast({
+            variant: 'destructive',
+            title: 'No Input Provided',
+            description: 'Please provide some text or an image for the AI to process.'
+        });
+        return;
+    }
+
+    setIsExtracting(true);
+    try {
+        const imageDataUri = aiImage ? await fileToDataUri(aiImage) : undefined;
+        
+        const extractedData: ExtractCategoryDetailsOutput = await extractCategoryDetails({
+            prompt: aiPrompt,
+            imageDataUri: imageDataUri
+        });
+
+        if (extractedData.name) form.setValue('name', extractedData.name);
+        if (extractedData.notes) form.setValue('notes', extractedData.notes);
+
+        toast({
+            title: 'Details Extracted',
+            description: 'The AI has filled the form with the extracted details. Please review them.'
+        });
+
+    } catch (error) {
+        console.error('Error extracting category details:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Extraction Failed',
+            description: 'The AI could not extract details. Please try again.'
+        });
+    } finally {
+        setIsExtracting(false);
+    }
+};
 
   async function onSubmit(values: CategoryFormValues) {
     if (!user) return;
@@ -75,57 +135,90 @@ export function CategoryForm({ category, projectId, closeForm }: CategoryFormPro
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+        <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Category Name</FormLabel>
+                    <FormControl>
+                        <Input placeholder="e.g. Web Development" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="sku"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>SKU</FormLabel>
+                    <FormControl>
+                        <Input placeholder="Auto-generated SKU" {...field} readOnly />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </div>
             <FormField
             control={form.control}
-            name="name"
+            name="notes"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Category Name</FormLabel>
+                <FormLabel>Notes (Optional)</FormLabel>
                 <FormControl>
-                    <Input placeholder="e.g. Web Development" {...field} />
+                    <Textarea placeholder="Internal notes about this category..." {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
             )}
             />
-            <FormField
-            control={form.control}
-            name="sku"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>SKU</FormLabel>
-                <FormControl>
-                    <Input placeholder="Auto-generated SKU" {...field} readOnly />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-        </div>
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notes (Optional)</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Internal notes about this category..." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {category ? 'Update' : 'Create'} Category
-          </Button>
-        </div>
-      </form>
-    </Form>
+            <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {category ? 'Update' : 'Create'} Category
+            </Button>
+            </div>
+        </form>
+        </Form>
+         <Card className='h-fit'>
+            <CardHeader>
+                <CardTitle className='flex items-center gap-2'>
+                    <Sparkles className='h-5 w-5 text-primary' />
+                    AI Assistant
+                </CardTitle>
+                <CardDescription>
+                    Paste text or upload an image to automatically fill the form.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="ai-prompt">Text or Prompt</Label>
+                    <Textarea
+                        id="ai-prompt"
+                        placeholder="e.g., 'A category for all our design services.'"
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        className="h-24"
+                    />
+                </div>
+                    <div className="space-y-2">
+                    <Label htmlFor="ai-image">Image</Label>
+                    <Input id="ai-image" type="file" accept="image/*" onChange={handleFileChange} />
+                </div>
+                <Button className='w-full' onClick={handleExtractDetails} disabled={isExtracting}>
+                    {isExtracting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Extract Details
+                </Button>
+            </CardContent>
+        </Card>
+    </div>
   );
 }
