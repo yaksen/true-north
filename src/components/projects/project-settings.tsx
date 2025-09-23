@@ -181,7 +181,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           if (type === 'drive') {
               url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
           } else {
-              url = `https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses&key=${apiKey}`;
+              const personFields = encodeURIComponent('names,emailAddresses');
+              url = `https://people.googleapis.com/v1/people/me/connections?personFields=${personFields}&key=${apiKey}`;
           }
           
           const response = await fetch(url, {
@@ -203,12 +204,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           if (type === 'drive') {
               items = data.files?.map((file: any) => file.name) || [];
           } else {
-              const userName = data.names?.[0]?.displayName;
-              if (userName) {
-                items = [`Successfully fetched profile: ${userName}`];
-              } else {
-                items = ["Successfully connected, but couldn't fetch profile name."];
-              }
+              items = data.connections?.map((person: any) => person.names?.[0]?.displayName).filter(Boolean) || [];
           }
           setTestResult({type, items});
 
