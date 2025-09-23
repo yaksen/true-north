@@ -212,7 +212,7 @@ export function ProjectProducts({ project, categories, services, products, packa
           </Dialog>
           <Dialog open={isServiceFormOpen} onOpenChange={setIsServiceFormOpen}>
             <DialogTrigger asChild><Button size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> Service</Button></DialogTrigger>
-            <DialogContent><DialogHeader><DialogTitle>Create New Service</DialogTitle></DialogHeader><ServiceForm project={project} categories={categories} closeForm={() => setIsServiceFormOpen(false)} /></DialogContent>
+            <DialogContent className='max-w-4xl'><DialogHeader><DialogTitle>Create New Service</DialogTitle></DialogHeader><ServiceForm project={project} categories={categories} closeForm={() => setIsServiceFormOpen(false)} /></DialogContent>
           </Dialog>
           <Dialog open={isProductFormOpen} onOpenChange={setIsProductFormOpen}>
             <DialogTrigger asChild><Button size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> Product</Button></DialogTrigger>
