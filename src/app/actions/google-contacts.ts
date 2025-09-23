@@ -15,7 +15,7 @@ type CreateContactInput = z.infer<typeof CreateContactInputSchema>;
 export async function createGoogleContact(input: CreateContactInput) {
   const { accessToken, name, email, phone } = CreateContactInputSchema.parse(input);
 
-  const contact = {
+  const requestBody = {
     names: [{ givenName: name }],
     emailAddresses: email ? [{ value: email }] : [],
     phoneNumbers: phone ? [{ value: phone }] : [],
@@ -28,7 +28,7 @@ export async function createGoogleContact(input: CreateContactInput) {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(contact),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -43,5 +43,3 @@ export async function createGoogleContact(input: CreateContactInput) {
     throw new Error(error.message || 'An unexpected error occurred while creating the contact.');
   }
 }
-
-    
