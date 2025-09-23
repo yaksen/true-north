@@ -34,9 +34,16 @@ async function createContact(lead: Lead, accessToken: string): Promise<any> {
     const url = 'https://people.googleapis.com/v1/people:createContact';
     
     const contactData = {
-        names: [{ givenName: lead.name }],
+        names: [{ givenName: `${lead.name} - ${lead.sku || lead.id}` }],
         ...(lead.email && { emailAddresses: [{ value: lead.email }] }),
         ...(lead.phone && { phoneNumbers: [{ value: lead.phone }] }),
+        ...(lead.socials && lead.socials.length > 0 && { 
+            urls: lead.socials.map(social => ({ 
+                value: social.url, 
+                type: social.platform,
+                formattedType: social.platform,
+            }))
+        }),
     };
 
     const response = await fetch(url, {
