@@ -125,6 +125,14 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to the service first.' });
           return;
       }
+       if (!apiKey) {
+        toast({
+            variant: 'destructive',
+            title: 'API Key Missing',
+            description: 'Please enter your Google Cloud API Key.',
+        });
+        return;
+      }
       setIsTesting(true);
       setTestResult(null);
 
@@ -141,6 +149,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           });
 
           if (!response.ok) {
+              const errorData = await response.json();
+              console.error('API Error:', errorData);
               throw new Error(`API call failed with status: ${response.status}`);
           }
           
@@ -154,7 +164,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
 
       } catch (error) {
           console.error(`Test connection error for ${type}:`, error);
-          toast({ variant: 'destructive', title: 'Test Failed', description: 'Could not fetch test data.' });
+          toast({ variant: 'destructive', title: 'Test Failed', description: 'Could not fetch test data. Check your API key and permissions.' });
           // If token is expired, clear it to force re-login
           if ((error as Error).message.includes('401') || (error as Error).message.includes('403')) {
             if (type === 'drive') setDriveAccessToken(null);
@@ -264,7 +274,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
             </div>
             {testResult && (
                 <div className='p-4 bg-muted rounded-lg'>
-                    <h4 className='font-semibold text-sm mb-2'>Test Results:</h4>
+                    <h4 className='font-semibold text-sm mb-2'>Test Results (First 5 items):</h4>
                     <ul className='space-y-1 text-sm text-muted-foreground'>
                         {testResult.map((item, index) => (
                             <li key={index} className='flex items-center gap-2'>
@@ -314,3 +324,5 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     </div>
   );
 }
+
+    
