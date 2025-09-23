@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -176,7 +175,7 @@ export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientP
               <PlusCircle className="mr-2 h-4 w-4" /> New Record
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle>Create New Global Record</DialogTitle>
             </DialogHeader>

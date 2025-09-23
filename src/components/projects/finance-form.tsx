@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -12,17 +11,22 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2, CalendarIcon } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Loader2, CalendarIcon, Sparkles } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, addDays } from 'date-fns';
+import { format, addDays, parseISO } from 'date-fns';
 import { logActivity } from '@/lib/activity-log';
 import { CurrencyInput } from '../ui/currency-input';
 import { useCurrency } from '@/context/CurrencyContext';
 import { v4 as uuidv4 } from 'uuid';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import { extractFinanceDetails, type ExtractFinanceDetailsOutput } from '@/ai/flows/extract-finance-details-flow';
+
 
 const financeTypes = ['income', 'expense'] as const;
 
@@ -57,6 +61,9 @@ export function FinanceForm({ finance, project, projects, packages, services, le
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiImage, setAiImage] = useState<File | null>(null);
   
   const [totalValue, setTotalValue] = useState(finance?.amount || 0);
 
@@ -113,6 +120,64 @@ export function FinanceForm({ finance, project, projects, packages, services, le
     }
   }, [selectedServiceId, services, form]);
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setAiImage(event.target.files[0]);
+    }
+  };
+  
+  const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const handleExtractDetails = async () => {
+    if (!aiPrompt && !aiImage) {
+        toast({
+            variant: 'destructive',
+            title: 'No Input Provided',
+            description: 'Please provide some text or an image for the AI to process.'
+        });
+        return;
+    }
+
+    setIsExtracting(true);
+    try {
+        const imageDataUri = aiImage ? await fileToDataUri(aiImage) : undefined;
+        
+        const extractedData: ExtractFinanceDetailsOutput = await extractFinanceDetails({
+            prompt: aiPrompt,
+            imageDataUri: imageDataUri
+        });
+
+        if (extractedData.description) form.setValue('description', extractedData.description);
+        if (extractedData.type) form.setValue('type', extractedData.type);
+        if (extractedData.amount) form.setValue('amount', extractedData.amount);
+        if (extractedData.currency) form.setValue('currency', extractedData.currency);
+        if (extractedData.date) form.setValue('date', parseISO(extractedData.date));
+        if (extractedData.category) form.setValue('category', extractedData.category);
+
+
+        toast({
+            title: 'Details Extracted',
+            description: 'The AI has filled the form with the extracted details. Please review them.'
+        });
+
+    } catch (error) {
+        console.error('Error extracting finance details:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Extraction Failed',
+            description: 'The AI could not extract details. Please try again.'
+        });
+    } finally {
+        setIsExtracting(false);
+    }
+  };
 
   async function onSubmit(values: FinanceFormValues) {
     if (!user) {
@@ -235,223 +300,256 @@ export function FinanceForm({ finance, project, projects, packages, services, le
   const isInvoiceFlow = leadId && form.watch('type') === 'income';
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {projects && (
-           <FormField
-            control={form.control}
-            name="projectId"
-            render={({ field }) => (
+    <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+        <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {projects && (
+            <FormField
+                control={form.control}
+                name="projectId"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Project</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a project..." />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {projects.map(p => (
+                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            )}
+            {(packages && packages.length > 0) || (services && services.length > 0) ? (
+            <div className="grid grid-cols-2 gap-4">
+                {packages && packages.length > 0 && (
                 <FormItem>
-                    <FormLabel>Project</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormLabel>Select a Package (Optional)</FormLabel>
+                    <Select value={selectedPackageId || ''} onValueChange={setSelectedPackageId}>
                         <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select a project..." />
+                                <SelectValue placeholder="Select a package..." />
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            {projects.map(p => (
+                            {packages.map(p => (
                                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
-                    <FormMessage />
                 </FormItem>
-            )}
-           />
-        )}
-        {(packages && packages.length > 0) || (services && services.length > 0) ? (
-          <div className="grid grid-cols-2 gap-4">
-            {packages && packages.length > 0 && (
-              <FormItem>
-                  <FormLabel>Select a Package (Optional)</FormLabel>
-                  <Select value={selectedPackageId || ''} onValueChange={setSelectedPackageId}>
-                      <FormControl>
-                          <SelectTrigger>
-                              <SelectValue placeholder="Select a package..." />
-                          </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                          {packages.map(p => (
-                              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                          ))}
-                      </SelectContent>
-                  </Select>
-              </FormItem>
-            )}
-            {services && services.length > 0 && (
-                <FormItem>
-                    <FormLabel>Select a Service (Optional)</FormLabel>
-                    <Select value={selectedServiceId || ''} onValueChange={setSelectedServiceId}>
-                        <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a service..." />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {services.map(s => (
-                                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </FormItem>
-            )}
-          </div>
-        ) : null}
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. Initial client payment" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="grid grid-cols-2 gap-4">
-            <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
+                )}
+                {services && services.length > 0 && (
                     <FormItem>
-                    <FormLabel>Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>
-                            {financeTypes.map(type => (
-                                <SelectItem key={type} value={type} className='capitalize'>{type}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
+                        <FormLabel>Select a Service (Optional)</FormLabel>
+                        <Select value={selectedServiceId || ''} onValueChange={setSelectedServiceId}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a service..." />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {services.map(s => (
+                                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </FormItem>
                 )}
-            />
-             {isInvoiceFlow ? (
-                 <FormItem>
-                    <FormLabel>Total Value</FormLabel>
-                    <CurrencyInput
-                        value={totalValue}
-                        onValueChange={setTotalValue}
-                        currency={form.watch('currency')}
-                        onCurrencyChange={(value) => form.setValue('currency', value)}
-                    />
+            </div>
+            ) : null}
+            <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                    <Input placeholder="e.g. Initial client payment" {...field} />
+                </FormControl>
+                <FormMessage />
                 </FormItem>
-             ) : (
+            )}
+            />
+            <div className="grid grid-cols-2 gap-4">
                 <FormField
                     control={form.control}
-                    name="amount"
+                    name="type"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Amount</FormLabel>
+                        <FormLabel>Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                                {financeTypes.map(type => (
+                                    <SelectItem key={type} value={type} className='capitalize'>{type}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                {isInvoiceFlow ? (
+                    <FormItem>
+                        <FormLabel>Total Value</FormLabel>
+                        <CurrencyInput
+                            value={totalValue}
+                            onValueChange={setTotalValue}
+                            currency={form.watch('currency')}
+                            onCurrencyChange={(value) => form.setValue('currency', value)}
+                        />
+                    </FormItem>
+                ) : (
+                    <FormField
+                        control={form.control}
+                        name="amount"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Amount</FormLabel>
+                                <CurrencyInput
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                    currency={form.watch('currency')}
+                                    onCurrencyChange={(value) => form.setValue('currency', value)}
+                                />
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
+            </div>
+
+            {isInvoiceFlow && (
+                <FormField
+                    control={form.control}
+                    name="paidPrice"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Paid Amount</FormLabel>
                             <CurrencyInput
-                                value={field.value}
+                                value={field.value || 0}
                                 onValueChange={field.onChange}
                                 currency={form.watch('currency')}
                                 onCurrencyChange={(value) => form.setValue('currency', value)}
+                                readOnlyCurrency
                             />
+                            <FormDescription>
+                                Amount paid at the time of creating this invoice.
+                            </FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
-             )}
-        </div>
-
-        {isInvoiceFlow && (
-            <FormField
-                control={form.control}
-                name="paidPrice"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Paid Amount</FormLabel>
-                        <CurrencyInput
-                            value={field.value || 0}
-                            onValueChange={field.onChange}
-                            currency={form.watch('currency')}
-                            onCurrencyChange={(value) => form.setValue('currency', value)}
-                            readOnlyCurrency
-                        />
-                         <FormDescription>
-                            Amount paid at the time of creating this invoice.
-                        </FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-        )}
-        
-        <div className="grid grid-cols-2 gap-4">
-             <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                        <FormLabel>Date</FormLabel>
-                        <Popover>
-                            <PopoverTrigger asChild>
+            )}
+            
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                            <FormLabel>Date</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                <FormControl>
+                                    <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "pl-3 text-left font-normal",
+                                        !field.value && "text-muted-foreground"
+                                    )}
+                                    >
+                                    {field.value ? (
+                                        format(field.value instanceof Date ? field.value : new Date(field.value), "PPP")
+                                    ) : (
+                                        <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                                    initialFocus
+                                />
+                                <div className="p-2 border-t flex gap-1">
+                                    <Button size="sm" variant="ghost" onClick={() => field.onChange(new Date())}>Today</Button>
+                                    <Button size="sm" variant="ghost" onClick={() => field.onChange(addDays(new Date(), 1))}>Tomorrow</Button>
+                                    <Button size="sm" variant="ghost" onClick={() => field.onChange(addDays(new Date(), 2))}>Day After</Button>
+                                </div>
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Category (Optional)</FormLabel>
                             <FormControl>
-                                <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                )}
-                                >
-                                {field.value ? (
-                                    format(field.value instanceof Date ? field.value : new Date(field.value), "PPP")
-                                ) : (
-                                    <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
+                                <Input placeholder="e.g. Software" {...field} />
                             </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                                initialFocus
-                            />
-                            <div className="p-2 border-t flex gap-1">
-                                <Button size="sm" variant="ghost" onClick={() => field.onChange(new Date())}>Today</Button>
-                                <Button size="sm" variant="ghost" onClick={() => field.onChange(addDays(new Date(), 1))}>Tomorrow</Button>
-                                <Button size="sm" variant="ghost" onClick={() => field.onChange(addDays(new Date(), 2))}>Day After</Button>
-                            </div>
-                            </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Category (Optional)</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g. Software" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-        </div>
-        
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {finance ? 'Update' : 'Create'} Record
-          </Button>
-        </div>
-      </form>
-    </Form>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+            
+            <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {finance ? 'Update' : 'Create'} Record
+            </Button>
+            </div>
+        </form>
+        </Form>
+        <Card className='h-fit'>
+            <CardHeader>
+                <CardTitle className='flex items-center gap-2'>
+                    <Sparkles className='h-5 w-5 text-primary' />
+                    AI Assistant
+                </CardTitle>
+                <CardDescription>
+                    Paste text from a receipt or upload an image to automatically fill the form.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="ai-prompt">Text or Prompt</Label>
+                    <Textarea
+                        id="ai-prompt"
+                        placeholder="e.g., 'Lunch meeting with client, $45.50 on Oct 23'"
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        className="h-24"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="ai-image">Image (e.g., Receipt)</Label>
+                    <Input id="ai-image" type="file" accept="image/*" onChange={handleFileChange} />
+                </div>
+                <Button className='w-full' onClick={handleExtractDetails} disabled={isExtracting}>
+                    {isExtracting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Extract Details
+                </Button>
+            </CardContent>
+        </Card>
+    </div>
   );
 }

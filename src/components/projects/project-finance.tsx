@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from "react";
@@ -117,7 +116,7 @@ export function ProjectFinance({ project, finances }: ProjectFinanceProps) {
                             <DialogTrigger asChild>
                                 <Button size="sm"><PlusCircle className="mr-2"/> Add Record</Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className='max-w-4xl'>
                                 <DialogHeader>
                                     <DialogTitle>Add New Financial Record</DialogTitle>
                                 </DialogHeader>

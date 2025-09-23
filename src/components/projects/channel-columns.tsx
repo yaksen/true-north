@@ -1,4 +1,3 @@
-
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
@@ -88,7 +87,7 @@ const ActionsCell: React.FC<{ channel: Channel, project: Project }> = ({ channel
             </Dialog>
 
             <Dialog open={isFinanceOpen} onOpenChange={setIsFinanceOpen}>
-                <DialogContent>
+                <DialogContent className="max-w-4xl">
                     <DialogHeader>
                         <DialogTitle>Log Finance for {channel.name}</DialogTitle>
                     </DialogHeader>
