@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Project, ProjectMember } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -59,12 +60,26 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  
+  // States are now initialized from the project prop
+  const [apiKey, setApiKey] = useState(project.googleApiKey || '');
+  const [tokens, setTokens] = useState({
+      drive: project.googleDriveAccessToken || null,
+      contacts: project.googleContactsAccessToken || null,
+  });
 
   const [isConnecting, setIsConnecting] = useState<'drive' | 'contacts' | null>(null);
-  const [tokens, setTokens] = useState<{drive: string | null, contacts: string | null}>({ drive: null, contacts: null });
   const [testResult, setTestResult] = useState<{type: 'drive' | 'contacts', items: string[]} | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+
+  useEffect(() => {
+    setApiKey(project.googleApiKey || '');
+    setTokens({
+      drive: project.googleDriveAccessToken || null,
+      contacts: project.googleContactsAccessToken || null,
+    });
+  }, [project]);
+
 
   const isOwner = user?.uid === project.ownerUid;
 
@@ -85,6 +100,17 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     }
   }
 
+  const handleSaveApiKey = async (key: string) => {
+    const projectRef = doc(db, 'projects', project.id);
+    try {
+        await updateDoc(projectRef, { googleApiKey: key });
+        setApiKey(key);
+        toast({ title: 'Success', description: 'API Key saved.' });
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not save API Key.' });
+    }
+  };
+
   const handleConnect = async (type: 'drive' | 'contacts') => {
     const provider = new GoogleAuthProvider();
     if (type === 'drive') {
@@ -98,7 +124,14 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (credential?.accessToken) {
-        setTokens(prev => ({...prev, [type]: credential.accessToken}));
+        const token = credential.accessToken;
+        const projectRef = doc(db, 'projects', project.id);
+        const updatePayload = type === 'drive' 
+            ? { googleDriveAccessToken: token } 
+            : { googleContactsAccessToken: token };
+            
+        await updateDoc(projectRef, updatePayload);
+        setTokens(prev => ({...prev, [type]: token}));
         toast({ title: 'Success', description: `Successfully connected to Google ${type === 'drive' ? 'Drive' : 'Contacts'}.` });
       } else {
         throw new Error('No access token received.');
@@ -108,6 +141,22 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
       toast({ variant: 'destructive', title: 'Connection Failed', description: `Could not connect to Google ${type === 'drive' ? 'Drive' : 'Contacts'}.` });
     } finally {
       setIsConnecting(null);
+    }
+  };
+
+  const handleDisconnect = async (type: 'drive' | 'contacts') => {
+    const projectRef = doc(db, 'projects', project.id);
+    const updatePayload = type === 'drive' 
+        ? { googleDriveAccessToken: null } 
+        : { googleContactsAccessToken: null };
+    
+    try {
+        await updateDoc(projectRef, updatePayload);
+        setTokens(prev => ({ ...prev, [type]: null }));
+        setTestResult(null);
+        toast({ title: 'Success', description: 'Disconnected successfully.' });
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not disconnect.' });
     }
   };
 
@@ -143,6 +192,10 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           if (!response.ok) {
               const errorData = await response.json();
               console.error('API Error:', errorData);
+              if (response.status === 401 || response.status === 403) {
+                  // Token expired or revoked, disconnect it
+                  await handleDisconnect(type);
+              }
               throw new Error(`API call failed with status: ${response.status}`);
           }
           
@@ -151,16 +204,13 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           if (type === 'drive') {
               items = data.files.map((file: any) => file.name);
           } else {
-              items = data.connections.map((person: any) => person.names[0].displayName);
+              items = data.connections?.map((person: any) => person.names?.[0]?.displayName || 'Unnamed Contact') || [];
           }
           setTestResult({type, items});
 
       } catch (error) {
           console.error(`Test connection error for ${type}:`, error);
-          toast({ variant: 'destructive', title: 'Test Failed', description: 'Could not fetch test data. Check your API key and permissions.' });
-          if ((error as Error).message.includes('401') || (error as Error).message.includes('403')) {
-            setTokens(prev => ({...prev, [type]: null}));
-          }
+          toast({ variant: 'destructive', title: 'Test Failed', description: 'Could not fetch test data. Your token might have expired. Please try disconnecting and reconnecting.' });
       } finally {
           setIsTesting(false);
       }
@@ -201,13 +251,16 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         <CardContent className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="google-api-key">Google Cloud API Key</Label>
-                <Input 
-                    id="google-api-key" 
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="Enter your Google Cloud API Key"
-                />
+                <div className='flex gap-2'>
+                    <Input 
+                        id="google-api-key" 
+                        type="password"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder="Enter your Google Cloud API Key"
+                    />
+                    <Button onClick={() => handleSaveApiKey(apiKey)}>Save</Button>
+                </div>
             </div>
         </CardContent>
       </Card>
@@ -278,7 +331,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                     <Button variant="secondary" onClick={() => testConnection('drive')} disabled={isTesting}>
                       {isTesting && isConnecting !== 'drive' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
                     </Button>
-                     <Button variant="outline" onClick={() => setTokens(p => ({...p, drive: null}))}>Disconnect</Button>
+                     <Button variant="outline" onClick={() => handleDisconnect('drive')}>Disconnect</Button>
                   </div>
                 ) : (
                   <Button variant="outline" onClick={() => handleConnect('drive')} disabled={isConnecting === 'drive'}>
@@ -300,7 +353,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                         <Button variant="secondary" onClick={() => testConnection('contacts')} disabled={isTesting}>
                           {isTesting && isConnecting !== 'contacts' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Test Connection
                         </Button>
-                        <Button variant="outline" onClick={() => setTokens(p => ({...p, contacts: null}))}>Disconnect</Button>
+                        <Button variant="outline" onClick={() => handleDisconnect('contacts')}>Disconnect</Button>
                     </div>
                 ) : (
                     <Button variant="outline" onClick={() => handleConnect('contacts')} disabled={isConnecting === 'contacts'}>
@@ -361,4 +414,5 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     </div>
   );
 }
+
 

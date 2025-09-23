@@ -60,6 +60,9 @@ export interface Project {
   createdAt: Date;
   updatedAt: Date;
   timezone?: string;
+  googleApiKey?: string;
+  googleDriveAccessToken?: string;
+  googleContactsAccessToken?: string;
 }
 
 export interface Task {
