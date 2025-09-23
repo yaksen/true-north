@@ -115,7 +115,7 @@ export function PersonalExpenseCard({ expenses, wallet, categories }: { expenses
                             <DialogTrigger asChild>
                                 <Button size="sm" ><PlusCircle className='mr-2' /> Add</Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="max-w-4xl">
                                 <DialogHeader><DialogTitle>Add Personal Expense</DialogTitle></DialogHeader>
                                 <ExpenseForm wallet={wallet} categories={categories} closeForm={() => setIsFormOpen(false)} />
                             </DialogContent>
