@@ -181,7 +181,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           if (type === 'drive') {
               url = `https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(name)&key=${apiKey}`;
           } else {
-              const personFields = encodeURIComponent('names,emailAddresses');
+              const personFields = 'names,emailAddresses';
               url = `https://people.googleapis.com/v1/people/me/connections?personFields=${personFields}&pageSize=5&key=${apiKey}`;
           }
           
@@ -280,9 +280,9 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Troubleshooting API Connections</AlertDialogTitle>
+                        <DialogTitle>Troubleshooting API Connections</DialogTitle>
                         <AlertDialogDescription>
-                            If a `403 Forbidden` error occurs, please verify the following in your Google Cloud Console for project <b className="text-primary">{process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}</b>.
+                            If a `403 Forbidden` error occurs, please verify the following in your Google Cloud Console for project <b className="text-primary">{process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}</b>. A `400 Bad Request` may also indicate a permissions issue.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <div className="text-sm space-y-4">
@@ -418,6 +418,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     </div>
   );
 }
+
 
 
 
