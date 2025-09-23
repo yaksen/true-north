@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Lead, LeadStatus, Package, Service, Project, Channel } from "@/lib/types";
-import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon, Edit, Trash2, Facebook, Instagram, CaseUpper, Star, QrCode } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, PlusCircle, Linkedin, Twitter, Github, Link as LinkIcon, Edit, Trash2, Facebook, Instagram, CaseUpper, Star, QrCode, Contact as ContactIcon, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Badge } from "../ui/badge";
@@ -23,6 +23,8 @@ import { db } from "@/lib/firebase";
 import { logActivity } from "@/lib/activity-log";
 import { cn } from "@/lib/utils";
 import { QrCodeModal } from "../qr-code-modal";
+import { createGoogleContact } from "@/app/actions/google-contacts";
+
 
 interface ColumnDependencies {
     project: Project;
@@ -38,6 +40,7 @@ const ActionsCell: React.FC<{ lead: Lead, dependencies: ColumnDependencies }> = 
     const [isTaskOpen, setIsTaskOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isQrOpen, setIsQrOpen] = useState(false);
+    const [isSavingContact, setIsSavingContact] = useState(false);
 
     const handleDelete = async () => {
         if (!user) return;
@@ -49,6 +52,38 @@ const ActionsCell: React.FC<{ lead: Lead, dependencies: ColumnDependencies }> = 
             toast({ variant: 'destructive', title: 'Error', description: 'Could not delete lead.' });
         }
     };
+    
+    const handleSaveToContacts = async () => {
+        if (!dependencies.project.googleContactsAccessToken) {
+            toast({
+                variant: 'destructive',
+                title: 'Not Connected',
+                description: 'Please connect to Google Contacts in project settings first.'
+            });
+            return;
+        }
+
+        setIsSavingContact(true);
+        try {
+            await createGoogleContact({
+                accessToken: dependencies.project.googleContactsAccessToken,
+                name: lead.name,
+                email: lead.email,
+                phone: lead.phone,
+            });
+            toast({ title: 'Success', description: `${lead.name} saved to Google Contacts.`});
+        } catch (error: any) {
+            console.error(error);
+            toast({
+                variant: 'destructive',
+                title: 'Failed to Save Contact',
+                description: error.message || 'An unknown error occurred.'
+            });
+        } finally {
+            setIsSavingContact(false);
+        }
+    };
+
 
     return (
         <>
@@ -88,6 +123,10 @@ const ActionsCell: React.FC<{ lead: Lead, dependencies: ColumnDependencies }> = 
                     </AlertDialog>
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={handleSaveToContacts} disabled={isSavingContact}>
+                        {isSavingContact ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ContactIcon className="mr-2 h-4 w-4" />}
+                        Save to Google Contacts
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setIsFinanceOpen(true)}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Log Finance
                     </DropdownMenuItem>
@@ -271,3 +310,5 @@ export const getLeadsColumns = (dependencies: ColumnDependencies): ColumnDef<Lea
         },
       },
   ];
+
+    
