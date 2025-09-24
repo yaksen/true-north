@@ -256,7 +256,7 @@ export function ProjectChatbot({
                 </AlertDialogContent>
             </AlertDialog>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col p-4 gap-4">
+        <CardContent className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
         <ScrollArea className="flex-1 pr-4" ref={scrollAreaRef}>
           <div className="space-y-6">
             {messages.map((message) => (
@@ -266,10 +266,10 @@ export function ProjectChatbot({
                     <AvatarFallback><Bot className="h-5 w-5" /></AvatarFallback>
                   </Avatar>
                 )}
-                <div className={`max-w-md rounded-xl px-4 py-3 text-sm ${ message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted' }`}>
+                <div className={`prose dark:prose-invert prose-sm max-w-md rounded-xl px-4 py-3 text-sm ${ message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted' }`}>
                   {message.image && <Image src={message.image} alt="user upload" width={200} height={200} className='rounded-md mb-2' />}
                   {message.audio && <audio src={message.audio} controls className='w-full h-10 mb-2' />}
-                  <p className="whitespace-pre-wrap">{message.text}</p>
+                  <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: message.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>').replace(/`([^`]+)`/g, '<code>$1</code>') }} />
                 </div>
                  {message.sender === 'user' && (
                   <Avatar className="h-8 w-8">
