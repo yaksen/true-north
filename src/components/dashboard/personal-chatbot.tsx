@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -14,6 +15,7 @@ import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, Timest
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import Image from 'next/image';
 
 interface PersonalChatbotProps {
   tasks: Task[];
@@ -29,6 +31,8 @@ interface ChatMessage {
   id: string;
   sender: 'user' | 'ai';
   text: string;
+  image?: string;
+  audio?: string;
   createdAt: Timestamp | Date;
 }
 
@@ -47,6 +51,14 @@ export function PersonalChatbot({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const messagesCollectionRef = user ? collection(db, 'personalChats', user.uid, 'messages') : null;
 
@@ -69,9 +81,71 @@ export function PersonalChatbot({
     }
   }, [messages]);
 
+  const fileToDataUri = (file: File | Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+        setImageFile(file);
+        const reader = new FileReader();
+        reader.onload = (e) => setImagePreview(e.target?.result as string);
+        reader.readAsDataURL(file);
+    } else {
+        toast({ variant: 'destructive', title: 'Unsupported File', description: 'Please upload an image file.' });
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        audioChunksRef.current = [];
+        
+        mediaRecorderRef.current.ondataavailable = event => {
+            audioChunksRef.current.push(event.data);
+        };
+
+        mediaRecorderRef.current.onstop = () => {
+            const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            setAudioBlob(blob);
+            audioChunksRef.current = [];
+            stream.getTracks().forEach(track => track.stop());
+        };
+        
+        mediaRecorderRef.current.start();
+        setIsRecording(true);
+        setAudioBlob(null);
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Microphone Error', description: 'Could not access the microphone.' });
+    }
+  };
+
+  const stopRecording = () => {
+      if (mediaRecorderRef.current && isRecording) {
+          mediaRecorderRef.current.stop();
+          setIsRecording(false);
+      }
+  };
+  
+  const clearMedia = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setAudioBlob(null);
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
+  }
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() && !imageFile && !audioBlob) return;
     if (!user || !messagesCollectionRef) {
         toast({ variant: 'destructive', title: 'Not authenticated'});
         return;
@@ -79,20 +153,28 @@ export function PersonalChatbot({
     
     setIsLoading(true);
 
-    const userMessageData = {
+    const imageDataUri = imageFile ? await fileToDataUri(imageFile) : undefined;
+    const audioDataUri = audioBlob ? await fileToDataUri(audioBlob) : undefined;
+
+    const userMessageData: any = {
         sender: 'user' as const,
         text: input,
         userId: user.uid,
         createdAt: serverTimestamp(),
     };
+    if (imageDataUri) userMessageData.image = imageDataUri;
+    if (audioDataUri) userMessageData.audio = audioDataUri;
 
     await addDoc(messagesCollectionRef, userMessageData);
 
     setInput('');
+    clearMedia();
     
     try {
       const chatInput: PersonalChatInput = {
         userMessage: input,
+        imageDataUri: imageDataUri,
+        audioDataUri: audioDataUri,
         tasks,
         habits,
         habitLogs,
@@ -149,7 +231,7 @@ export function PersonalChatbot({
   }
 
   return (
-    <div className="flex flex-col h-full max-h-[calc(100vh-10rem)]">
+    <div className="flex flex-col h-full max-h-[calc(100vh-4rem)]">
         <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
             <CardTitle className="text-lg">Personal AI Assistant</CardTitle>
              <AlertDialog>
@@ -170,7 +252,7 @@ export function PersonalChatbot({
                 </AlertDialogContent>
             </AlertDialog>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col p-4 gap-4">
+        <CardContent className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
         <ScrollArea className="flex-1 pr-4" ref={scrollAreaRef}>
           <div className="space-y-6">
             {messages.map((message) => (
@@ -181,6 +263,8 @@ export function PersonalChatbot({
                   </Avatar>
                 )}
                 <div className={`max-w-md rounded-xl px-4 py-3 text-sm ${ message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted' }`}>
+                  {message.image && <Image src={message.image} alt="user upload" width={200} height={200} className='rounded-md mb-2' />}
+                  {message.audio && <audio src={message.audio} controls className='w-full h-10 mb-2' />}
                   <p className="whitespace-pre-wrap">{message.text}</p>
                 </div>
                  {message.sender === 'user' && (
@@ -203,14 +287,31 @@ export function PersonalChatbot({
           </div>
         </ScrollArea>
         
+        {(imagePreview || audioBlob) && (
+            <div className="flex items-center gap-2 text-sm p-2 bg-muted rounded-md">
+                {imagePreview && <Image src={imagePreview} alt="Preview" width={40} height={40} className="rounded" />}
+                {audioBlob && <audio src={URL.createObjectURL(audioBlob)} controls className='h-10'/>}
+                <Button size="icon" variant="ghost" className="h-7 w-7 ml-auto" onClick={clearMedia}><X className="h-4 w-4" /></Button>
+            </div>
+        )}
+
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+           <Button type="button" size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" onClick={() => fileInputRef.current?.click()}>
+                <Paperclip className="h-4 w-4" />
+            </Button>
+            <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" />
+
+            <Button type="button" size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" onClick={isRecording ? stopRecording : startRecording}>
+                {isRecording ? <AudioLines className="h-4 w-4 text-red-500 animate-pulse" /> : <Mic className="h-4 w-4" />}
+            </Button>
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about your day, tasks, habits..."
             disabled={isLoading}
+            className="h-9"
           />
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading} size="icon" className="h-9 w-9 flex-shrink-0">
             <Send className="h-4 w-4" />
           </Button>
         </form>
@@ -218,3 +319,5 @@ export function PersonalChatbot({
     </div>
   );
 }
+
+    

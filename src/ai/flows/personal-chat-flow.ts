@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A personal AI chatbot flow.
@@ -21,6 +22,8 @@ import {
 
 const PersonalChatInputSchema = z.object({
   userMessage: z.string().describe("The user's message or question."),
+  imageDataUri: z.string().optional().describe("An optional image file attached by the user, as a data URI."),
+  audioDataUri: z.string().optional().describe("An optional audio file attached by the user, as a data URI."),
   tasks: z.array(z.custom<Task>()).describe('A list of all tasks assigned to the user.'),
   habits: z.array(z.custom<Habit>()).describe('A list of all the user\'s habits.'),
   habitLogs: z.array(z.custom<HabitLog>()).describe('A list of all habit logs for the user.'),
@@ -56,6 +59,18 @@ Analyze the user's message and the provided data to give a relevant and accurate
 User's message:
 "{{{userMessage}}}"
 
+{{#if imageDataUri}}
+[Image Content Provided by User]
+{{media url=imageDataUri}}
+[End Image Content]
+{{/if}}
+
+{{#if audioDataUri}}
+[Audio Content Provided by User]
+{{media url=audioDataUri}}
+[End Audio Content]
+{{/if}}
+
 Your response should be in clear, easy-to-understand language. Be concise and helpful.
 `,
 });
@@ -80,3 +95,5 @@ export async function personalChat(
 ): Promise<PersonalChatOutput> {
   return await personalChatFlow(input);
 }
+
+    
