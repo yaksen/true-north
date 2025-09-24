@@ -31,15 +31,6 @@ import { auth } from '@/lib/firebase';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
-function GoogleContactsIcon(props: React.SVGProps<SVGSVGElement>) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="24" height="24" {...props}>
-            <path fill="#4285F4" d="M368 96a96 96 0 1 0-192 0 96 96 0 0 0 192 0zm-96 32c-35.3 0-64-28.7-64-64s28.7-64 64-64 64 28.7 64 64-28.7 64-64 64z"/>
-            <path fill="#4285F4" d="M272 256h-32c-61.9 0-112 50.1-112 112v64h368v-64c0-61.9-50.1-112-112-112h-32v-32h32c79.5 0 144 64.5 144 144v80H96v-80c0-79.5 64.5-144 144-144h32v32z"/>
-        </svg>
-    )
-}
-
 interface ProjectSettingsProps {
   project: Project;
 }
@@ -190,7 +181,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
             </div>
             <div className="flex items-center justify-between rounded-lg border p-3">
                 <div className="flex items-center gap-4">
-                    <GoogleContactsIcon />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b7/Google_Contacts_logo.png" alt="Google Contacts Icon" width="24" height="24" />
                     <div>
                         <p className="font-semibold">Google Contacts</p>
                         <p className="text-sm text-muted-foreground">Save leads, vendors, and partners.</p>
