@@ -19,6 +19,7 @@ import {
   Link2,
   Flame,
   CreditCard,
+  Bot,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -60,10 +61,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { writeBatch, doc, collection, onSnapshot, query, where } from 'firebase/firestore';
+import { writeBatch, doc, collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { VaultFolder, VaultItem } from '@/lib/types';
+import type { VaultFolder, VaultItem, Task, Habit, HabitLog, DiaryEntry, PersonalWallet, WalletTransaction } from '@/lib/types';
 import { VaultClient } from '@/components/vault/vault-client';
+import { PersonalChatbot } from '@/components/dashboard/personal-chatbot';
 
 
 export default function DashboardLayout({
@@ -77,45 +79,69 @@ export default function DashboardLayout({
   const { toast } = useToast();
   const { globalCurrency, setGlobalCurrency } = useCurrency();
 
+  // --- Data Fetching for Sheets ---
   const [vaultFolders, setVaultFolders] = useState<VaultFolder[]>([]);
   const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
-  const [vaultLoading, setVaultLoading] = useState(true);
+  
+  // Personal Chatbot Data
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [personalWallet, setPersonalWallet] = useState<PersonalWallet | null>(null);
+  const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([]);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
+  const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
+
+  const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    setVaultLoading(true);
+    setDataLoading(true);
 
-    const foldersQuery = query(collection(db, 'vaultFolders'), where('userId', '==', user.uid));
-    const itemsQuery = query(collection(db, 'vaultItems'), where('userId', '==', user.uid));
+    const unsubs: (()=>void)[] = [];
 
-    const unsubscribeFolders = onSnapshot(foldersQuery, (snapshot) => {
-      setVaultFolders(snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate(),
-        } as VaultFolder;
-      }));
-    });
+    // Vault (Quick Links)
+    unsubs.push(onSnapshot(query(collection(db, 'vaultFolders'), where('userId', '==', user.uid)), (snapshot) => {
+      setVaultFolders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VaultFolder)));
+    }));
+    unsubs.push(onSnapshot(query(collection(db, 'vaultItems'), where('userId', '==', user.uid)), (snapshot) => {
+        setVaultItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VaultItem)));
+    }));
 
-    const unsubscribeItems = onSnapshot(itemsQuery, (snapshot) => {
-      setVaultItems(snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate(),
-        } as VaultItem;
-      }));
-      setVaultLoading(false);
-    });
+    // Personal Chatbot Data
+    unsubs.push(onSnapshot(query(collection(db, 'tasks'), where('assigneeUid', '==', user.uid)), (snapshot) => {
+        setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)))
+    }));
+    unsubs.push(onSnapshot(query(collection(db, 'habits'), where('userId', '==', user.uid)), (snapshot) => {
+        setHabits(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Habit)))
+    }));
+    unsubs.push(onSnapshot(query(collection(db, 'habitLogs'), where('userId', '==', user.uid)), (snapshot) => {
+        setHabitLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HabitLog)))
+    }));
+    unsubs.push(onSnapshot(query(collection(db, 'diaryEntries'), where('userId', '==', user.uid)), (snapshot) => {
+        setDiaryEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DiaryEntry)))
+    }));
+    unsubs.push(onSnapshot(query(collection(db, 'personalWallets'), where('userId', '==', user.uid)), (snapshot) => {
+        if (!snapshot.empty) {
+            const walletData = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as PersonalWallet;
+            setPersonalWallet(walletData);
+            const transactionsQuery = query(collection(db, 'walletTransactions'), where('walletId', '==', walletData.id));
+            unsubs.push(onSnapshot(transactionsQuery, (transSnapshot) => {
+                setWalletTransactions(transSnapshot.docs.map(d => ({id: d.id, ...d.data() } as WalletTransaction)));
+            }));
+        } else {
+            setPersonalWallet(null);
+        }
+    }));
+    
+    // Check when initial data has loaded
+    const initialLoad = Promise.all([
+        getDocs(query(collection(db, 'vaultFolders'), where('userId', '==', user.uid))),
+        getDocs(query(collection(db, 'tasks'), where('assigneeUid', '==', user.uid))),
+    ]);
+    initialLoad.then(() => setDataLoading(false));
 
     return () => {
-      unsubscribeFolders();
-      unsubscribeItems();
+      unsubs.forEach(unsub => unsub());
     };
   }, [user]);
 
@@ -217,13 +243,41 @@ export default function DashboardLayout({
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon">
+                <Bot className="h-4 w-4" />
+                <span className="sr-only">Personal AI Assistant</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="max-w-full w-full sm:max-w-md p-0">
+                <div className='p-0 h-full'>
+                    {dataLoading ? (
+                        <div className="flex h-full flex-1 items-center justify-center">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                    ) : (
+                        <PersonalChatbot 
+                            tasks={tasks}
+                            habits={habits}
+                            habitLogs={habitLogs}
+                            diaryEntries={diaryEntries}
+                            wallet={personalWallet}
+                            walletTransactions={walletTransactions}
+                            vaultItems={vaultItems}
+                        />
+                    )}
+                </div>
+            </SheetContent>
+          </Sheet>
+          
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon">
                 <Link2 className="h-4 w-4" />
                 <span className="sr-only">Quick Links</span>
               </Button>
             </SheetTrigger>
             <SheetContent className="w-full max-w-full sm:max-w-4xl p-0">
                 <div className='p-6 h-full'>
-                    {vaultLoading ? (
+                    {dataLoading ? (
                         <div className="flex h-full flex-1 items-center justify-center">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
