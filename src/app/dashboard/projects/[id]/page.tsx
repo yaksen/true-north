@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -197,6 +195,10 @@ export default function ProjectDetailPage() {
                     channels={channels}
                     vendors={vendors}
                     partners={partners}
+                    services={services}
+                    products={products}
+                    packages={packages}
+                    invoices={invoices}
                 />
             </TabsContent>
             <TabsContent value="leads">

@@ -1,5 +1,3 @@
-
-
 import { CurrencyCode } from "@/context/CurrencyContext";
 
 export type UserRole = 'admin' | 'manager' | 'member';
@@ -461,4 +459,14 @@ export interface DiaryEntry {
     content: string;
     createdAt: Date;
     updatedAt: Date;
+}
+
+export interface ProjectChatMessage {
+    id: string;
+    sender: 'user' | 'ai';
+    text: string;
+    image?: string;
+    audio?: string;
+    createdAt: Date;
+    userId?: string; // ID of the user who sent the message
 }
