@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useMemo, useState } from "react";
-import { Project, Channel, ChannelStatus } from "@/lib/types";
+import { Project, Channel } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
@@ -10,26 +9,25 @@ import { DataTable } from "../ui/data-table";
 import { getChannelsColumns } from "./channel-columns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { ChannelForm } from "./channel-form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { Input } from "../ui/input";
+import { ChannelsToolbar } from "./channels-toolbar";
+
 
 interface ProjectChannelsProps {
     project: Project;
     channels: Channel[];
 }
 
-const channelStatuses: ChannelStatus[] = ['new', 'active', 'inactive', 'closed'];
-const channelPlatforms = ['Instagram', 'Facebook', 'Twitter', 'LinkedIn', 'Website', 'Referral', 'Other'];
-
-
 export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
     const { toast } = useToast();
     const [isChannelFormOpen, setIsChannelFormOpen] = useState(false);
-    const [statusFilter, setStatusFilter] = useState<ChannelStatus | 'all'>('all');
-    const [platformFilter, setPlatformFilter] = useState<string | 'all'>('all');
+    const [filters, setFilters] = useState({
+        status: 'all',
+        platform: 'all',
+        search: ''
+    });
     
     const handleStar = async (id: string, starred: boolean) => {
         try {
@@ -56,43 +54,12 @@ export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
 
     const filteredChannels = useMemo(() => {
         return channels.filter(channel => {
-            const statusMatch = statusFilter === 'all' || channel.status === statusFilter;
-            const platformMatch = platformFilter === 'all' || channel.platform === platformFilter;
+            const statusMatch = filters.status === 'all' || channel.status === filters.status;
+            const platformMatch = filters.platform === 'all' || channel.platform === filters.platform;
             return statusMatch && platformMatch;
         });
-    }, [channels, statusFilter, platformFilter]);
+    }, [channels, filters]);
 
-    const Toolbar = () => (
-        <div className="flex items-center gap-2">
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
-                <SelectTrigger className="w-36 h-9 text-sm">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    {channelStatuses.map(status => (
-                        <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <Select value={platformFilter} onValueChange={(value) => setPlatformFilter(value as any)}>
-                <SelectTrigger className="w-36 h-9 text-sm">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Platforms</SelectItem>
-                    {channelPlatforms.map(platform => (
-                        <SelectItem key={platform} value={platform} className="capitalize">{platform}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            {(statusFilter !== 'all' || platformFilter !== 'all') && (
-                <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('all'); setPlatformFilter('all'); }}>
-                    Clear Filters
-                </Button>
-            )}
-        </div>
-    );
 
     return (
         <div className="grid gap-6 mt-4">
@@ -120,8 +87,10 @@ export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
                     <DataTable 
                         columns={channelsColumns} 
                         data={filteredChannels} 
-                        toolbar={<Toolbar />} 
+                        toolbar={<ChannelsToolbar onFilterChange={setFilters} />} 
                         onDeleteSelected={handleDeleteSelected}
+                        globalFilter={filters.search}
+                        setGlobalFilter={(value) => setFilters(prev => ({...prev, search: value}))}
                     />
                 </CardContent>
             </Card>

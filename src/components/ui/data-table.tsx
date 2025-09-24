@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {
@@ -71,9 +69,10 @@ export function DataTable<TData extends {id: string, starred?: boolean, complete
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [showStarred, setShowStarred] = useState(false);
 
-  const isGlobalFilterControlled = externalGlobalFilter !== undefined && setExternalGlobalFilter !== undefined;
+  const isGlobalFilterControlled = externalGlobalFilter !== undefined;
   const globalFilter = isGlobalFilterControlled ? externalGlobalFilter : internalGlobalFilter;
-  const setGlobalFilter = isGlobalFilterControlled ? setExternalGlobalFilter : setInternalGlobalFilter;
+  const setGlobalFilter = setExternalGlobalFilter || setInternalGlobalFilter;
+
 
   const filteredData = useMemo(() => {
     if (showStarred) {
@@ -221,9 +220,10 @@ export function DataTable<TData extends {id: string, starred?: boolean, complete
 
   return (
     <>
-        <div className="flex items-center justify-between pb-6 gap-2">
-            <div className='flex items-center gap-2 flex-wrap'>
-                {!isGlobalFilterControlled && (
+        {toolbar && <div className="pb-4">{toolbar}</div>}
+        <div className="flex items-center justify-end pb-4 gap-2">
+            <div className='flex items-center gap-2 mr-auto'>
+                 {!isGlobalFilterControlled && (
                     <Input
                         placeholder="Search all columns..."
                         value={globalFilter ?? ''}
@@ -233,7 +233,6 @@ export function DataTable<TData extends {id: string, starred?: boolean, complete
                         className="max-w-sm h-9"
                     />
                 )}
-                {toolbar}
             </div>
             <div className='flex items-center gap-2'>
                 <Button variant={showStarred ? "secondary" : "outline"} size="icon" onClick={() => setShowStarred(!showStarred)} className='h-9 w-9'>

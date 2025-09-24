@@ -4,20 +4,17 @@ import { useMemo, useState } from "react";
 import { Project, Finance, FinanceType } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
-import { PlusCircle, SlidersHorizontal } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { DataTable } from "../ui/data-table";
 import { financeColumns } from "./finance-columns";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { FinanceForm } from "./finance-form";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { DateRange } from "react-day-picker";
-import { Calendar } from "../ui/calendar";
-import { format } from "date-fns";
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from "@/context/CurrencyContext";
+import { FinanceToolbar } from "../finance/finance-toolbar";
 
 interface ProjectFinanceProps {
     project: Project;
@@ -27,10 +24,14 @@ interface ProjectFinanceProps {
 export function ProjectFinance({ project, finances }: ProjectFinanceProps) {
     const { toast } = useToast();
     const [isFinanceFormOpen, setIsFinanceFormOpen] = useState(false);
-    const [typeFilter, setTypeFilter] = useState<FinanceType | 'all'>('all');
-    const [dateFilter, setDateFilter] = useState<DateRange | undefined>();
     const { globalCurrency } = useCurrency();
     const displayCurrency = globalCurrency || project.currency;
+    const [filters, setFilters] = useState({
+        type: 'all' as FinanceType | 'all',
+        date: undefined as DateRange | undefined,
+        category: '',
+        search: '',
+      });
 
     const handleStar = async (id: string, starred: boolean) => {
         try {
@@ -57,51 +58,16 @@ export function ProjectFinance({ project, finances }: ProjectFinanceProps) {
 
     const filteredFinances = useMemo(() => {
         return finances.filter(f => {
-            const typeMatch = typeFilter === 'all' || f.type === typeFilter;
-            const dateMatch = !dateFilter || (
-                (!dateFilter.from || new Date(f.date) >= dateFilter.from) &&
-                (!dateFilter.to || new Date(f.date) <= dateFilter.to)
+            const typeMatch = filters.type === 'all' || f.type === filters.type;
+            const dateMatch = !filters.date || (
+                (!filters.date.from || new Date(f.date) >= filters.date.from) &&
+                (!filters.date.to || new Date(f.date) <= filters.date.to)
             );
-            return typeMatch && dateMatch;
+            const categoryMatch = !filters.category || (f.category && f.category.toLowerCase().includes(filters.category.toLowerCase()));
+            return typeMatch && dateMatch && categoryMatch;
         });
-    }, [finances, typeFilter, dateFilter]);
+    }, [finances, filters]);
     
-    const Toolbar = () => (
-        <div className="flex gap-2">
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9">
-                        <SlidersHorizontal className="mr-2 h-4 w-4" /> Date Range
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={dateFilter?.from}
-                        selected={dateFilter}
-                        onSelect={setDateFilter}
-                        numberOfMonths={2}
-                    />
-                </PopoverContent>
-            </Popover>
-             <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as any)}>
-                <SelectTrigger className="w-32 h-9 text-sm">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="income">Income</SelectItem>
-                    <SelectItem value="expense">Expense</SelectItem>
-                </SelectContent>
-            </Select>
-            {(typeFilter !== 'all' || dateFilter) && (
-                <Button variant="ghost" size="sm" onClick={() => { setTypeFilter('all'); setDateFilter(undefined); }}>
-                    Clear Filters
-                </Button>
-            )}
-        </div>
-    );
 
     return (
         <div className="grid gap-6 mt-4">
@@ -129,8 +95,10 @@ export function ProjectFinance({ project, finances }: ProjectFinanceProps) {
                     <DataTable 
                         columns={columns} 
                         data={filteredFinances} 
-                        toolbar={<Toolbar />} 
+                        toolbar={<FinanceToolbar onFilterChange={setFilters} />} 
                         onDeleteSelected={handleDeleteSelected}
+                        globalFilter={filters.search}
+                        setGlobalFilter={(value) => setFilters(prev => ({...prev, search: value}))}
                     />
                 </CardContent>
             </Card>

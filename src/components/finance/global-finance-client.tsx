@@ -6,19 +6,15 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { DataTable } from '@/components/ui/data-table';
 import { financeColumns } from '@/components/projects/finance-columns';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, SlidersHorizontal } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { FinanceForm } from '@/components/projects/finance-form';
 import { Card, CardContent } from '../ui/card';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { DateRange } from 'react-day-picker';
-import { Calendar } from '../ui/calendar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Input } from '../ui/input';
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from '@/context/CurrencyContext';
+import { FinanceToolbar } from './finance-toolbar';
 
 type FinanceTypeFilter = 'all' | 'income' | 'expense';
 
@@ -41,9 +37,13 @@ export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientP
   const { globalCurrency } = useCurrency();
   const displayCurrency = globalCurrency || 'USD';
   const [isFinanceFormOpen, setIsFinanceFormOpen] = useState(false);
-  const [dateFilter, setDateFilter] = useState<DateRange | undefined>();
-  const [typeFilter, setTypeFilter] = useState<FinanceTypeFilter>('all');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  
+  const [filters, setFilters] = useState({
+    type: 'all' as FinanceTypeFilter,
+    date: undefined as DateRange | undefined,
+    category: '',
+    search: '',
+  });
 
   const handleStar = async (id: string, starred: boolean) => {
     try {
@@ -70,16 +70,16 @@ export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientP
 
   const filteredFinances = useMemo(() => {
     return finances.filter(f => {
-        const dateMatch = !dateFilter || (
-            (!dateFilter.from || new Date(f.date) >= dateFilter.from) &&
-            (!dateFilter.to || new Date(f.date) <= dateFilter.to)
+        const dateMatch = !filters.date || (
+            (!filters.date.from || new Date(f.date) >= filters.date.from) &&
+            (!filters.date.to || new Date(f.date) <= filters.date.to)
         );
-        const typeMatch = typeFilter === 'all' || f.type === typeFilter;
-        const categoryMatch = !categoryFilter || (f.category && f.category.toLowerCase().includes(categoryFilter.toLowerCase()));
+        const typeMatch = filters.type === 'all' || f.type === filters.type;
+        const categoryMatch = !filters.category || (f.category && f.category.toLowerCase().includes(filters.category.toLowerCase()));
         
         return dateMatch && typeMatch && categoryMatch;
     });
-  }, [finances, dateFilter, typeFilter, categoryFilter]);
+  }, [finances, filters]);
 
 
   const financesByProject = useMemo(() => {
@@ -120,55 +120,9 @@ export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientP
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: displayCurrency }).format(amount);
   };
 
-  const clearFilters = () => {
-    setDateFilter(undefined);
-    setTypeFilter('all');
-    setCategoryFilter('');
-  };
-
   return (
     <>
-      <div className="flex justify-between items-center mb-4 mt-4">
-        <div className="flex items-center gap-2">
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9">
-                        <SlidersHorizontal className="mr-2 h-4 w-4" /> Date Range
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={dateFilter?.from}
-                        selected={dateFilter}
-                        onSelect={setDateFilter}
-                        numberOfMonths={2}
-                    />
-                </PopoverContent>
-            </Popover>
-             <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as any)}>
-                <SelectTrigger className="w-32 h-9 text-sm">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="income">Income</SelectItem>
-                    <SelectItem value="expense">Expense</SelectItem>
-                </SelectContent>
-            </Select>
-             <Input 
-                placeholder="Filter by category..."
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="h-9 w-48"
-            />
-            {(dateFilter || typeFilter !== 'all' || categoryFilter) && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    Clear Filters
-                </Button>
-            )}
-        </div>
+      <div className="flex justify-end mb-4 mt-4">
         <Dialog open={isFinanceFormOpen} onOpenChange={setIsFinanceFormOpen}>
           <DialogTrigger asChild>
             <Button size="sm">
@@ -213,6 +167,8 @@ export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientP
                                 columns={columns} 
                                 data={projectFinances}
                                 onDeleteSelected={handleDeleteSelected}
+                                toolbar={<FinanceToolbar onFilterChange={setFilters} />}
+                                globalFilter={filters.search}
                             />
                         </AccordionContent>
                     </AccordionItem>

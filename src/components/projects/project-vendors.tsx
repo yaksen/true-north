@@ -14,7 +14,7 @@ import { doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { saveContactToGoogle } from '@/app/actions/google-contacts';
-import { Input } from '../ui/input';
+import { VendorsToolbar } from './vendors-toolbar';
 
 interface ProjectVendorsProps {
   project: Project;
@@ -26,7 +26,10 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
   const { toast } = useToast();
   const [isVendorFormOpen, setIsVendorFormOpen] = useState(false);
   const [isBulkSaving, setIsBulkSaving] = useState(false);
-  const [serviceTypeFilter, setServiceTypeFilter] = useState('');
+  const [filters, setFilters] = useState({
+    serviceType: '',
+    search: '',
+  });
 
   const handleStar = async (id: string, starred: boolean) => {
     try {
@@ -81,26 +84,10 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
   
   const filteredVendors = useMemo(() => {
     return vendors.filter(v => {
-        const serviceMatch = !serviceTypeFilter || v.serviceType.toLowerCase().includes(serviceTypeFilter.toLowerCase());
+        const serviceMatch = !filters.serviceType || v.serviceType.toLowerCase().includes(filters.serviceType.toLowerCase());
         return serviceMatch;
     });
-  }, [vendors, serviceTypeFilter]);
-
-  const Toolbar = () => (
-    <div className="flex items-center gap-2">
-        <Input 
-            placeholder="Filter by service type..."
-            value={serviceTypeFilter}
-            onChange={(e) => setServiceTypeFilter(e.target.value)}
-            className="h-9 w-48"
-        />
-        {serviceTypeFilter && (
-            <Button variant="ghost" size="sm" onClick={() => setServiceTypeFilter('')}>
-                Clear Filter
-            </Button>
-        )}
-    </div>
-  );
+  }, [vendors, filters]);
 
   return (
     <div className="grid gap-6 mt-4">
@@ -137,7 +124,9 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
             columns={vendorColumns} 
             data={filteredVendors} 
             onDeleteSelected={handleDeleteSelected}
-            toolbar={<Toolbar />}
+            toolbar={<VendorsToolbar onFilterChange={setFilters} />}
+            globalFilter={filters.search}
+            setGlobalFilter={(value) => setFilters(prev => ({...prev, search: value}))}
           />
         </CardContent>
       </Card>
