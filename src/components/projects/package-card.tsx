@@ -144,16 +144,16 @@ export function PackageCard({ pkg, project, allServices, allProducts }: PackageC
     };
 
     return (
-        <Card>
-            <CardHeader>
-                {pkg.imageUrl && (
-                    <div className="relative aspect-square w-full mb-4">
-                        <Image src={pkg.imageUrl} alt={pkg.name} layout="fill" className="rounded-t-2xl object-cover" />
-                    </div>
-                )}
+        <Card className='flex flex-col'>
+            {pkg.imageUrl && (
+                <div className="relative aspect-square w-full">
+                    <Image src={pkg.imageUrl} alt={pkg.name} layout="fill" className="rounded-t-lg object-cover" />
+                </div>
+            )}
+            <CardHeader className='p-4'>
                 <div className='flex justify-between items-start'>
-                    <CardTitle>{pkg.name}</CardTitle>
-                    <div className="flex items-center gap-1">
+                    <CardTitle className='text-lg'>{pkg.name}</CardTitle>
+                    <div className="flex items-center -mr-2 -mt-2">
                         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                             <DialogTrigger asChild>
                                 <Button size="icon" variant="ghost"><Edit className="h-4 w-4" /></Button>
@@ -180,28 +180,29 @@ export function PackageCard({ pkg, project, allServices, allProducts }: PackageC
                         </AlertDialog>
                     </div>
                 </div>
-                <CardDescription>{pkg.description}</CardDescription>
+                <CardDescription className='text-xs line-clamp-2'>{pkg.description}</CardDescription>
                 <div className='flex gap-2 pt-2'>
                     <Badge variant="secondary">{pkg.duration}</Badge>
                     {pkg.custom && <Badge variant="outline">Custom</Badge>}
                 </div>
             </CardHeader>
-            <CardContent>
-                <h4 className='font-semibold text-sm mb-2'>Included Services:</h4>
-                <ul className='space-y-1 text-sm text-muted-foreground'>
-                    {includedServices.map(s => <li key={s.id} className='flex items-center gap-2'><ArrowRight className='h-3 w-3'/>{s.name}</li>)}
+            <CardContent className='p-4 pt-0 flex-grow'>
+                <h4 className='font-semibold text-xs mb-2'>Includes:</h4>
+                <ul className='space-y-1 text-xs text-muted-foreground'>
+                    {includedServices.slice(0, 3).map(s => <li key={s.id}>{s.name}</li>)}
+                    {includedServices.length > 3 && <li>+ {includedServices.length - 3} more...</li>}
                 </ul>
             </CardContent>
-            <CardFooter className='flex-col items-start gap-4'>
+            <CardFooter className='p-4 pt-0 flex items-center justify-between'>
                 <div>
-                    <p className='text-sm text-muted-foreground'>Price</p>
-                    <p className='text-xl font-bold'>
+                    <p className='text-xs text-muted-foreground'>Price</p>
+                    <p className='text-lg font-bold'>
                         {new Intl.NumberFormat("en-US", { style: "currency", currency: pkg.currency }).format(pkg.price)}
                     </p>
                 </div>
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">Discount Calculator</Button>
+                        <Button variant="outline" size="sm">Calculator</Button>
                     </PopoverTrigger>
                     <PopoverContent className='w-96'>
                         <DiscountCalculator pkg={pkg} />
@@ -211,3 +212,4 @@ export function PackageCard({ pkg, project, allServices, allProducts }: PackageC
         </Card>
     );
 }
+
