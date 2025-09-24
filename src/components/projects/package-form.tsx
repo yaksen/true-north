@@ -148,24 +148,24 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
   }, [selectedServiceIds, selectedProductIds, services, products, packageCurrency]);
 
 
-  // Update price when discount changes
-  useEffect(() => {
-    const calculatedPrice = basePrice * (1 - (discountPercentage / 100));
+  // When discount changes, update price
+  const handleDiscountChange = (newDiscount: number) => {
+    form.setValue('discountPercentage', newDiscount);
+    const calculatedPrice = basePrice * (1 - (newDiscount / 100));
     form.setValue('price', parseFloat(calculatedPrice.toFixed(2)));
-  }, [discountPercentage, basePrice, form]);
+  }
 
-  // Update discount when price is manually changed
-  useEffect(() => {
+  // When price changes, update discount
+  const handlePriceChange = (newPrice: number) => {
+    form.setValue('price', newPrice);
     if (basePrice > 0) {
-        const calculatedDiscount = (1 - (finalPrice / basePrice)) * 100;
-        // Check if the change is significant to avoid flicker
-        if (Math.abs(calculatedDiscount - discountPercentage) > 0.1) {
-            form.setValue('discountPercentage', parseFloat(calculatedDiscount.toFixed(1)));
-        }
-    } else if (finalPrice === 0) {
+        const calculatedDiscount = (1 - (newPrice / basePrice)) * 100;
+        form.setValue('discountPercentage', parseFloat(calculatedDiscount.toFixed(1)));
+    } else {
         form.setValue('discountPercentage', 0);
     }
-  }, [finalPrice, basePrice, form]);
+  }
+
 
   const handlePackageImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -468,23 +468,23 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
             />
             
             <FormField
-            control={form.control}
-            name="discountPercentage"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Discount / Markup ( {field.value.toFixed(1)}% )</FormLabel>
-                <FormControl>
-                    <Slider
-                    min={-100}
-                    max={100}
-                    step={0.1}
-                    value={[field.value]}
-                    onValueChange={(vals) => field.onChange(vals[0])}
-                    />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
+                control={form.control}
+                name="discountPercentage"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Discount / Markup ( {field.value.toFixed(1)}% )</FormLabel>
+                    <FormControl>
+                        <Slider
+                            min={-100}
+                            max={100}
+                            step={0.1}
+                            value={[field.value]}
+                            onValueChange={(vals) => handleDiscountChange(vals[0])}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
             />
             
             <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 items-start'>
@@ -496,7 +496,7 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
                             <FormLabel>Final Package Price</FormLabel>
                             <CurrencyInput
                                 value={field.value}
-                                onValueChange={field.onChange}
+                                onValueChange={handlePriceChange}
                                 currency={form.watch('currency')}
                                 onCurrencyChange={(value) => form.setValue('currency', value)}
                             />
@@ -613,3 +613,5 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
     </div>
   );
 }
+
+    
