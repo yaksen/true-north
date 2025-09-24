@@ -186,8 +186,8 @@ export function ProjectChatbot({
     try {
       const chatInput: ProjectChatInput = {
         userMessage: input,
-        imageDataUri,
-        audioDataUri,
+        imageDataUri: imageDataUri,
+        audioDataUri: audioDataUri,
         project, tasks, finances, leads, channels, vendors, partners, services, products, packages, invoices, notes,
       };
 
@@ -266,12 +266,12 @@ export function ProjectChatbot({
             </div>
         )}
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-            <Button size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" onClick={() => fileInputRef.current?.click()}>
+            <Button type="button" size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" onClick={() => fileInputRef.current?.click()}>
                 <Paperclip className="h-4 w-4" />
             </Button>
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" />
 
-            <Button size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" onClick={isRecording ? stopRecording : startRecording}>
+            <Button type="button" size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" onClick={isRecording ? stopRecording : startRecording}>
                 {isRecording ? <AudioLines className="h-4 w-4 text-red-500 animate-pulse" /> : <Mic className="h-4 w-4" />}
             </Button>
           <Input
