@@ -125,16 +125,16 @@ export async function uploadFileToDrive(
             },
         });
 
-        // 4. Get the web view link
+        // 4. Get the web view and web content links
         const fileWithLink = await drive.files.get({
             fileId: fileId,
-            fields: 'webViewLink',
+            fields: 'webViewLink, webContentLink',
         });
         
         return {
             success: true,
             message: 'File uploaded successfully.',
-            link: fileWithLink.data.webViewLink || '',
+            link: fileWithLink.data.webContentLink || fileWithLink.data.webViewLink || '',
         };
 
     } catch (error: any) {
