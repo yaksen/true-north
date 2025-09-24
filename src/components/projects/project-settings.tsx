@@ -31,16 +31,6 @@ import { auth } from '@/lib/firebase';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
-function GoogleDriveIcon(props: React.SVGProps<SVGSVGElement>) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="24" height="24" {...props}>
-            <path fill="#4285F4" d="M336 448H176l-64-112h320z"/>
-            <path fill="#34A853" d="M112 336l-64-112 152-272 64 112z"/>
-            <path fill="#FBBC05" d="M152 48l152 272H400l64-112z"/>
-        </svg>
-    )
-}
-
 function GoogleContactsIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="24" height="24" {...props}>
@@ -183,7 +173,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         <CardContent className="space-y-4">
             <div className="flex items-center justify-between rounded-lg border p-3">
                 <div className="flex items-center gap-4">
-                    <GoogleDriveIcon />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" alt="Google Drive Icon" width="24" height="24" />
                     <div>
                         <p className="font-semibold">Google Drive</p>
                         <p className="text-sm text-muted-foreground">Store reports and files.</p>
