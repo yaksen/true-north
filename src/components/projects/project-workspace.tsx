@@ -14,6 +14,7 @@ import { PromptForm } from './prompt-form';
 import { Input } from '../ui/input';
 import { ProjectChatbot } from './project-chatbot';
 import { Card } from '../ui/card';
+import { PromptsToolbar } from './prompts-toolbar';
 
 interface ProjectWorkspaceProps {
   project: Project;
@@ -49,7 +50,12 @@ export function ProjectWorkspace({
   const [isNoteFormOpen, setIsNoteFormOpen] = useState(false);
   const [isPromptFormOpen, setIsPromptFormOpen] = useState(false);
   const [noteSearchTerm, setNoteSearchTerm] = useState('');
-  const [promptSearchTerm, setPromptSearchTerm] = useState('');
+  
+  const [promptFilters, setPromptFilters] = useState({
+    searchTerm: '',
+    category: '',
+    tags: [] as string[],
+  });
 
   const filteredNotes = notes.filter(note => 
     note.title.toLowerCase().includes(noteSearchTerm.toLowerCase()) ||
@@ -57,12 +63,14 @@ export function ProjectWorkspace({
     note.tags.some(tag => tag.toLowerCase().includes(noteSearchTerm.toLowerCase()))
   );
 
-  const filteredPrompts = aiPrompts.filter(prompt =>
-    prompt.title.toLowerCase().includes(promptSearchTerm.toLowerCase()) ||
-    prompt.description?.toLowerCase().includes(promptSearchTerm.toLowerCase()) ||
-    prompt.category?.toLowerCase().includes(promptSearchTerm.toLowerCase()) ||
-    prompt.tags?.some(tag => tag.toLowerCase().includes(promptSearchTerm.toLowerCase()))
-  );
+  const filteredPrompts = aiPrompts.filter(prompt => {
+    const searchTermMatch = prompt.title.toLowerCase().includes(promptFilters.searchTerm.toLowerCase()) ||
+                            (prompt.description && prompt.description.toLowerCase().includes(promptFilters.searchTerm.toLowerCase()));
+    const categoryMatch = !promptFilters.category || (prompt.category && prompt.category.toLowerCase().includes(promptFilters.category.toLowerCase()));
+    const tagsMatch = promptFilters.tags.length === 0 || promptFilters.tags.every(filterTag => prompt.tags.some(promptTag => promptTag.toLowerCase().includes(filterTag.toLowerCase())));
+
+    return searchTermMatch && categoryMatch && tagsMatch;
+  });
 
   return (
     <Tabs defaultValue="chatbot" className="mt-4">
@@ -116,12 +124,7 @@ export function ProjectWorkspace({
       
       <TabsContent value="ai-prompts">
         <div className="flex justify-between items-center mb-4">
-            <Input 
-                placeholder="Search prompts..." 
-                className="max-w-sm"
-                value={promptSearchTerm}
-                onChange={(e) => setPromptSearchTerm(e.target.value)}
-            />
+            <PromptsToolbar onFilterChange={setPromptFilters} />
             <Dialog open={isPromptFormOpen} onOpenChange={setIsPromptFormOpen}>
                 <DialogTrigger asChild>
                 <Button><PlusCircle className="mr-2 h-4 w-4" /> New Prompt</Button>
