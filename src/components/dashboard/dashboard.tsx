@@ -13,7 +13,7 @@ interface DashboardProps {
 
 export function Dashboard(props: DashboardProps) {
     return (
-        <div className="mt-4 space-y-6">
+        <div className="space-y-6">
             <DashboardClient 
                 projects={props.projects} 
                 tasks={props.tasks} 
