@@ -5,16 +5,16 @@ import { useMemo, useState } from "react";
 import { Project, Lead, LeadStatus, Package, Service, Channel } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
-import { PlusCircle, SlidersHorizontal, Contact, Loader2 } from "lucide-react";
+import { PlusCircle, Contact, Loader2 } from "lucide-react";
 import { DataTable } from "../ui/data-table";
 import { getLeadsColumns } from "./leads-columns";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { LeadForm } from "./lead-form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { saveContactToGoogle } from "@/app/actions/google-contacts";
+import { LeadsToolbar } from "./leads-toolbar";
 
 interface ProjectLeadsProps {
     project: Project;
@@ -24,15 +24,16 @@ interface ProjectLeadsProps {
     channels: Channel[];
 }
 
-const leadStatuses: LeadStatus[] = ['new', 'contacted', 'qualified', 'lost', 'converted'];
-
 export function ProjectLeads({ project, leads, packages, services, channels }: ProjectLeadsProps) {
     const { toast } = useToast();
     const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
-    const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
-    const [channelFilter, setChannelFilter] = useState<string | 'all'>('all');
     const [isBulkSaving, setIsBulkSaving] = useState(false);
-    
+    const [filters, setFilters] = useState({
+        status: 'all',
+        channel: 'all',
+        search: ''
+    });
+
     const handleStar = async (id: string, starred: boolean) => {
         try {
             await updateDoc(doc(db, 'leads', id), { starred });
@@ -58,11 +59,12 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
 
     const filteredLeads = useMemo(() => {
         return leads.filter(lead => {
-            const statusMatch = statusFilter === 'all' || lead.status === statusFilter;
-            const channelMatch = channelFilter === 'all' || lead.channelId === channelFilter;
+            const statusMatch = filters.status === 'all' || lead.status === filters.status;
+            const channelMatch = filters.channel === 'all' || lead.channelId === filters.channel;
+            // The global search is now handled by the DataTable itself via the `globalFilter` prop
             return statusMatch && channelMatch;
         });
-    }, [leads, statusFilter, channelFilter]);
+    }, [leads, filters.status, filters.channel]);
 
     const handleBulkSaveToContacts = async () => {
         if (!project.googleContactsAccessToken) {
@@ -91,38 +93,6 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
             description: `${successCount} new contacts saved, ${existCount} already existed, and ${failCount} failed.`,
         });
     }
-
-    const Toolbar = () => (
-        <div className="flex items-center gap-2">
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
-                <SelectTrigger className="w-36 h-9 text-sm">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    {leadStatuses.map(status => (
-                        <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-             <Select value={channelFilter} onValueChange={(value) => setChannelFilter(value)}>
-                <SelectTrigger className="w-48 h-9 text-sm">
-                    <SelectValue placeholder="Filter by channel..." />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Channels</SelectItem>
-                    {channels.map(channel => (
-                        <SelectItem key={channel.id} value={channel.id}>{channel.name}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            {(statusFilter !== 'all' || channelFilter !== 'all') && (
-                <Button variant="ghost" size="sm" onClick={() => {setStatusFilter('all'); setChannelFilter('all')}}>
-                    Clear Filters
-                </Button>
-            )}
-        </div>
-    );
 
     return (
         <div className="grid gap-6 mt-4">
@@ -156,8 +126,10 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
                     <DataTable 
                         columns={leadsColumns} 
                         data={filteredLeads} 
-                        toolbar={<Toolbar />} 
+                        toolbar={<LeadsToolbar channels={channels} onFilterChange={setFilters} />} 
                         onDeleteSelected={handleDeleteSelected}
+                        globalFilter={filters.search}
+                        setGlobalFilter={(value) => setFilters(prev => ({...prev, search: value}))}
                     />
                 </CardContent>
             </Card>

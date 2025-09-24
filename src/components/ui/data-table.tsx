@@ -18,7 +18,7 @@ import {
   Row,
   ExpandedState,
 } from '@tanstack/react-table';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 import {
     DropdownMenu,
@@ -48,6 +48,8 @@ interface DataTableProps<TData, TValue> {
   onDeleteSelected?: (selectedIds: string[]) => Promise<void>;
   onPostponeSelected?: (selectedIds: string[]) => Promise<void>;
   onArchiveSelected?: (selectedIds: string[]) => Promise<void>;
+  globalFilter?: string;
+  setGlobalFilter?: (value: string) => void;
 }
 
 export function DataTable<TData extends {id: string, starred?: boolean, completed?: boolean} , TValue>({
@@ -58,14 +60,20 @@ export function DataTable<TData extends {id: string, starred?: boolean, complete
   onDeleteSelected,
   onPostponeSelected,
   onArchiveSelected,
+  globalFilter: externalGlobalFilter,
+  setGlobalFilter: setExternalGlobalFilter,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [globalFilter, setGlobalFilter] = useState('');
+  const [internalGlobalFilter, setInternalGlobalFilter] = useState('');
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [showStarred, setShowStarred] = useState(false);
+
+  const isGlobalFilterControlled = externalGlobalFilter !== undefined && setExternalGlobalFilter !== undefined;
+  const globalFilter = isGlobalFilterControlled ? externalGlobalFilter : internalGlobalFilter;
+  const setGlobalFilter = isGlobalFilterControlled ? setExternalGlobalFilter : setInternalGlobalFilter;
 
   const filteredData = useMemo(() => {
     if (showStarred) {
@@ -86,9 +94,9 @@ export function DataTable<TData extends {id: string, starred?: boolean, complete
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
+    getExpandedRowModel: getExpandedRowModel(),
     onExpandedChange: setExpanded,
     getSubRows: getSubRows as any, // Type assertion might be needed depending on strictness
-    getExpandedRowModel: getExpandedRowModel(),
     state: {
       sorting,
       columnFilters,
@@ -104,6 +112,14 @@ export function DataTable<TData extends {id: string, starred?: boolean, complete
       }
     }
   });
+  
+   // Sync external filter changes
+   useEffect(() => {
+    if (isGlobalFilterControlled) {
+        table.setGlobalFilter(externalGlobalFilter);
+    }
+  }, [externalGlobalFilter, table, isGlobalFilterControlled]);
+
 
   const handleExport = () => {
     const rowsToExport = table.getFilteredSelectedRowModel().rows.length > 0
@@ -207,14 +223,16 @@ export function DataTable<TData extends {id: string, starred?: boolean, complete
     <>
         <div className="flex items-center justify-between pb-6 gap-2">
             <div className='flex items-center gap-2 flex-wrap'>
-                <Input
-                    placeholder="Search all columns..."
-                    value={globalFilter ?? ''}
-                    onChange={(event) =>
-                        setGlobalFilter(String(event.target.value))
-                    }
-                    className="max-w-sm h-9"
-                />
+                {!isGlobalFilterControlled && (
+                    <Input
+                        placeholder="Search all columns..."
+                        value={globalFilter ?? ''}
+                        onChange={(event) =>
+                            setGlobalFilter(String(event.target.value))
+                        }
+                        className="max-w-sm h-9"
+                    />
+                )}
                 {toolbar}
             </div>
             <div className='flex items-center gap-2'>
