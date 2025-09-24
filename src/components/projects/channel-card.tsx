@@ -77,7 +77,7 @@ export function ChannelCard({ channel, project }: ChannelCardProps) {
                 </DialogTrigger>
                 <DialogContent className='max-w-4xl'>
                     <DialogHeader><DialogTitle>Edit Channel</DialogTitle></DialogHeader>
-                    <ChannelForm channel={channel} projectId={project.id} channels={[]} closeForm={() => setIsEditOpen(false)} />
+                    <ChannelForm channel={channel} projectId={project.id} closeForm={() => setIsEditOpen(false)} />
                 </DialogContent>
             </Dialog>
             {channel.url && (

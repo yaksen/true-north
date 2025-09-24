@@ -137,7 +137,8 @@ export function LeadsToolbar({ channels, onFilterChange }: LeadsToolbarProps) {
     try {
         const imageDataUri = imageFile ? await fileToDataUri(imageFile) : undefined;
         const textDataUri = textFile ? await fileToDataUri(textFile) : undefined;
-        const audioDataUri = audioBlob ? await fileToDataUri(audioBlob) : undefined;
+        const audioFile = audioBlob ? new File([audioBlob], "recording.webm", { type: audioBlob.type }) : undefined;
+        const audioDataUri = audioFile ? await fileToDataUri(audioFile) : undefined;
 
         const availableChannels = channels.map(({ id, name }) => ({ id, name }));
 

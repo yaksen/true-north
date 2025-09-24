@@ -56,7 +56,7 @@ export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
                                 <DialogHeader>
                                     <DialogTitle>Add New Channel</DialogTitle>
                                 </DialogHeader>
-                                <ChannelForm projectId={project.id} channels={channels} closeForm={() => setIsChannelFormOpen(false)} />
+                                <ChannelForm projectId={project.id} closeForm={() => setIsChannelFormOpen(false)} />
                             </DialogContent>
                         </Dialog>
                     </div>

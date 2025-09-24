@@ -322,6 +322,7 @@ export type ActivityRecordType =
   | 'product_created' | 'product_updated' | 'product_deleted'
   | 'package_created' | 'package_updated' | 'package_deleted'
   | 'note_added'
+  | 'report_uploaded' | 'report_deleted'
   | 'invoice_created' | 'invoice_updated' | 'invoice_deleted'
   | 'member_invited' | 'member_added' | 'member_removed'
   | 'payment_added'

@@ -45,7 +45,7 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
         }
     };
 
-    const taskColumns = useMemo(() => getTaskColumns({ leads }, handleStar), [leads]);
+    const taskColumns = useMemo(() => getTaskColumns({ leads, onStar: handleStar }), [leads]);
 
     const totalIncome = finances.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
     const totalExpenses = finances.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
