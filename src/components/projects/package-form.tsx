@@ -12,8 +12,8 @@ import type { Package, Project, Service, Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ChevronsUpDown, Loader2, Sparkles, ImageIcon, Upload, Image as ImagePreviewIcon } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+import { ChevronsUpDown, Loader2, Sparkles, ImageIcon, Upload, Image as ImagePreviewIcon, X } from 'lucide-react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Checkbox } from '../ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '../ui/command';
@@ -70,7 +70,6 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
   const [aiImage, setAiImage] = useState<File | null>(null);
   const [pastedImage, setPastedImage] = useState<string | null>(null);
   const [isItemsPopoverOpen, setIsItemsPopoverOpen] = useState(false);
-  const [packageImageFile, setPackageImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(pkg?.imageUrl || null);
 
@@ -105,7 +104,6 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
   const selectedProductIds = form.watch('products');
   const packageCurrency = form.watch('currency');
   const discountPercentage = form.watch('discountPercentage');
-  const finalPrice = form.watch('price');
   const isCustom = form.watch('custom');
 
   // A mock conversion rate for suggestion. Replace with a real API call in a real app.
@@ -147,54 +145,38 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
       return basePriceInUSD * targetRate;
   }, [selectedServiceIds, selectedProductIds, services, products, packageCurrency]);
 
-
-  // When discount changes, update price
-  const handleDiscountChange = (newDiscount: number) => {
+  const handleDiscountChange = useCallback((newDiscount: number) => {
     form.setValue('discountPercentage', newDiscount);
     const calculatedPrice = basePrice * (1 - (newDiscount / 100));
-    form.setValue('price', parseFloat(calculatedPrice.toFixed(2)));
-  }
+    form.setValue('price', parseFloat(calculatedPrice.toFixed(2)), { shouldValidate: true });
+  }, [basePrice, form]);
 
-  // When price changes, update discount
-  const handlePriceChange = (newPrice: number) => {
+  const handlePriceChange = useCallback((newPrice: number) => {
     form.setValue('price', newPrice);
     if (basePrice > 0) {
-        const calculatedDiscount = (1 - (newPrice / basePrice)) * 100;
-        form.setValue('discountPercentage', parseFloat(calculatedDiscount.toFixed(1)));
+      const calculatedDiscount = (1 - (newPrice / basePrice)) * 100;
+      form.setValue('discountPercentage', parseFloat(calculatedDiscount.toFixed(1)));
     } else {
-        form.setValue('discountPercentage', 0);
+      form.setValue('discountPercentage', 0);
     }
-  }
+  }, [basePrice, form]);
 
-
-  const handlePackageImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files.length > 0) {
-        const file = event.target.files[0];
-        setPackageImageFile(file);
-        setPreviewImageUrl(URL.createObjectURL(file));
-    }
-  };
-
-  const handleImageUpload = async () => {
-    if (!packageImageFile) {
-        toast({ title: 'No image selected', variant: 'destructive' });
-        return;
-    }
+  const handleImageUpload = useCallback(async (file: File) => {
     if (!project.googleDriveAccessToken) {
         toast({ title: 'Google Drive not connected', description: 'Please connect to Google Drive in Project Settings first.', variant: 'destructive' });
         return;
     }
     setIsUploading(true);
+    setPreviewImageUrl(URL.createObjectURL(file));
 
     const formData = new FormData();
-    formData.append('file', packageImageFile);
+    formData.append('file', file);
     formData.append('accessToken', project.googleDriveAccessToken);
     formData.append('folderPath', ['true_north', project.name, 'products'].join(','));
-    formData.append('fileName', `${pkg?.id || form.getValues('sku')}.jpg`);
+    formData.append('fileName', `${form.getValues('sku') || uuidv4()}.jpg`);
 
     try {
         const result = await uploadFileToDrive(formData);
-
         if (result.success && result.link) {
             form.setValue('imageUrl', result.link);
             setPreviewImageUrl(result.link);
@@ -203,12 +185,26 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
             throw new Error(result.message || 'Image upload failed');
         }
     } catch (error: any) {
+        setPreviewImageUrl(null); // Clear preview on error
+        form.setValue('imageUrl', '');
         toast({ title: 'Upload Error', description: error.message, variant: 'destructive' });
     } finally {
         setIsUploading(false);
     }
-};
+}, [project, toast, form]);
 
+const handlePackageImageChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+        const file = event.target.files[0];
+        handleImageUpload(file);
+    }
+}, [handleImageUpload]);
+
+const handleRemoveImage = () => {
+    setPreviewImageUrl(null);
+    form.setValue('imageUrl', '');
+    // Consider adding logic here to delete from Google Drive if needed
+};
   
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -370,19 +366,25 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
             <div className='space-y-2'>
               <Label>Package Image</Label>
               <div className='flex items-center gap-4'>
-                  <div className='w-24 h-24 bg-muted rounded-lg flex items-center justify-center'>
+                  <div className='relative w-24 h-24 bg-muted rounded-lg flex items-center justify-center'>
                       {previewImageUrl ? (
-                          <Image src={previewImageUrl} alt="Package preview" width={96} height={96} className='rounded-lg object-cover w-24 h-24' />
+                          <>
+                              <Image src={previewImageUrl} alt="Package preview" width={96} height={96} className='rounded-lg object-cover w-24 h-24' />
+                              <Button type="button" size="icon" variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full z-10" onClick={handleRemoveImage} disabled={isUploading}>
+                                  <X className="h-4 w-4" />
+                              </Button>
+                          </>
                       ) : (
                           <ImagePreviewIcon className='h-8 w-8 text-muted-foreground' />
                       )}
+                      {isUploading && (
+                          <div className='absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg'>
+                              <Loader2 className='h-6 w-6 text-white animate-spin' />
+                          </div>
+                      )}
                   </div>
-                  <div className='flex-1 space-y-2'>
+                  <div className='flex-1'>
                     <Input id="package-image" type="file" accept="image/*" onChange={handlePackageImageChange} disabled={isUploading}/>
-                    <Button type='button' size="sm" onClick={handleImageUpload} disabled={isUploading || !packageImageFile}>
-                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                        Upload to Drive
-                    </Button>
                   </div>
               </div>
             </div>
@@ -561,10 +563,10 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
             </div>
 
             <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {pkg ? 'Update' : 'Create'} Package
+            <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting || isUploading}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting || isUploading}>
+                {isSubmitting || isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isUploading ? 'Uploading...' : (pkg ? 'Update' : 'Create') + ' Package'}
             </Button>
             </div>
         </form>
@@ -614,4 +616,3 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
   );
 }
 
-    
