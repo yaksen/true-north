@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -15,6 +14,7 @@ import { Input } from '../ui/input';
 import { ProjectChatbot } from './project-chatbot';
 import { Card } from '../ui/card';
 import { PromptsToolbar } from './prompts-toolbar';
+import { NotesToolbar } from './notes-toolbar';
 
 interface ProjectWorkspaceProps {
   project: Project;
@@ -49,19 +49,24 @@ export function ProjectWorkspace({
 }: ProjectWorkspaceProps) {
   const [isNoteFormOpen, setIsNoteFormOpen] = useState(false);
   const [isPromptFormOpen, setIsPromptFormOpen] = useState(false);
-  const [noteSearchTerm, setNoteSearchTerm] = useState('');
   
+  const [noteFilters, setNoteFilters] = useState({
+    searchTerm: '',
+    tags: [] as string[],
+  });
+
   const [promptFilters, setPromptFilters] = useState({
     searchTerm: '',
     category: '',
     tags: [] as string[],
   });
 
-  const filteredNotes = notes.filter(note => 
-    note.title.toLowerCase().includes(noteSearchTerm.toLowerCase()) ||
-    note.content.toLowerCase().includes(noteSearchTerm.toLowerCase()) ||
-    note.tags.some(tag => tag.toLowerCase().includes(noteSearchTerm.toLowerCase()))
-  );
+  const filteredNotes = notes.filter(note => {
+    const searchTermMatch = note.title.toLowerCase().includes(noteFilters.searchTerm.toLowerCase()) ||
+                            note.content.toLowerCase().includes(noteFilters.searchTerm.toLowerCase());
+    const tagsMatch = noteFilters.tags.length === 0 || noteFilters.tags.every(filterTag => note.tags.some(noteTag => noteTag.toLowerCase().includes(filterTag.toLowerCase())));
+    return searchTermMatch && tagsMatch;
+  });
 
   const filteredPrompts = aiPrompts.filter(prompt => {
     const searchTermMatch = prompt.title.toLowerCase().includes(promptFilters.searchTerm.toLowerCase()) ||
@@ -103,12 +108,7 @@ export function ProjectWorkspace({
 
       <TabsContent value="notes">
         <div className="flex justify-between items-center mb-4">
-          <Input 
-            placeholder="Search notes..." 
-            className="max-w-sm"
-            value={noteSearchTerm}
-            onChange={(e) => setNoteSearchTerm(e.target.value)}
-          />
+          <NotesToolbar onFilterChange={setNoteFilters} />
           <Dialog open={isNoteFormOpen} onOpenChange={setIsNoteFormOpen}>
             <DialogTrigger asChild>
               <Button><PlusCircle className="mr-2 h-4 w-4" /> New Note</Button>
