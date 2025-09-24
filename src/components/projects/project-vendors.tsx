@@ -6,15 +6,13 @@ import type { Project, Vendor, Channel } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { PlusCircle, Contact, Loader2 } from 'lucide-react';
-import { DataTable } from '../ui/data-table';
-import { getVendorColumns } from './vendor-columns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { VendorForm } from './vendor-form';
-import { doc, writeBatch, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { saveContactToGoogle } from '@/app/actions/google-contacts';
 import { VendorsToolbar } from './vendors-toolbar';
+import { VendorCard } from './vendor-card';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface ProjectVendorsProps {
   project: Project;
@@ -31,26 +29,17 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
     search: '',
   });
 
-  const handleStar = async (id: string, starred: boolean) => {
-    try {
-        await updateDoc(doc(db, 'vendors', id), { starred });
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
-    }
-  }
+  const filteredVendors = useMemo(() => {
+    return vendors.filter(v => {
+        const serviceMatch = !filters.serviceType || v.serviceType.toLowerCase().includes(filters.serviceType.toLowerCase());
+        const searchMatch = !filters.search ||
+            v.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+            (v.contactName && v.contactName.toLowerCase().includes(filters.search.toLowerCase()));
 
-  const handleDeleteSelected = async (ids: string[]) => {
-      const batch = writeBatch(db);
-      ids.forEach(id => {
-          batch.delete(doc(db, 'vendors', id));
-      });
-      try {
-          await batch.commit();
-          toast({ title: "Success", description: `${ids.length} vendor(s) deleted.`});
-      } catch (error) {
-          toast({ variant: 'destructive', title: "Error", description: "Could not delete selected vendors."})
-      }
-  }
+        return serviceMatch && searchMatch;
+    });
+  }, [vendors, filters]);
+
   
   const handleBulkSaveToContacts = async () => {
     if (!project.googleContactsAccessToken) {
@@ -62,7 +51,7 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
     let existCount = 0;
     let failCount = 0;
 
-    for (const vendor of vendors) {
+    for (const vendor of filteredVendors) {
         const result = await saveContactToGoogle(vendor, project.googleContactsAccessToken);
         if (result.success) {
             successCount++;
@@ -79,15 +68,6 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
         description: `${successCount} new contacts saved, ${existCount} already existed, and ${failCount} failed.`,
     });
   }
-
-  const vendorColumns = useMemo(() => getVendorColumns({ project, channels, onStar: handleStar }), [project, channels]);
-  
-  const filteredVendors = useMemo(() => {
-    return vendors.filter(v => {
-        const serviceMatch = !filters.serviceType || v.serviceType.toLowerCase().includes(filters.serviceType.toLowerCase());
-        return serviceMatch;
-    });
-  }, [vendors, filters]);
 
   return (
     <div className="grid gap-6 mt-4">
@@ -120,14 +100,23 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable 
-            columns={vendorColumns} 
-            data={filteredVendors} 
-            onDeleteSelected={handleDeleteSelected}
-            toolbar={<VendorsToolbar onFilterChange={setFilters} />}
-            globalFilter={filters.search}
-            setGlobalFilter={(value) => setFilters(prev => ({...prev, search: value}))}
-          />
+            <VendorsToolbar onFilterChange={setFilters} />
+            <ScrollArea className="h-[calc(100vh-30rem)]">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                    {filteredVendors.map(vendor => (
+                        <VendorCard 
+                            key={vendor.id}
+                            vendor={vendor}
+                            dependencies={{ project, channels }}
+                        />
+                    ))}
+                </div>
+            </ScrollArea>
+             {filteredVendors.length === 0 && (
+                <div className="text-center text-muted-foreground py-12">
+                    <p>No vendors found for the selected filters.</p>
+                </div>
+            )}
         </CardContent>
       </Card>
     </div>

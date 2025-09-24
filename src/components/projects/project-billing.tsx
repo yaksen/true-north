@@ -4,12 +4,12 @@
 import { useMemo, useState } from 'react';
 import type { Project, Invoice, Lead } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { DataTable } from '../ui/data-table';
-import { getInvoiceColumns } from '../billing/invoice-columns';
 import { doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { BillingToolbar } from '../billing/billing-toolbar';
+import { InvoiceCard } from '../billing/invoice-card';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface ProjectBillingProps {
   project: Project;
@@ -24,35 +24,13 @@ export function ProjectBilling({ project, invoices, leads }: ProjectBillingProps
     leadId: 'all',
     search: ''
   });
-
-  const handleStar = async (id: string, starred: boolean) => {
-    try {
-        await updateDoc(doc(db, 'invoices', id), { starred });
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
-    }
-  }
-
-  const handleDeleteSelected = async (ids: string[]) => {
-      const batch = writeBatch(db);
-      ids.forEach(id => {
-          batch.delete(doc(db, 'invoices', id));
-      });
-      try {
-          await batch.commit();
-          toast({ title: "Success", description: `${ids.length} invoice(s) deleted.`});
-      } catch (error) {
-          toast({ variant: 'destructive', title: "Error", description: "Could not delete selected invoices."})
-      }
-  }
-  
-  const invoiceColumns = useMemo(() => getInvoiceColumns({ projects: [project], leads, onStar: handleStar }), [project, leads]);
   
   const filteredInvoices = useMemo(() => {
     return invoices.filter(invoice => {
         const statusMatch = filters.status === 'all' || invoice.status === filters.status;
         const leadMatch = filters.leadId === 'all' || invoice.leadId === filters.leadId;
-        return statusMatch && leadMatch;
+        const searchMatch = !filters.search || invoice.invoiceNumber.toLowerCase().includes(filters.search.toLowerCase());
+        return statusMatch && leadMatch && searchMatch;
     });
   }, [invoices, filters]);
 
@@ -67,13 +45,24 @@ export function ProjectBilling({ project, invoices, leads }: ProjectBillingProps
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable 
-            columns={invoiceColumns} 
-            data={filteredInvoices} 
-            onDeleteSelected={handleDeleteSelected}
-            toolbar={<BillingToolbar leads={leads} onFilterChange={setFilters} />}
-            globalFilter={filters.search}
-          />
+            <BillingToolbar leads={leads} onFilterChange={setFilters} />
+             <ScrollArea className="h-[calc(100vh-30rem)]">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                    {filteredInvoices.map(invoice => (
+                        <InvoiceCard 
+                            key={invoice.id}
+                            invoice={invoice}
+                            project={project}
+                            leads={leads}
+                        />
+                    ))}
+                </div>
+            </ScrollArea>
+             {filteredInvoices.length === 0 && (
+                <div className="text-center text-muted-foreground py-12">
+                    <p>No invoices found for the selected filters.</p>
+                </div>
+            )}
         </CardContent>
       </Card>
     </div>

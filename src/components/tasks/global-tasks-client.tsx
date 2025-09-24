@@ -1,11 +1,7 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
 import type { Project, Task, Lead, TaskTemplate, UserProfile, ProjectMember } from '@/lib/types';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { DataTable } from '@/components/ui/data-table';
-import { getTaskColumns } from '@/components/projects/task-columns';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Loader2, History, Archive } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -19,6 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { isToday, isTomorrow, addDays } from 'date-fns';
 import { Checkbox } from '../ui/checkbox';
+import { TasksToolbar } from '../projects/tasks-toolbar';
+import { TaskCard } from '../projects/task-card';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface GlobalTasksClientProps {
   projects: Project[];
@@ -37,9 +36,13 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
-  const [hideCompleted, setHideCompleted] = useState(false);
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [showArchived, setShowArchived] = useState(false);
+  const [filters, setFilters] = useState({
+    slot: 'all',
+    assignee: 'all',
+    search: '',
+    hideCompleted: false
+  });
 
   const projectMembers: ProjectMember[] = useMemo(() => {
     const allMembers: ProjectMember[] = [];
@@ -48,55 +51,21 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
       .map(uid => allMembers.find(m => m.uid === uid)!);
     return uniqueMembers;
   }, [projects]);
+  
+  const [memberProfiles, setMemberProfiles] = useState<UserProfile[]>([]);
 
-  const handleStar = async (id: string, starred: boolean) => {
-    try {
-        await updateDoc(doc(db, 'tasks', id), { starred });
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
-    }
-  }
+  useEffect(() => {
+    const fetchMembers = async () => {
+      const uids = projectMembers.map(m => m.uid);
+      if (uids.length === 0) return;
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('id', 'in', uids));
+      const snapshot = await getDocs(q);
+      setMemberProfiles(snapshot.docs.map(doc => doc.data() as UserProfile));
+    };
+    fetchMembers();
+  }, [projectMembers]);
 
-  const handleDeleteSelected = async (ids: string[]) => {
-      const batch = writeBatch(db);
-      ids.forEach(id => {
-          batch.delete(doc(db, 'tasks', id));
-      });
-      try {
-          await batch.commit();
-          toast({ title: "Success", description: `${ids.length} task(s) deleted.`});
-      } catch (error) {
-          toast({ variant: 'destructive', title: "Error", description: "Could not delete selected tasks."})
-      }
-  }
-
-  const handleArchiveSelected = async (ids: string[]) => {
-    const batch = writeBatch(db);
-    ids.forEach(id => {
-        batch.update(doc(db, 'tasks', id), { archived: true, updatedAt: serverTimestamp() });
-    });
-    try {
-        await batch.commit();
-        toast({ title: "Success", description: `${ids.length} task(s) archived.`});
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Error", description: "Could not archive selected tasks."})
-    }
-  }
-
-  const handlePostponeSelected = async (ids: string[]) => {
-    const batch = writeBatch(db);
-    const nextDay = addDays(new Date(), 1);
-    ids.forEach(id => {
-        const taskRef = doc(db, 'tasks', id);
-        batch.update(taskRef, { dueDate: nextDay, updatedAt: serverTimestamp() });
-    });
-    try {
-        await batch.commit();
-        toast({ title: "Success", description: `${ids.length} task(s) postponed to tomorrow.`});
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Error", description: "Could not postpone selected tasks."})
-    }
-  }
 
   const handleGenerateTodaysTasks = async () => {
     if (!user) {
@@ -168,7 +137,6 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
     }
   }
 
-  const taskColumns = useMemo(() => getTaskColumns({ leads }, handleStar), [leads]);
 
   useEffect(() => {
     setLoading(true);
@@ -184,63 +152,25 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   const filteredTasks = useMemo(() => {
     let filtered = tasks.filter(task => showArchived ? task.archived : !task.archived);
     
-    if (dateFilter !== 'all') {
-        filtered = filtered.filter(task => {
-            if (!task.dueDate) return false;
-            const dueDate = new Date(task.dueDate);
-            if (dateFilter === 'today') return isToday(dueDate);
-            if (dateFilter === 'tomorrow') return isTomorrow(dueDate);
-            if (dateFilter === 'day-after') return isToday(addDays(new Date(), -2)); // Simplified logic
-            return true;
-        });
+    if (filters.slot !== 'all') {
+        filtered = filtered.filter(task => task.slot === filters.slot);
+    }
+    
+    if (filters.assignee !== 'all') {
+        filtered = filtered.filter(task => task.assigneeUid === filters.assignee);
     }
 
-    if (hideCompleted) {
-        const taskMap = new Map(filtered.map(t => [t.id, t]));
-        const hasIncompleteSubtasks = (taskId: string): boolean => {
-            const subtasks = filtered.filter(t => t.parentTaskId === taskId);
-            return subtasks.some(st => !st.completed || hasIncompleteSubtasks(st.id));
-        };
-
-        return filtered.filter(task => {
-             if (task.parentTaskId) {
-                let current = task;
-                while (current.parentTaskId) {
-                    const parent = taskMap.get(current.parentTaskId);
-                    if (!parent) return true; // Orphaned, show it
-                    if (parent.completed && !hasIncompleteSubtasks(parent.id)) return false;
-                    current = parent;
-                }
-            }
-            return !task.completed || hasIncompleteSubtasks(task.id);
-        });
+    if (filters.search) {
+      filtered = filtered.filter(task => task.title.toLowerCase().includes(filters.search.toLowerCase()));
+    }
+    
+    if (filters.hideCompleted) {
+        filtered = filtered.filter(task => !task.completed);
     }
     
     return filtered;
-  }, [tasks, hideCompleted, dateFilter, showArchived]);
+  }, [tasks, filters, showArchived]);
 
-  const hierarchicalTasksByProject = useMemo(() => {
-    const groupedByProject: { [key: string]: Task[] } = {};
-    for (const project of projects) {
-        groupedByProject[project.id] = [];
-    }
-
-    const taskMap = new Map(filteredTasks.map(t => [t.id, { ...t, subRows: [] as Task[] }]));
-
-    for (const task of filteredTasks) {
-        if (groupedByProject[task.projectId]) {
-            const currentTask = taskMap.get(task.id);
-            if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
-                taskMap.get(task.parentTaskId)!.subRows.push(currentTask!);
-            } else {
-                groupedByProject[task.projectId].push(currentTask!);
-            }
-        }
-    }
-    return groupedByProject;
-  }, [projects, filteredTasks]);
-
-  const defaultAccordionValues = useMemo(() => projects.filter(p => (hierarchicalTasksByProject[p.id] || []).length > 0).map(p => p.id), [projects, hierarchicalTasksByProject]);
 
   if (loading) {
       return (
@@ -253,26 +183,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   return (
     <>
       <div className="flex flex-col gap-4 mb-4">
-        <div className='flex items-center gap-2 flex-wrap'>
-             <div className="flex items-center space-x-2">
-                <Checkbox id="hide-completed-global" checked={hideCompleted} onCheckedChange={(checked) => setHideCompleted(checked as boolean)} />
-                <label htmlFor="hide-completed-global" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    Hide completed
-                </label>
-            </div>
-            <div className="flex items-center gap-1 p-1 border rounded-lg">
-                {(['all', 'today', 'tomorrow', 'day-after'] as DateFilter[]).map(df => (
-                    <Button key={df} variant={dateFilter === df ? 'secondary' : 'ghost'} size="sm" onClick={() => setDateFilter(df)} className="capitalize h-7">
-                        {df.replace('-', ' ')}
-                    </Button>
-                ))}
-            </div>
-             {(hideCompleted || dateFilter !== 'all') && (
-                <Button variant="ghost" size="sm" onClick={() => { setHideCompleted(false); setDateFilter('all'); }}>
-                    Clear Filters
-                </Button>
-            )}
-        </div>
+        <TasksToolbar assignees={memberProfiles} onFilterChange={setFilters} />
         <div className='flex items-center gap-2 self-end'>
             <Button size="sm" variant="outline" onClick={() => setShowArchived(!showArchived)}>
                 <History className="mr-2 h-4 w-4" />
@@ -309,40 +220,20 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
 
       <Card>
         <CardContent className='pt-6'>
-            <Accordion type="multiple" defaultValue={defaultAccordionValues} className="w-full">
-            {projects.map(project => {
-                const projectTasks = hierarchicalTasksByProject[project.id] || [];
-                if (projectTasks.length === 0) return null;
-
-                return (
-                    <AccordionItem value={project.id} key={project.id} className="border-b-0">
-                    <AccordionTrigger className='hover:no-underline px-4 py-2 bg-muted/50 rounded-t-lg'>
-                        <div className='flex flex-col items-start'>
-                            <h3 className="font-semibold text-lg">{project.name}</h3>
-                            <p className='text-sm text-muted-foreground'>
-                                {tasks.filter(t => t.projectId === project.id).length} task(s)
-                            </p>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="p-0">
-                        <div className="border-x border-b rounded-b-lg p-4">
-                            <DataTable 
-                                columns={taskColumns} 
-                                data={projectTasks}
-                                getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
-                                onDeleteSelected={handleDeleteSelected}
-                                onPostponeSelected={handlePostponeSelected}
-                                onArchiveSelected={handleArchiveSelected}
-                            />
-                        </div>
-                    </AccordionContent>
-                    </AccordionItem>
-                )
-            })}
-            </Accordion>
-            {tasks.length === 0 && (
+            <ScrollArea className="h-[calc(100vh-30rem)]">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                    {filteredTasks.map(task => (
+                        <TaskCard 
+                            key={task.id}
+                            task={task}
+                            leads={leads}
+                        />
+                    ))}
+                </div>
+            </ScrollArea>
+            {filteredTasks.length === 0 && (
                  <div className="text-center text-muted-foreground py-12">
-                    <p>No tasks found. Create a task to get started.</p>
+                    <p>No tasks found for the selected filters.</p>
                 </div>
             )}
         </CardContent>
@@ -350,5 +241,3 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
     </>
   );
 }
-
-  

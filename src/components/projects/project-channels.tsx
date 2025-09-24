@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from "react";
@@ -5,14 +6,12 @@ import { Project, Channel } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
-import { DataTable } from "../ui/data-table";
-import { getChannelsColumns } from "./channel-columns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { ChannelForm } from "./channel-form";
-import { doc, writeBatch, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { ChannelsToolbar } from "./channels-toolbar";
+import { ChannelCard } from "./channel-card";
+import { ScrollArea } from "../ui/scroll-area";
 
 
 interface ProjectChannelsProps {
@@ -28,35 +27,14 @@ export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
         platform: 'all',
         search: ''
     });
-    
-    const handleStar = async (id: string, starred: boolean) => {
-        try {
-            await updateDoc(doc(db, 'channels', id), { starred });
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
-        }
-    }
-
-    const handleDeleteSelected = async (ids: string[]) => {
-        const batch = writeBatch(db);
-        ids.forEach(id => {
-            batch.delete(doc(db, 'channels', id));
-        });
-        try {
-            await batch.commit();
-            toast({ title: "Success", description: `${ids.length} channel(s) deleted.`});
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error", description: "Could not delete selected channels."})
-        }
-    }
-    
-    const channelsColumns = useMemo(() => getChannelsColumns(project, handleStar), [project]);
 
     const filteredChannels = useMemo(() => {
         return channels.filter(channel => {
             const statusMatch = filters.status === 'all' || channel.status === filters.status;
             const platformMatch = filters.platform === 'all' || channel.platform === filters.platform;
-            return statusMatch && platformMatch;
+            const searchMatch = !filters.search || channel.name.toLowerCase().includes(filters.search.toLowerCase());
+
+            return statusMatch && platformMatch && searchMatch;
         });
     }, [channels, filters]);
 
@@ -84,14 +62,23 @@ export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <DataTable 
-                        columns={channelsColumns} 
-                        data={filteredChannels} 
-                        toolbar={<ChannelsToolbar onFilterChange={setFilters} />} 
-                        onDeleteSelected={handleDeleteSelected}
-                        globalFilter={filters.search}
-                        setGlobalFilter={(value) => setFilters(prev => ({...prev, search: value}))}
-                    />
+                    <ChannelsToolbar onFilterChange={setFilters} />
+                    <ScrollArea className="h-[calc(100vh-30rem)]">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                            {filteredChannels.map(channel => (
+                                <ChannelCard 
+                                    key={channel.id}
+                                    channel={channel}
+                                    project={project}
+                                />
+                            ))}
+                        </div>
+                    </ScrollArea>
+                    {filteredChannels.length === 0 && (
+                        <div className="text-center text-muted-foreground py-12">
+                            <p>No channels found for the selected filters.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

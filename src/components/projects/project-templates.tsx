@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from "react";
@@ -6,8 +5,6 @@ import { Project, Task, TaskTemplate, UserProfile } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
-import { DataTable } from "../ui/data-table";
-import { getTaskTemplatesColumns } from "./task-template-columns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { TaskTemplateForm } from "./task-template-form";
 import { collection, where, query, getDocs, doc, writeBatch, updateDoc } from "firebase/firestore";
@@ -15,6 +12,8 @@ import { db } from "@/lib/firebase";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { TaskTemplateCard } from "./task-template-card";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface ProjectTemplatesProps {
     project: Project;
@@ -40,29 +39,6 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
         };
         fetchMembers();
     }, [project.memberUids]);
-
-    const handleStar = async (id: string, starred: boolean) => {
-        try {
-            await updateDoc(doc(db, 'taskTemplates', id), { starred });
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
-        }
-    }
-
-    const handleDeleteSelected = async (ids: string[]) => {
-        const batch = writeBatch(db);
-        ids.forEach(id => {
-            batch.delete(doc(db, 'taskTemplates', id));
-        });
-        try {
-            await batch.commit();
-            toast({ title: "Success", description: `${ids.length} template(s) a deleted.`});
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error", description: "Could not delete selected templates."})
-        }
-    }
-
-    const templateColumns = useMemo(() => getTaskTemplatesColumns(project, handleStar), [project]);
     
     const filteredTemplates = useMemo(() => {
         return templates.filter(template => {
@@ -74,7 +50,7 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
     }, [templates, slotFilter, dayFilter, assigneeFilter]);
 
     const Toolbar = () => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-4">
             <Select value={slotFilter} onValueChange={(value) => setSlotFilter(value as any)}>
                 <SelectTrigger className="w-36 h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -139,12 +115,23 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <DataTable 
-                        columns={templateColumns} 
-                        data={filteredTemplates} 
-                        toolbar={<Toolbar />}
-                        onDeleteSelected={handleDeleteSelected}
-                    />
+                    <Toolbar />
+                     <ScrollArea className="h-[calc(100vh-30rem)]">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                            {filteredTemplates.map(template => (
+                                <TaskTemplateCard
+                                    key={template.id}
+                                    template={template}
+                                    project={project}
+                                />
+                            ))}
+                        </div>
+                    </ScrollArea>
+                    {filteredTemplates.length === 0 && (
+                        <div className="text-center text-muted-foreground py-12">
+                            <p>No templates found for the selected filters.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

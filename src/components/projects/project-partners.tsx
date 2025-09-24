@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -5,8 +6,6 @@ import type { Project, Partner, Channel } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { PlusCircle, Contact, Loader2 } from 'lucide-react';
-import { DataTable } from '../ui/data-table';
-import { getPartnerColumns } from './partner-columns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { PartnerForm } from './partner-form';
 import { doc, writeBatch, updateDoc } from 'firebase/firestore';
@@ -14,6 +13,8 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { saveContactToGoogle } from '@/app/actions/google-contacts';
 import { PartnersToolbar } from './partners-toolbar';
+import { PartnerCard } from './partner-card';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface ProjectPartnersProps {
   project: Project;
@@ -30,27 +31,17 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
     search: '',
   });
 
-  const handleStar = async (id: string, starred: boolean) => {
-    try {
-        await updateDoc(doc(db, 'partners', id), { starred });
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
-    }
-  }
+  const filteredPartners = useMemo(() => {
+    return partners.filter(p => {
+        const roleMatch = !filters.role || p.roleInProject.toLowerCase().includes(filters.role.toLowerCase());
+        const searchMatch = !filters.search ||
+            p.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+            (p.contactName && p.contactName.toLowerCase().includes(filters.search.toLowerCase()));
 
-  const handleDeleteSelected = async (ids: string[]) => {
-      const batch = writeBatch(db);
-      ids.forEach(id => {
-          batch.delete(doc(db, 'partners', id));
-      });
-      try {
-          await batch.commit();
-          toast({ title: "Success", description: `${ids.length} partner(s) deleted.`});
-      } catch (error) {
-          toast({ variant: 'destructive', title: "Error", description: "Could not delete selected partners."})
-      }
-  }
-  
+        return roleMatch && searchMatch;
+    });
+  }, [partners, filters]);
+
   const handleBulkSaveToContacts = async () => {
     if (!project.googleContactsAccessToken) {
         toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to Google Contacts in Project Settings first.'});
@@ -61,7 +52,7 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
     let existCount = 0;
     let failCount = 0;
 
-    for (const partner of partners) {
+    for (const partner of filteredPartners) {
         const result = await saveContactToGoogle(partner, project.googleContactsAccessToken);
         if (result.success) {
             successCount++;
@@ -78,15 +69,6 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
         description: `${successCount} new contacts saved, ${existCount} already existed, and ${failCount} failed.`,
     });
   }
-
-  const partnerColumns = useMemo(() => getPartnerColumns({ project, channels, onStar: handleStar }), [project, channels]);
-
-  const filteredPartners = useMemo(() => {
-    return partners.filter(p => {
-        const roleMatch = !filters.role || p.roleInProject.toLowerCase().includes(filters.role.toLowerCase());
-        return roleMatch;
-    });
-  }, [partners, filters]);
 
 
   return (
@@ -120,14 +102,23 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable 
-            columns={partnerColumns} 
-            data={filteredPartners} 
-            onDeleteSelected={handleDeleteSelected}
-            toolbar={<PartnersToolbar onFilterChange={setFilters} />}
-            globalFilter={filters.search}
-            setGlobalFilter={(value) => setFilters(prev => ({...prev, search: value}))}
-          />
+            <PartnersToolbar onFilterChange={setFilters} />
+            <ScrollArea className="h-[calc(100vh-30rem)]">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                    {filteredPartners.map(partner => (
+                        <PartnerCard 
+                            key={partner.id}
+                            partner={partner}
+                            dependencies={{ project, channels }}
+                        />
+                    ))}
+                </div>
+            </ScrollArea>
+             {filteredPartners.length === 0 && (
+                <div className="text-center text-muted-foreground py-12">
+                    <p>No partners found for the selected filters.</p>
+                </div>
+            )}
         </CardContent>
       </Card>
     </div>

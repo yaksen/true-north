@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from "react";
@@ -5,8 +6,6 @@ import { Project, Task, Lead, TaskTemplateSlot, UserProfile } from "@/lib/types"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle, History } from "lucide-react";
-import { DataTable } from "../ui/data-table";
-import { getTaskColumns } from "./task-columns";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { TaskForm } from "./task-form";
 import { Row } from "@tanstack/react-table";
@@ -16,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { addDays, isToday, isTomorrow } from "date-fns";
 import { TasksToolbar } from "./tasks-toolbar";
 import { useEffect } from "react";
+import { TaskCard } from "./task-card";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface ProjectTasksProps {
     project: Project;
@@ -47,58 +48,6 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
         fetchMembers();
     }, [project.memberUids]);
 
-    const handleStar = async (id: string, starred: boolean) => {
-        try {
-            await updateDoc(doc(db, 'tasks', id), { starred });
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
-        }
-    }
-
-    const handleDeleteSelected = async (ids: string[]) => {
-        const batch = writeBatch(db);
-        ids.forEach(id => {
-            batch.delete(doc(db, 'tasks', id));
-        });
-        try {
-            await batch.commit();
-            toast({ title: "Success", description: `${ids.length} task(s) deleted.`});
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error", description: "Could not delete selected tasks."})
-        }
-    }
-
-    const handleArchiveSelected = async (ids: string[]) => {
-        const batch = writeBatch(db);
-        ids.forEach(id => {
-            batch.update(doc(db, 'tasks', id), { archived: true, updatedAt: serverTimestamp() });
-        });
-        try {
-            await batch.commit();
-            toast({ title: "Success", description: `${ids.length} task(s) archived.`});
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error", description: "Could not archive selected tasks."})
-        }
-    }
-
-
-    const handlePostponeSelected = async (ids: string[]) => {
-        const batch = writeBatch(db);
-        const nextDay = addDays(new Date(), 1);
-        ids.forEach(id => {
-            const taskRef = doc(db, 'tasks', id);
-            batch.update(taskRef, { dueDate: nextDay, updatedAt: serverTimestamp() });
-        });
-        try {
-            await batch.commit();
-            toast({ title: "Success", description: `${ids.length} task(s) postponed to tomorrow.`});
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error", description: "Could not postpone selected tasks."})
-        }
-    }
-    
-    const taskColumns = useMemo(() => getTaskColumns({ leads }, handleStar), [leads]);
-
     const filteredTasks = useMemo(() => {
         let filtered = tasks.filter(task => showArchived ? task.archived : !task.archived);
 
@@ -111,45 +60,15 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
         }
         
         if (filters.hideCompleted) {
-             const taskMap = new Map(filtered.map(t => [t.id, t]));
-            const hasIncompleteSubtasks = (taskId: string): boolean => {
-                const subtasks = filtered.filter(t => t.parentTaskId === taskId);
-                if (subtasks.some(st => !st.completed)) return true;
-                return subtasks.some(st => hasIncompleteSubtasks(st.id));
-            };
+             filtered = filtered.filter(task => !task.completed);
+        }
 
-             return filtered.filter(task => {
-                if (task.parentTaskId) {
-                    let current = task;
-                    while (current.parentTaskId) {
-                        const parent = taskMap.get(current.parentTaskId);
-                        if (!parent) return true; // Orphaned, show it
-                        if (parent.completed && !hasIncompleteSubtasks(parent.id)) return false;
-                        current = parent;
-                    }
-                }
-                return !task.completed || hasIncompleteSubtasks(task.id);
-            });
+        if (filters.search) {
+            filtered = filtered.filter(task => task.title.toLowerCase().includes(filters.search.toLowerCase()));
         }
 
         return filtered;
     }, [tasks, filters, showArchived]);
-
-    const hierarchicalTasks = useMemo(() => {
-        const taskMap = new Map(filteredTasks.map(t => [t.id, { ...t, subRows: [] as Task[] }]));
-        const rootTasks: Task[] = [];
-        
-        for (const task of filteredTasks) {
-            const currentTask = taskMap.get(task.id);
-            if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
-                taskMap.get(task.parentTaskId)!.subRows.push(currentTask!);
-            } else {
-                rootTasks.push(currentTask!);
-            }
-        }
-        return rootTasks;
-
-    }, [filteredTasks]);
 
 
     return (
@@ -181,17 +100,19 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <DataTable 
-                        columns={taskColumns} 
-                        data={hierarchicalTasks} 
-                        toolbar={<TasksToolbar assignees={memberProfiles} onFilterChange={setFilters} />} 
-                        getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
-                        onDeleteSelected={handleDeleteSelected}
-                        onPostponeSelected={handlePostponeSelected}
-                        onArchiveSelected={handleArchiveSelected}
-                        globalFilter={filters.search}
-                        setGlobalFilter={(value) => setFilters(prev => ({...prev, search: value}))}
-                    />
+                    <TasksToolbar assignees={memberProfiles} onFilterChange={setFilters} />
+                    <ScrollArea className="h-[calc(100vh-30rem)]">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                            {filteredTasks.map(task => (
+                                <TaskCard key={task.id} task={task} leads={leads} />
+                            ))}
+                        </div>
+                    </ScrollArea>
+                    {filteredTasks.length === 0 && (
+                        <div className="text-center text-muted-foreground py-12">
+                            <p>No tasks found for the selected filters.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

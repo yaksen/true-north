@@ -6,8 +6,6 @@ import { Project, Lead, LeadStatus, Package, Service, Channel } from "@/lib/type
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle, Contact, Loader2 } from "lucide-react";
-import { DataTable } from "../ui/data-table";
-import { getLeadsColumns } from "./leads-columns";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { LeadForm } from "./lead-form";
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
@@ -15,6 +13,8 @@ import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { saveContactToGoogle } from "@/app/actions/google-contacts";
 import { LeadsToolbar } from "./leads-toolbar";
+import { LeadCard } from "./lead-card";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface ProjectLeadsProps {
     project: Project;
@@ -42,29 +42,17 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
         }
     }
 
-    const handleDeleteSelected = async (ids: string[]) => {
-        const batch = writeBatch(db);
-        ids.forEach(id => {
-            batch.delete(doc(db, 'leads', id));
-        });
-        try {
-            await batch.commit();
-            toast({ title: "Success", description: `${ids.length} lead(s) deleted.`});
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error", description: "Could not delete selected leads."})
-        }
-    }
-    
-    const leadsColumns = useMemo(() => getLeadsColumns({ project, packages, services, channels, onStar: handleStar }), [project, packages, services, channels]);
-
     const filteredLeads = useMemo(() => {
         return leads.filter(lead => {
             const statusMatch = filters.status === 'all' || lead.status === filters.status;
             const channelMatch = filters.channel === 'all' || lead.channelId === filters.channel;
-            // The global search is now handled by the DataTable itself via the `globalFilter` prop
-            return statusMatch && channelMatch;
+            const searchMatch = !filters.search || 
+                lead.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+                (lead.email && lead.email.toLowerCase().includes(filters.search.toLowerCase()));
+
+            return statusMatch && channelMatch && searchMatch;
         });
-    }, [leads, filters.status, filters.channel]);
+    }, [leads, filters]);
 
     const handleBulkSaveToContacts = async () => {
         if (!project.googleContactsAccessToken) {
@@ -123,14 +111,23 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <DataTable 
-                        columns={leadsColumns} 
-                        data={filteredLeads} 
-                        toolbar={<LeadsToolbar channels={channels} onFilterChange={setFilters} />} 
-                        onDeleteSelected={handleDeleteSelected}
-                        globalFilter={filters.search}
-                        setGlobalFilter={(value) => setFilters(prev => ({...prev, search: value}))}
-                    />
+                    <LeadsToolbar channels={channels} onFilterChange={setFilters} />
+                    <ScrollArea className="h-[calc(100vh-30rem)]">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                            {filteredLeads.map(lead => (
+                                <LeadCard 
+                                    key={lead.id}
+                                    lead={lead}
+                                    dependencies={{ project, packages, services, channels }}
+                                />
+                            ))}
+                        </div>
+                    </ScrollArea>
+                    {filteredLeads.length === 0 && (
+                        <div className="text-center text-muted-foreground py-12">
+                            <p>No leads found for the selected filters.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

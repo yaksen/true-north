@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from "react";
@@ -5,16 +6,14 @@ import { Project, Finance, FinanceType } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
-import { DataTable } from "../ui/data-table";
-import { financeColumns } from "./finance-columns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { FinanceForm } from "./finance-form";
 import { DateRange } from "react-day-picker";
-import { doc, writeBatch, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from "@/context/CurrencyContext";
 import { FinanceToolbar } from "../finance/finance-toolbar";
+import { FinanceCard } from "../finance/finance-card";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface ProjectFinanceProps {
     project: Project;
@@ -33,29 +32,6 @@ export function ProjectFinance({ project, finances }: ProjectFinanceProps) {
         search: '',
       });
 
-    const handleStar = async (id: string, starred: boolean) => {
-        try {
-            await updateDoc(doc(db, 'finances', id), { starred });
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
-        }
-    }
-
-    const handleDeleteSelected = async (ids: string[]) => {
-        const batch = writeBatch(db);
-        ids.forEach(id => {
-            batch.delete(doc(db, 'finances', id));
-        });
-        try {
-            await batch.commit();
-            toast({ title: "Success", description: `${ids.length} record(s) deleted.`});
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error", description: "Could not delete selected records."})
-        }
-    }
-
-    const columns = useMemo(() => financeColumns(handleStar, displayCurrency), [displayCurrency]);
-
     const filteredFinances = useMemo(() => {
         return finances.filter(f => {
             const typeMatch = filters.type === 'all' || f.type === filters.type;
@@ -64,7 +40,9 @@ export function ProjectFinance({ project, finances }: ProjectFinanceProps) {
                 (!filters.date.to || new Date(f.date) <= filters.date.to)
             );
             const categoryMatch = !filters.category || (f.category && f.category.toLowerCase().includes(filters.category.toLowerCase()));
-            return typeMatch && dateMatch && categoryMatch;
+            const searchMatch = !filters.search || f.description.toLowerCase().includes(filters.search.toLowerCase());
+
+            return typeMatch && dateMatch && categoryMatch && searchMatch;
         });
     }, [finances, filters]);
     
@@ -92,14 +70,23 @@ export function ProjectFinance({ project, finances }: ProjectFinanceProps) {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <DataTable 
-                        columns={columns} 
-                        data={filteredFinances} 
-                        toolbar={<FinanceToolbar onFilterChange={setFilters} />} 
-                        onDeleteSelected={handleDeleteSelected}
-                        globalFilter={filters.search}
-                        setGlobalFilter={(value) => setFilters(prev => ({...prev, search: value}))}
-                    />
+                    <FinanceToolbar onFilterChange={setFilters} />
+                     <ScrollArea className="h-[calc(100vh-30rem)]">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                            {filteredFinances.map(finance => (
+                                <FinanceCard
+                                    key={finance.id}
+                                    finance={finance}
+                                    displayCurrency={displayCurrency}
+                                />
+                            ))}
+                        </div>
+                    </ScrollArea>
+                    {filteredFinances.length === 0 && (
+                        <div className="text-center text-muted-foreground py-12">
+                            <p>No financial records found for the selected filters.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

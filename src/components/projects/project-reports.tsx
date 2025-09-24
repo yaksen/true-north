@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -13,9 +12,9 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { logActivity } from '@/lib/activity-log';
-import { DataTable } from '../ui/data-table';
-import { reportsColumns } from './reports-columns';
 import { FileUp, Loader2 } from 'lucide-react';
+import { ReportCard } from './report-card';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface ProjectReportsProps {
   project: Project;
@@ -28,8 +27,6 @@ export function ProjectReports({ project, reports }: ProjectReportsProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-
-  const columns = useMemo(() => reportsColumns, []);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -89,7 +86,19 @@ export function ProjectReports({ project, reports }: ProjectReportsProps) {
             <CardDescription>View and manage all uploaded reports for this project.</CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable columns={columns} data={reports} />
+            {reports.length > 0 ? (
+                <ScrollArea className="h-[calc(100vh-22rem)]">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                        {reports.map(report => (
+                            <ReportCard key={report.id} report={report} />
+                        ))}
+                    </div>
+                </ScrollArea>
+            ) : (
+                <div className="text-center text-muted-foreground py-12">
+                    <p>No reports uploaded yet.</p>
+                </div>
+            )}
           </CardContent>
         </Card>
       </div>
