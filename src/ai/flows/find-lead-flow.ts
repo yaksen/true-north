@@ -85,11 +85,31 @@ const findLeadFlow = ai.defineFlow(
     outputSchema: FindLeadOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    if (!output) {
-      throw new Error('The model did not return structured output.');
+    let attempts = 0;
+    const maxAttempts = 6;
+
+    while (attempts < maxAttempts) {
+        try {
+            const modifiedInput = { ...input };
+            if (attempts > 0) {
+                // Modify the prompt slightly on retries
+                modifiedInput.prompt = `(Attempt ${attempts + 1}) Please re-evaluate: ${input.prompt}`;
+            }
+
+            const { output } = await prompt(modifiedInput);
+
+            if (output) {
+                return output;
+            }
+
+            console.warn(`AI search attempt ${attempts + 1} returned a null or undefined output.`);
+        } catch (error) {
+            console.error(`AI search attempt ${attempts + 1} failed:`, error);
+        }
+        attempts++;
     }
-    return output;
+    
+    throw new Error(`The AI failed to return structured output after ${maxAttempts} attempts.`);
   }
 );
 

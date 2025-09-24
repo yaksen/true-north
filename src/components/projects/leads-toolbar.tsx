@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -44,13 +44,23 @@ export function LeadsToolbar({ channels, onFilterChange }: LeadsToolbarProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFilterChange = (key: 'status' | 'channel' | 'search', value: string) => {
-    onFilterChange({
-        status: key === 'status' ? value : statusFilter,
-        channel: key === 'channel' ? value : channelFilter,
-        search: key === 'search' ? value : searchTerm,
-    });
+  // Effect to handle live search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      onFilterChange({
+        status: statusFilter,
+        channel: channelFilter,
+        search: searchTerm,
+      });
+    }, 300); // Debounce by 300ms
 
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm, statusFilter, channelFilter, onFilterChange]);
+
+
+  const handleFilterChange = (key: 'status' | 'channel' | 'search', value: string) => {
     if (key === 'status') setStatusFilter(value);
     if (key === 'channel') setChannelFilter(value);
     if (key === 'search') setSearchTerm(value);
@@ -145,7 +155,7 @@ export function LeadsToolbar({ channels, onFilterChange }: LeadsToolbarProps) {
             search: result.searchTerm || '',
         };
         
-        onFilterChange(newFilters);
+        // This will trigger the useEffect to update the table
         setStatusFilter(newFilters.status);
         setChannelFilter(newFilters.channel);
         setSearchTerm(newFilters.search);
@@ -160,18 +170,21 @@ export function LeadsToolbar({ channels, onFilterChange }: LeadsToolbarProps) {
     }
   }
 
+  const clearAllFilters = () => {
+    setStatusFilter('all');
+    setChannelFilter('all');
+    setSearchTerm('');
+  }
+
   return (
     <div className="flex flex-col gap-2 mb-4 p-4 border rounded-lg bg-card">
         <div className='flex gap-2 items-center'>
             <Sparkles className='h-5 w-5 text-primary flex-shrink-0' />
             <Input
-                placeholder="Ask AI to find a lead... (e.g., 'show me new leads from the website')"
+                placeholder="Search leads or ask AI..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
                 className="h-9"
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleAiSearch();
-                }}
             />
              <Button size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" onClick={() => fileInputRef.current?.click()}>
                 <Paperclip className="h-4 w-4" />
@@ -218,7 +231,7 @@ export function LeadsToolbar({ channels, onFilterChange }: LeadsToolbarProps) {
                     ))}
                 </SelectContent>
             </Select>
-            <Button variant="ghost" size="sm" onClick={() => { handleFilterChange('status', 'all'); handleFilterChange('channel', 'all'); handleFilterChange('search', ''); }}>
+            <Button variant="ghost" size="sm" onClick={clearAllFilters}>
                 Clear All
             </Button>
         </div>
