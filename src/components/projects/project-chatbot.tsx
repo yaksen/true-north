@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -164,14 +165,16 @@ export function ProjectChatbot({
     const imageDataUri = imageFile ? await fileToDataUri(imageFile) : undefined;
     const audioDataUri = audioBlob ? await fileToDataUri(audioBlob) : undefined;
 
-    const userMessageData = {
+    const userMessageData: any = {
         sender: 'user' as const,
         text: input,
         userId: user.uid,
         createdAt: serverTimestamp(),
-        image: imageDataUri,
-        audio: audioDataUri,
     };
+
+    if (imageDataUri) userMessageData.image = imageDataUri;
+    if (audioDataUri) userMessageData.audio = audioDataUri;
+
 
     // Save user message to Firestore
     const messagesCollection = collection(db, 'projectChats', project.id, 'messages');
