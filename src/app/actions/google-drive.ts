@@ -2,6 +2,7 @@
 'use server';
 
 import { google } from 'googleapis';
+import { Readable } from 'stream';
 
 // Helper function to find a folder by name within a specific parent folder
 async function findFolderByName(drive: any, name: string, parentId: string): Promise<string | null> {
@@ -54,6 +55,18 @@ async function findOrCreateFolderByPath(drive: any, path: string[], parentId: st
     return currentParentId;
 }
 
+// Helper function to convert a ReadableStream (from the web) to a Buffer
+async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffer> {
+    const reader = stream.getReader();
+    const chunks: Uint8Array[] = [];
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) chunks.push(value);
+    }
+    return Buffer.concat(chunks);
+}
+
 
 export async function uploadFileToDrive(
     formData: FormData
@@ -84,9 +97,11 @@ export async function uploadFileToDrive(
             parents: [targetFolderId],
         };
 
+        const fileBuffer = await streamToBuffer(file.stream());
+
         const media = {
             mimeType: file.type,
-            body: file.stream(),
+            body: Readable.from(fileBuffer),
         };
 
         // 2. Upload the file
