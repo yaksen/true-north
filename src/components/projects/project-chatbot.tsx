@@ -3,18 +3,20 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Project, Task, Finance, Lead, Channel, Vendor, Partner, Service, Product, Package, Invoice, Note } from '@/lib/types';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { Send, Loader2, Bot, Paperclip, Mic, StopCircle, X, AudioLines } from 'lucide-react';
+import { Send, Loader2, Bot, Paperclip, Mic, StopCircle, X, AudioLines, Trash2 } from 'lucide-react';
 import { projectChat, ProjectChatInput } from '@/ai/flows/project-chat-flow';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, Timestamp, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+
 
 interface ProjectChatbotProps {
   project: Project;
@@ -68,12 +70,11 @@ export function ProjectChatbot({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const messagesCollectionRef = collection(db, 'projectChats', project.id, 'messages');
 
   useEffect(() => {
-    const q = query(
-      collection(db, 'projectChats', project.id, 'messages'),
-      orderBy('createdAt', 'asc')
-    );
+    const q = query(messagesCollectionRef, orderBy('createdAt', 'asc'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const msgs: ChatMessage[] = [];
       querySnapshot.forEach((doc) => {
@@ -175,10 +176,7 @@ export function ProjectChatbot({
     if (imageDataUri) userMessageData.image = imageDataUri;
     if (audioDataUri) userMessageData.audio = audioDataUri;
 
-
-    // Save user message to Firestore
-    const messagesCollection = collection(db, 'projectChats', project.id, 'messages');
-    await addDoc(messagesCollection, userMessageData);
+    await addDoc(messagesCollectionRef, userMessageData);
 
     setInput('');
     clearMedia();
@@ -198,7 +196,7 @@ export function ProjectChatbot({
         text: result.response,
         createdAt: serverTimestamp(),
       };
-      await addDoc(messagesCollection, aiMessageData);
+      await addDoc(messagesCollectionRef, aiMessageData);
 
     } catch (error) {
       console.error('Chatbot error:', error);
@@ -207,11 +205,25 @@ export function ProjectChatbot({
         text: "Sorry, I encountered an error. Please try again.",
         createdAt: serverTimestamp(),
       };
-      await addDoc(messagesCollection, errorMessageData);
+      await addDoc(messagesCollectionRef, errorMessageData);
     } finally {
       setIsLoading(false);
     }
   };
+  
+  const handleClearHistory = async () => {
+    const batch = writeBatch(db);
+    const snapshot = await getDocs(messagesCollectionRef);
+    if (snapshot.empty) {
+        toast({ description: "Chat history is already empty." });
+        return;
+    }
+    snapshot.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
+    toast({ title: 'Success', description: 'Chat history has been cleared.' });
+  }
 
   const getInitials = (nameOrEmail: string | null | undefined) => {
     if (!nameOrEmail) return 'U';
@@ -223,9 +235,29 @@ export function ProjectChatbot({
   }
 
   return (
-    <Card className="h-[calc(100vh-20rem)] flex flex-col">
-      <CardContent className="flex-1 flex flex-col p-4">
-        <ScrollArea className="flex-1 mb-4 pr-4" ref={scrollAreaRef}>
+    <div className="flex flex-col h-full max-h-[calc(100vh-18rem)]">
+        <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
+            <CardTitle className="text-lg">TrueNorth AI</CardTitle>
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" disabled={messages.length === 0}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>This will permanently delete the entire chat history for this project. This action cannot be undone.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearHistory}>Clear History</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col p-4 gap-4">
+        <ScrollArea className="flex-1 pr-4" ref={scrollAreaRef}>
           <div className="space-y-6">
             {messages.map((message) => (
               <div key={message.id} className={`flex items-start gap-3 ${message.sender === 'user' ? 'justify-end' : ''}`}>
@@ -259,7 +291,7 @@ export function ProjectChatbot({
           </div>
         </ScrollArea>
         {(imagePreview || audioBlob) && (
-            <div className="flex items-center gap-2 text-sm p-2 mb-2 bg-muted rounded-md">
+            <div className="flex items-center gap-2 text-sm p-2 bg-muted rounded-md">
                 {imagePreview && <Image src={imagePreview} alt="Preview" width={40} height={40} className="rounded" />}
                 {audioBlob && <audio src={URL.createObjectURL(audioBlob)} controls className='h-10'/>}
                 <Button size="icon" variant="ghost" className="h-7 w-7 ml-auto" onClick={clearMedia}><X className="h-4 w-4" /></Button>
@@ -285,6 +317,6 @@ export function ProjectChatbot({
           </Button>
         </form>
       </CardContent>
-    </Card>
+    </div>
   );
 }

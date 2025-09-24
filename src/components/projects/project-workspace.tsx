@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -12,6 +13,7 @@ import { NoteForm } from './note-form';
 import { PromptForm } from './prompt-form';
 import { Input } from '../ui/input';
 import { ProjectChatbot } from './project-chatbot';
+import { Card } from '../ui/card';
 
 interface ProjectWorkspaceProps {
   project: Project;
@@ -73,20 +75,22 @@ export function ProjectWorkspace({
       </div>
 
       <TabsContent value="chatbot">
-          <ProjectChatbot 
-            project={project}
-            tasks={tasks}
-            finances={finances}
-            leads={leads}
-            channels={channels}
-            vendors={vendors}
-            partners={partners}
-            services={services}
-            products={products}
-            packages={packages}
-            invoices={invoices}
-            notes={notes}
-          />
+          <Card>
+            <ProjectChatbot 
+              project={project}
+              tasks={tasks}
+              finances={finances}
+              leads={leads}
+              channels={channels}
+              vendors={vendors}
+              partners={partners}
+              services={services}
+              products={products}
+              packages={packages}
+              invoices={invoices}
+              notes={notes}
+            />
+          </Card>
       </TabsContent>
 
       <TabsContent value="notes">
