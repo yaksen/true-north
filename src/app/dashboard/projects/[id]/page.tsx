@@ -7,7 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, AIPrompt, Report, Invoice, Product, Channel, TaskTemplate, Vendor, Partner } from '@/lib/types';
+import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, AIPrompt, Invoice, Product, Channel, TaskTemplate, Vendor, Partner } from '@/lib/types';
 import { Loader2, BookText } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,7 +21,6 @@ import { ProjectTemplates } from '@/components/projects/project-templates';
 import { ProjectRecords } from '@/components/projects/project-records';
 import { ProjectSettings } from '@/components/projects/project-settings';
 import { ProjectBilling } from '@/components/projects/project-billing';
-import { ProjectReports } from '@/components/projects/project-reports';
 import { ProjectWorkspace } from '@/components/projects/project-workspace';
 import { ProjectVendors } from '@/components/projects/project-vendors';
 import { ProjectPartners } from '@/components/projects/project-partners';
@@ -45,7 +44,6 @@ const allProjectTabs = [
     { value: 'tasks', label: 'Tasks' },
     { value: 'templates', label: 'Templates' },
     { value: 'workspace', label: 'Workspace' },
-    { value: 'reports', label: 'Reports' },
     { value: 'settings', label: 'Settings' },
 ];
 
@@ -73,7 +71,6 @@ export default function ProjectDetailPage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [aiPrompts, setAIPrompts] = useState<AIPrompt[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -142,7 +139,6 @@ export default function ProjectDetailPage() {
     const unsubscribeNotes = createCollectionSubscription<Note>('notes', setNotes);
     const unsubscribeAIPrompts = createCollectionSubscription<AIPrompt>('aiPrompts', setAIPrompts);
     const unsubscribeInvoices = createCollectionSubscription<Invoice>('invoices', setInvoices);
-    const unsubscribeReports = createCollectionSubscription<Report>('reports', setReports);
 
     return () => {
         unsubscribeProject();
@@ -162,7 +158,6 @@ export default function ProjectDetailPage() {
         unsubscribeNotes();
         unsubscribeAIPrompts();
         unsubscribeInvoices();
-        unsubscribeReports();
     };
   }, [user, id, router]);
 
@@ -229,9 +224,6 @@ export default function ProjectDetailPage() {
             </TabsContent>
             <TabsContent value="records">
                 <ProjectRecords project={project} records={records} notes={notes} />
-            </TabsContent>
-             <TabsContent value="reports">
-                <ProjectReports project={project} reports={reports} />
             </TabsContent>
             <TabsContent value="settings">
                 <ProjectSettings project={project} />

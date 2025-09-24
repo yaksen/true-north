@@ -30,7 +30,6 @@ const allProjectTabs = [
     { value: 'tasks', label: 'Tasks' },
     { value: 'templates', label: 'Templates' },
     { value: 'workspace', label: 'Workspace' },
-    { value: 'reports', label: 'Reports' },
     { value: 'settings', label: 'Settings' },
 ];
 

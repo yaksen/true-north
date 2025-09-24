@@ -322,7 +322,7 @@ export type ActivityRecordType =
   | 'service_created' | 'service_updated' | 'service_deleted'
   | 'product_created' | 'product_updated' | 'product_deleted'
   | 'package_created' | 'package_updated' | 'package_deleted'
-  | 'note_added' | 'report_uploaded' | 'report_deleted'
+  | 'note_added'
   | 'invoice_created' | 'invoice_updated' | 'invoice_deleted'
   | 'member_invited' | 'member_added' | 'member_removed'
   | 'payment_added'
@@ -364,19 +364,6 @@ export interface AIPrompt {
     outputFormat?: string;
     body: string;
     tags: string[];
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-
-export interface Report {
-    id: string;
-    projectId: string;
-    name: string;
-    storagePath: string;
-    uploadedByUid: string;
-    sizeBytes: number;
-    mimeType: string;
     createdAt: Date;
     updatedAt: Date;
 }
