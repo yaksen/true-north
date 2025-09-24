@@ -20,6 +20,7 @@ interface CustomizeTabsDialogProps {
 
 const allProjectTabs = [
     { value: 'dashboard', label: 'Dashboard' },
+    { value: 'workspace', label: 'Workspace' },
     { value: 'leads', label: 'Leads' },
     { value: 'channels', label: 'Channels' },
     { value: 'vendors', label: 'Vendors' },
@@ -29,7 +30,6 @@ const allProjectTabs = [
     { value: 'finance', label: 'Finance' },
     { value: 'tasks', label: 'Tasks' },
     { value: 'templates', label: 'Templates' },
-    { value: 'workspace', label: 'Workspace' },
     { value: 'settings', label: 'Settings' },
 ];
 

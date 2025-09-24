@@ -34,6 +34,7 @@ function toDate(timestamp: any): Date | undefined {
 
 const allProjectTabs = [
     { value: 'dashboard', label: 'Dashboard' },
+    { value: 'workspace', label: 'Workspace' },
     { value: 'leads', label: 'Leads' },
     { value: 'channels', label: 'Channels' },
     { value: 'vendors', label: 'Vendors' },
@@ -43,7 +44,6 @@ const allProjectTabs = [
     { value: 'finance', label: 'Finance' },
     { value: 'tasks', label: 'Tasks' },
     { value: 'templates', label: 'Templates' },
-    { value: 'workspace', label: 'Workspace' },
     { value: 'settings', label: 'Settings' },
 ];
 
@@ -186,6 +186,19 @@ export default function ProjectDetailPage() {
             <TabsContent value="dashboard">
                 <ProjectDashboard project={project} tasks={tasks} finances={finances} channels={channels} />
             </TabsContent>
+            <TabsContent value="workspace">
+                <ProjectWorkspace 
+                    project={project} 
+                    notes={notes} 
+                    aiPrompts={aiPrompts}
+                    tasks={tasks}
+                    finances={finances}
+                    leads={leads}
+                    channels={channels}
+                    vendors={vendors}
+                    partners={partners}
+                />
+            </TabsContent>
             <TabsContent value="leads">
                 <ProjectLeads project={project} leads={leads} packages={packages} services={services} channels={channels} />
             </TabsContent>
@@ -218,9 +231,6 @@ export default function ProjectDetailPage() {
             </TabsContent>
             <TabsContent value="templates">
                 <ProjectTemplates project={project} templates={taskTemplates} tasks={tasks} />
-            </TabsContent>
-            <TabsContent value="workspace">
-                <ProjectWorkspace project={project} notes={notes} aiPrompts={aiPrompts} />
             </TabsContent>
             <TabsContent value="records">
                 <ProjectRecords project={project} records={records} notes={notes} />

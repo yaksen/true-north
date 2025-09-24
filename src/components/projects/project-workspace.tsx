@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Project, Note, AIPrompt } from '@/lib/types';
+import type { Project, Note, AIPrompt, Task, Finance, Lead, Channel, Vendor, Partner } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NoteList } from './note-list';
 import { PromptList } from './prompt-list';
@@ -12,14 +12,31 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { NoteForm } from './note-form';
 import { PromptForm } from './prompt-form';
 import { Input } from '../ui/input';
+import { ProjectChatbot } from './project-chatbot';
 
 interface ProjectWorkspaceProps {
   project: Project;
   notes: Note[];
   aiPrompts: AIPrompt[];
+  tasks: Task[];
+  finances: Finance[];
+  leads: Lead[];
+  channels: Channel[];
+  vendors: Vendor[];
+  partners: Partner[];
 }
 
-export function ProjectWorkspace({ project, notes, aiPrompts }: ProjectWorkspaceProps) {
+export function ProjectWorkspace({ 
+    project, 
+    notes, 
+    aiPrompts,
+    tasks,
+    finances,
+    leads,
+    channels,
+    vendors,
+    partners
+}: ProjectWorkspaceProps) {
   const [isNoteFormOpen, setIsNoteFormOpen] = useState(false);
   const [isPromptFormOpen, setIsPromptFormOpen] = useState(false);
   const [noteSearchTerm, setNoteSearchTerm] = useState('');
@@ -39,13 +56,26 @@ export function ProjectWorkspace({ project, notes, aiPrompts }: ProjectWorkspace
   );
 
   return (
-    <Tabs defaultValue="notes" className="mt-4">
+    <Tabs defaultValue="chatbot" className="mt-4">
       <div className="flex justify-between items-center mb-4">
         <TabsList>
+          <TabsTrigger value="chatbot">Chatbot</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
           <TabsTrigger value="ai-prompts">AI Prompts</TabsTrigger>
         </TabsList>
       </div>
+
+      <TabsContent value="chatbot">
+          <ProjectChatbot 
+            project={project}
+            tasks={tasks}
+            finances={finances}
+            leads={leads}
+            channels={channels}
+            vendors={vendors}
+            partners={partners}
+          />
+      </TabsContent>
 
       <TabsContent value="notes">
         <div className="flex justify-between items-center mb-4">
