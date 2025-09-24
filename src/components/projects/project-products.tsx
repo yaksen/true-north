@@ -29,6 +29,7 @@ import { getProductsColumns } from './product-columns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { useCurrency } from '@/context/CurrencyContext';
 import { PackageCard } from './package-card';
+import { Input } from '../ui/input';
 
 interface ProjectProductsProps {
   project: Project;
@@ -64,6 +65,7 @@ export function ProjectProducts({ project, categories, services, products, packa
   const [packageTypeFilter, setPackageTypeFilter] = useState<'all' | 'custom' | 'fixed'>('all');
   const [packageCategoryFilter, setPackageCategoryFilter] = useState<string | 'all'>('all');
   const [packageServiceFilter, setPackageServiceFilter] = useState<string | 'all'>('all');
+  const [packageSearchTerm, setPackageSearchTerm] = useState('');
 
   const handleStar = (collectionName: 'categories' | 'services' | 'products' | 'packages') => async (id: string, starred: boolean) => {
     try {
@@ -104,6 +106,13 @@ export function ProjectProducts({ project, categories, services, products, packa
   const filteredPackages = useMemo(() => {
     let tempPackages = packages;
 
+    if (packageSearchTerm) {
+        tempPackages = tempPackages.filter(p => 
+            p.name.toLowerCase().includes(packageSearchTerm.toLowerCase()) ||
+            p.description.toLowerCase().includes(packageSearchTerm.toLowerCase())
+        );
+    }
+
     // Filter by type (custom/fixed)
     if (packageTypeFilter === 'custom') {
       tempPackages = tempPackages.filter(p => p.custom);
@@ -123,7 +132,7 @@ export function ProjectProducts({ project, categories, services, products, packa
     }
     
     return tempPackages;
-  }, [packages, services, packageTypeFilter, packageCategoryFilter, packageServiceFilter]);
+  }, [packages, services, packageTypeFilter, packageCategoryFilter, packageServiceFilter, packageSearchTerm]);
 
   const handleEditPackage = (pkg: Package) => {
     setEditingPackage(pkg);
@@ -279,6 +288,12 @@ export function ProjectProducts({ project, categories, services, products, packa
                     <CardDescription>Bundle services and products into fixed-price packages.</CardDescription>
                 </div>
                 <div className='flex items-center gap-2'>
+                  <Input 
+                    placeholder='Search packages...'
+                    value={packageSearchTerm}
+                    onChange={(e) => setPackageSearchTerm(e.target.value)}
+                    className='h-9 w-40'
+                  />
                   <Select value={packageCategoryFilter} onValueChange={(value) => setPackageCategoryFilter(value)}>
                       <SelectTrigger className="w-40 h-9 text-sm">
                           <SelectValue placeholder="Filter by category..." />
