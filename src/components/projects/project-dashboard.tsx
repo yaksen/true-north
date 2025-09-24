@@ -6,16 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
 import { Progress } from "../ui/progress";
-import { DataTable } from "../ui/data-table";
-import { getTaskColumns } from "./task-columns";
 import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { TaskForm } from "./task-form";
 import { FinanceForm } from "./finance-form";
-import { Row } from "@tanstack/react-table";
 import { collection, onSnapshot, query, where, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useCurrency } from "@/context/CurrencyContext";
+import { ScrollArea } from "../ui/scroll-area";
+import { TaskCard } from "./task-card";
 
 interface ProjectDashboardProps {
     project: Project;
@@ -49,18 +48,6 @@ export function ProjectDashboard({ project, tasks, finances, channels }: Project
         return () => unsubscribe();
     }, [project.id]);
 
-    const handleStar = async (id: string, starred: boolean) => {
-        try {
-            const taskRef = doc(db, 'tasks', id);
-            await updateDoc(taskRef, { starred });
-        } catch (error) {
-            console.error("Failed to update star status", error);
-            // Optionally, show a toast notification
-        }
-    };
-
-    const taskColumns = useMemo(() => getTaskColumns({ leads }, handleStar), [leads]);
-
     const { profitLoss, taskCompletionRate, completedTasks } = useMemo(() => {
         const totalIncome = finances
             .filter(f => f.type === 'income')
@@ -83,20 +70,8 @@ export function ProjectDashboard({ project, tasks, finances, channels }: Project
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: displayCurrency }).format(amount);
     }
 
-    const hierarchicalTasks = useMemo(() => {
-        const taskMap = new Map(tasks.map(t => [t.id, { ...t, subRows: [] as Task[] }]));
-        const rootTasks: Task[] = [];
-        
-        for (const task of tasks) {
-            const taskWithSubRows = taskMap.get(task.id)!;
-            if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
-                taskMap.get(task.parentTaskId)!.subRows.push(taskWithSubRows);
-            } else {
-                rootTasks.push(taskWithSubRows);
-            }
-        }
-        return rootTasks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
-
+    const recentTasks = useMemo(() => {
+        return tasks.filter(t => !t.archived).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
     }, [tasks]);
 
 
@@ -172,11 +147,24 @@ export function ProjectDashboard({ project, tasks, finances, channels }: Project
                 </Card>
             </div>
             
-            <DataTable 
-                columns={taskColumns} 
-                data={hierarchicalTasks} 
-                getSubRows={(row: Row<Task>) => (row.original as any)?.subRows}
-            />
+            <Card>
+                <CardHeader>
+                    <CardTitle>Recent Tasks</CardTitle>
+                    <CardDescription>Your 5 most recently created tasks for this project.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {recentTasks.map(task => (
+                            <TaskCard key={task.id} task={task} leads={leads} />
+                        ))}
+                    </div>
+                     {recentTasks.length === 0 && (
+                        <div className="text-center text-muted-foreground py-12">
+                            <p>No recent tasks.</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     )
 }

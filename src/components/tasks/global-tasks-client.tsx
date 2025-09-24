@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -10,11 +11,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { collection, onSnapshot, query, where, doc, writeBatch, updateDoc, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect } from 'react';
-import { Row } from '@tanstack/react-table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { isToday, isTomorrow, addDays } from 'date-fns';
-import { Checkbox } from '../ui/checkbox';
 import { TasksToolbar } from '../projects/tasks-toolbar';
 import { TaskCard } from '../projects/task-card';
 import { ScrollArea } from '../ui/scroll-area';
