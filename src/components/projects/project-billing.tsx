@@ -9,6 +9,7 @@ import { getInvoiceColumns } from '../billing/invoice-columns';
 import { doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { BillingToolbar } from '../billing/billing-toolbar';
 
 interface ProjectBillingProps {
   project: Project;
@@ -18,6 +19,11 @@ interface ProjectBillingProps {
 
 export function ProjectBilling({ project, invoices, leads }: ProjectBillingProps) {
   const { toast } = useToast();
+  const [filters, setFilters] = useState({
+    status: 'all',
+    leadId: 'all',
+    search: ''
+  });
 
   const handleStar = async (id: string, starred: boolean) => {
     try {
@@ -41,6 +47,15 @@ export function ProjectBilling({ project, invoices, leads }: ProjectBillingProps
   }
   
   const invoiceColumns = useMemo(() => getInvoiceColumns({ projects: [project], leads, onStar: handleStar }), [project, leads]);
+  
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter(invoice => {
+        const statusMatch = filters.status === 'all' || invoice.status === filters.status;
+        const leadMatch = filters.leadId === 'all' || invoice.leadId === filters.leadId;
+        return statusMatch && leadMatch;
+    });
+  }, [invoices, filters]);
+
 
   return (
     <div className="grid gap-6 mt-4">
@@ -52,7 +67,13 @@ export function ProjectBilling({ project, invoices, leads }: ProjectBillingProps
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable columns={invoiceColumns} data={invoices} onDeleteSelected={handleDeleteSelected} />
+          <DataTable 
+            columns={invoiceColumns} 
+            data={filteredInvoices} 
+            onDeleteSelected={handleDeleteSelected}
+            toolbar={<BillingToolbar leads={leads} onFilterChange={setFilters} />}
+            globalFilter={filters.search}
+          />
         </CardContent>
       </Card>
     </div>
