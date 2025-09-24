@@ -1,20 +1,19 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
 import type { Project, Finance } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { DataTable } from '@/components/ui/data-table';
-import { financeColumns } from '@/components/projects/finance-columns';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { FinanceForm } from '@/components/projects/finance-form';
 import { Card, CardContent } from '../ui/card';
-import { doc, writeBatch, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from '@/context/CurrencyContext';
 import { FinanceToolbar } from './finance-toolbar';
+import type { DateRange } from 'react-day-picker';
+import { ScrollArea } from '../ui/scroll-area';
+import { FinanceCard } from './finance-card';
 
 type FinanceTypeFilter = 'all' | 'income' | 'expense';
 
@@ -33,7 +32,6 @@ const convert = (amount: number, from: string, to: string) => {
 };
 
 export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientProps) {
-  const { toast } = useToast();
   const { globalCurrency } = useCurrency();
   const displayCurrency = globalCurrency || 'USD';
   const [isFinanceFormOpen, setIsFinanceFormOpen] = useState(false);
@@ -45,39 +43,17 @@ export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientP
     search: '',
   });
 
-  const handleStar = async (id: string, starred: boolean) => {
-    try {
-        await updateDoc(doc(db, 'finances', id), { starred });
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
-    }
-  }
-
-  const handleDeleteSelected = async (ids: string[]) => {
-      const batch = writeBatch(db);
-      ids.forEach(id => {
-          batch.delete(doc(db, 'finances', id));
-      });
-      try {
-          await batch.commit();
-          toast({ title: "Success", description: `${ids.length} record(s) deleted.`});
-      } catch (error) {
-          toast({ variant: 'destructive', title: "Error", description: "Could not delete selected records."})
-      }
-  }
-  
-  const columns = useMemo(() => financeColumns(handleStar, displayCurrency), [displayCurrency]);
-
   const filteredFinances = useMemo(() => {
     return finances.filter(f => {
+        const typeMatch = filters.type === 'all' || f.type === filters.type;
         const dateMatch = !filters.date || (
             (!filters.date.from || new Date(f.date) >= filters.date.from) &&
             (!filters.date.to || new Date(f.date) <= filters.date.to)
         );
-        const typeMatch = filters.type === 'all' || f.type === filters.type;
         const categoryMatch = !filters.category || (f.category && f.category.toLowerCase().includes(filters.category.toLowerCase()));
-        
-        return dateMatch && typeMatch && categoryMatch;
+        const searchMatch = !filters.search || f.description.toLowerCase().includes(filters.search.toLowerCase());
+
+        return typeMatch && dateMatch && categoryMatch && searchMatch;
     });
   }, [finances, filters]);
 
@@ -143,6 +119,7 @@ export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientP
 
       <Card>
         <CardContent className='pt-6'>
+            <FinanceToolbar onFilterChange={setFilters} />
             <Accordion type="multiple" defaultValue={defaultAccordionValues} className="w-full">
             {projects.map(project => {
                 const summary = projectSummaries[project.id];
@@ -163,13 +140,17 @@ export function GlobalFinanceClient({ projects, finances }: GlobalFinanceClientP
                             </div>
                         </AccordionTrigger>
                         <AccordionContent>
-                            <DataTable 
-                                columns={columns} 
-                                data={projectFinances}
-                                onDeleteSelected={handleDeleteSelected}
-                                toolbar={<FinanceToolbar onFilterChange={setFilters} />}
-                                globalFilter={filters.search}
-                            />
+                           <ScrollArea className="h-[calc(100vh-45rem)]">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                                    {projectFinances.map(finance => (
+                                        <FinanceCard
+                                            key={finance.id}
+                                            finance={finance}
+                                            displayCurrency={displayCurrency}
+                                        />
+                                    ))}
+                                </div>
+                            </ScrollArea>
                         </AccordionContent>
                     </AccordionItem>
                 )
