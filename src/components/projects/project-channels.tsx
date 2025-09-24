@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "../ui/input";
 
 interface ProjectChannelsProps {
     project: Project;
@@ -21,11 +22,14 @@ interface ProjectChannelsProps {
 }
 
 const channelStatuses: ChannelStatus[] = ['new', 'active', 'inactive', 'closed'];
+const channelPlatforms = ['Instagram', 'Facebook', 'Twitter', 'LinkedIn', 'Website', 'Referral', 'Other'];
+
 
 export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
     const { toast } = useToast();
     const [isChannelFormOpen, setIsChannelFormOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState<ChannelStatus | 'all'>('all');
+    const [platformFilter, setPlatformFilter] = useState<string | 'all'>('all');
     
     const handleStar = async (id: string, starred: boolean) => {
         try {
@@ -51,9 +55,12 @@ export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
     const channelsColumns = useMemo(() => getChannelsColumns(project, handleStar), [project]);
 
     const filteredChannels = useMemo(() => {
-        if (statusFilter === 'all') return channels;
-        return channels.filter(channel => channel.status === statusFilter);
-    }, [channels, statusFilter]);
+        return channels.filter(channel => {
+            const statusMatch = statusFilter === 'all' || channel.status === statusFilter;
+            const platformMatch = platformFilter === 'all' || channel.platform === platformFilter;
+            return statusMatch && platformMatch;
+        });
+    }, [channels, statusFilter, platformFilter]);
 
     const Toolbar = () => (
         <div className="flex items-center gap-2">
@@ -68,9 +75,20 @@ export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
                     ))}
                 </SelectContent>
             </Select>
-            {statusFilter !== 'all' && (
-                <Button variant="ghost" size="sm" onClick={() => setStatusFilter('all')}>
-                    Clear Filter
+            <Select value={platformFilter} onValueChange={(value) => setPlatformFilter(value as any)}>
+                <SelectTrigger className="w-36 h-9 text-sm">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Platforms</SelectItem>
+                    {channelPlatforms.map(platform => (
+                        <SelectItem key={platform} value={platform} className="capitalize">{platform}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            {(statusFilter !== 'all' || platformFilter !== 'all') && (
+                <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('all'); setPlatformFilter('all'); }}>
+                    Clear Filters
                 </Button>
             )}
         </div>
@@ -93,7 +111,7 @@ export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
                                 <DialogHeader>
                                     <DialogTitle>Add New Channel</DialogTitle>
                                 </DialogHeader>
-                                <ChannelForm projectId={project.id} closeForm={() => setIsChannelFormOpen(false)} />
+                                <ChannelForm projectId={project.id} channels={channels} closeForm={() => setIsChannelFormOpen(false)} />
                             </DialogContent>
                         </Dialog>
                     </div>

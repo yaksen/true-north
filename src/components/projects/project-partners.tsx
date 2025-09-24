@@ -14,6 +14,7 @@ import { doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { saveContactToGoogle } from '@/app/actions/google-contacts';
+import { Input } from '../ui/input';
 
 interface ProjectPartnersProps {
   project: Project;
@@ -25,6 +26,7 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
   const { toast } = useToast();
   const [isPartnerFormOpen, setIsPartnerFormOpen] = useState(false);
   const [isBulkSaving, setIsBulkSaving] = useState(false);
+  const [roleFilter, setRoleFilter] = useState('');
 
   const handleStar = async (id: string, starred: boolean) => {
     try {
@@ -77,6 +79,29 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
 
   const partnerColumns = useMemo(() => getPartnerColumns({ project, channels, onStar: handleStar }), [project, channels]);
 
+  const filteredPartners = useMemo(() => {
+    return partners.filter(p => {
+        const roleMatch = !roleFilter || p.roleInProject.toLowerCase().includes(roleFilter.toLowerCase());
+        return roleMatch;
+    });
+  }, [partners, roleFilter]);
+
+  const Toolbar = () => (
+    <div className="flex items-center gap-2">
+        <Input 
+            placeholder="Filter by role..."
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="h-9 w-48"
+        />
+        {roleFilter && (
+            <Button variant="ghost" size="sm" onClick={() => setRoleFilter('')}>
+                Clear Filter
+            </Button>
+        )}
+    </div>
+  );
+
   return (
     <div className="grid gap-6 mt-4">
       <Card>
@@ -108,7 +133,12 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable columns={partnerColumns} data={partners} onDeleteSelected={handleDeleteSelected} />
+          <DataTable 
+            columns={partnerColumns} 
+            data={filteredPartners} 
+            onDeleteSelected={handleDeleteSelected}
+            toolbar={<Toolbar />}
+          />
         </CardContent>
       </Card>
     </div>

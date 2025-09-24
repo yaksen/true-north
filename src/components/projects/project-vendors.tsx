@@ -14,6 +14,7 @@ import { doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { saveContactToGoogle } from '@/app/actions/google-contacts';
+import { Input } from '../ui/input';
 
 interface ProjectVendorsProps {
   project: Project;
@@ -25,6 +26,7 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
   const { toast } = useToast();
   const [isVendorFormOpen, setIsVendorFormOpen] = useState(false);
   const [isBulkSaving, setIsBulkSaving] = useState(false);
+  const [serviceTypeFilter, setServiceTypeFilter] = useState('');
 
   const handleStar = async (id: string, starred: boolean) => {
     try {
@@ -76,6 +78,29 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
   }
 
   const vendorColumns = useMemo(() => getVendorColumns({ project, channels, onStar: handleStar }), [project, channels]);
+  
+  const filteredVendors = useMemo(() => {
+    return vendors.filter(v => {
+        const serviceMatch = !serviceTypeFilter || v.serviceType.toLowerCase().includes(serviceTypeFilter.toLowerCase());
+        return serviceMatch;
+    });
+  }, [vendors, serviceTypeFilter]);
+
+  const Toolbar = () => (
+    <div className="flex items-center gap-2">
+        <Input 
+            placeholder="Filter by service type..."
+            value={serviceTypeFilter}
+            onChange={(e) => setServiceTypeFilter(e.target.value)}
+            className="h-9 w-48"
+        />
+        {serviceTypeFilter && (
+            <Button variant="ghost" size="sm" onClick={() => setServiceTypeFilter('')}>
+                Clear Filter
+            </Button>
+        )}
+    </div>
+  );
 
   return (
     <div className="grid gap-6 mt-4">
@@ -108,7 +133,12 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable columns={vendorColumns} data={vendors} onDeleteSelected={handleDeleteSelected} />
+          <DataTable 
+            columns={vendorColumns} 
+            data={filteredVendors} 
+            onDeleteSelected={handleDeleteSelected}
+            toolbar={<Toolbar />}
+          />
         </CardContent>
       </Card>
     </div>

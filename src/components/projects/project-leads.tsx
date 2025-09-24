@@ -30,6 +30,7 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
     const { toast } = useToast();
     const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
+    const [channelFilter, setChannelFilter] = useState<string | 'all'>('all');
     const [isBulkSaving, setIsBulkSaving] = useState(false);
     
     const handleStar = async (id: string, starred: boolean) => {
@@ -53,12 +54,15 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
         }
     }
     
-    const leadsColumns = useMemo(() => getLeadsColumns({ project, packages, services, channels }), [project, packages, services, channels]);
+    const leadsColumns = useMemo(() => getLeadsColumns({ project, packages, services, channels, onStar: handleStar }), [project, packages, services, channels]);
 
     const filteredLeads = useMemo(() => {
-        if (statusFilter === 'all') return leads;
-        return leads.filter(lead => lead.status === statusFilter);
-    }, [leads, statusFilter]);
+        return leads.filter(lead => {
+            const statusMatch = statusFilter === 'all' || lead.status === statusFilter;
+            const channelMatch = channelFilter === 'all' || lead.channelId === channelFilter;
+            return statusMatch && channelMatch;
+        });
+    }, [leads, statusFilter, channelFilter]);
 
     const handleBulkSaveToContacts = async () => {
         if (!project.googleContactsAccessToken) {
@@ -101,9 +105,20 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
                     ))}
                 </SelectContent>
             </Select>
-            {statusFilter !== 'all' && (
-                <Button variant="ghost" size="sm" onClick={() => setStatusFilter('all')}>
-                    Clear Filter
+             <Select value={channelFilter} onValueChange={(value) => setChannelFilter(value)}>
+                <SelectTrigger className="w-48 h-9 text-sm">
+                    <SelectValue placeholder="Filter by channel..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Channels</SelectItem>
+                    {channels.map(channel => (
+                        <SelectItem key={channel.id} value={channel.id}>{channel.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            {(statusFilter !== 'all' || channelFilter !== 'all') && (
+                <Button variant="ghost" size="sm" onClick={() => {setStatusFilter('all'); setChannelFilter('all')}}>
+                    Clear Filters
                 </Button>
             )}
         </div>
