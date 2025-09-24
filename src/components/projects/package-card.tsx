@@ -28,6 +28,7 @@ import {
   } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/lib/activity-log';
+import Image from 'next/image';
 
 interface PackageCardProps {
     pkg: Package;
@@ -145,6 +146,11 @@ export function PackageCard({ pkg, project, allServices, allProducts }: PackageC
     return (
         <Card>
             <CardHeader>
+                {pkg.imageUrl && (
+                    <div className="relative h-40 w-full mb-4">
+                        <Image src={pkg.imageUrl} alt={pkg.name} layout="fill" className="rounded-t-2xl object-cover" />
+                    </div>
+                )}
                 <div className='flex justify-between items-start'>
                     <CardTitle>{pkg.name}</CardTitle>
                     <div className="flex items-center gap-1">

@@ -12,7 +12,7 @@ import type { Package, Project, Service, Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ChevronsUpDown, Loader2, Sparkles, ImageIcon } from 'lucide-react';
+import { ChevronsUpDown, Loader2, Sparkles, ImageIcon, Upload, Image as ImagePreviewIcon } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { Checkbox } from '../ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -31,6 +31,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Label } from '../ui/label';
 import { extractPackageDetails, type ExtractPackageDetailsOutput } from '@/ai/flows/extract-package-details-flow';
 import Image from 'next/image';
+import { uploadFileToDrive } from '@/app/actions/google-drive';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -43,6 +44,7 @@ const formSchema = z.object({
   duration: z.string().min(1, { message: 'Duration is required.' }),
   custom: z.boolean().default(false),
   discountPercentage: z.coerce.number().min(-100).max(100).default(0),
+  imageUrl: z.string().url().optional().or(z.literal('')),
 }).refine(data => data.services.length > 0 || data.products.length > 0, {
     message: "At least one service or product must be selected.",
     path: ["services"], // you can point to either services or products
@@ -68,6 +70,10 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
   const [aiImage, setAiImage] = useState<File | null>(null);
   const [pastedImage, setPastedImage] = useState<string | null>(null);
   const [isItemsPopoverOpen, setIsItemsPopoverOpen] = useState(false);
+  const [packageImageFile, setPackageImageFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(pkg?.imageUrl || null);
+
 
   const [durationValue, setDurationValue] = useState(() => pkg?.duration?.split(' ')[0] || '1');
   const [durationUnit, setDurationUnit] = useState(() => pkg?.duration?.split(' ')[1] || 'Days');
@@ -79,6 +85,7 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
         ...pkg,
         services: pkg.services || [],
         products: pkg.products || [],
+        imageUrl: pkg.imageUrl || '',
     } : {
       name: '',
       sku: `PKG-${uuidv4().substring(0, 8).toUpperCase()}`,
@@ -90,6 +97,7 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
       duration: '1 Days',
       custom: false,
       discountPercentage: 0,
+      imageUrl: '',
     },
   });
 
@@ -159,6 +167,49 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
     }
   }, [finalPrice, basePrice, form]);
 
+  const handlePackageImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+        const file = event.target.files[0];
+        setPackageImageFile(file);
+        setPreviewImageUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleImageUpload = async () => {
+    if (!packageImageFile) {
+        toast({ title: 'No image selected', variant: 'destructive' });
+        return;
+    }
+    if (!project.googleDriveAccessToken) {
+        toast({ title: 'Google Drive not connected', description: 'Please connect to Google Drive in Project Settings first.', variant: 'destructive' });
+        return;
+    }
+    setIsUploading(true);
+
+    const formData = new FormData();
+    formData.append('file', packageImageFile);
+    formData.append('accessToken', project.googleDriveAccessToken);
+    formData.append('folderPath', ['true_north', project.name, 'products'].join(','));
+    formData.append('fileName', `${pkg?.id || form.getValues('sku')}.jpg`);
+
+    try {
+        const result = await uploadFileToDrive(formData);
+
+        if (result.success && result.link) {
+            form.setValue('imageUrl', result.link);
+            setPreviewImageUrl(result.link);
+            toast({ title: 'Success', description: 'Image uploaded to Google Drive.' });
+        } else {
+            throw new Error(result.message || 'Image upload failed');
+        }
+    } catch (error: any) {
+        toast({ title: 'Upload Error', description: error.message, variant: 'destructive' });
+    } finally {
+        setIsUploading(false);
+    }
+};
+
+  
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
       setAiImage(event.target.files[0]);
@@ -315,6 +366,26 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
                 </FormItem>
             )}
             />
+            
+            <div className='space-y-2'>
+              <Label>Package Image</Label>
+              <div className='flex items-center gap-4'>
+                  <div className='w-24 h-24 bg-muted rounded-lg flex items-center justify-center'>
+                      {previewImageUrl ? (
+                          <Image src={previewImageUrl} alt="Package preview" width={96} height={96} className='rounded-lg object-cover w-24 h-24' />
+                      ) : (
+                          <ImagePreviewIcon className='h-8 w-8 text-muted-foreground' />
+                      )}
+                  </div>
+                  <div className='flex-1 space-y-2'>
+                    <Input id="package-image" type="file" accept="image/*" onChange={handlePackageImageChange} disabled={isUploading}/>
+                    <Button type='button' size="sm" onClick={handleImageUpload} disabled={isUploading || !packageImageFile}>
+                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                        Upload to Drive
+                    </Button>
+                  </div>
+              </div>
+            </div>
 
             <FormField
                 control={form.control}
@@ -542,5 +613,3 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
     </div>
   );
 }
-
-    
