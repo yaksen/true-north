@@ -3,7 +3,7 @@
 
 import { useAuth } from '@/hooks/use-auth';
 import { CrmSettings, Project, Task, Finance, PersonalWallet, WalletTransaction, VaultItem, Habit, HabitLog, DiaryEntry } from '@/lib/types';
-import { collection, onSnapshot, query, where, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
