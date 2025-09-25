@@ -34,6 +34,7 @@ const formSchema = z.object({
   projectId: z.string().nonempty({ message: 'Project is required.' }),
   parentTaskId: z.string().optional(),
   leadId: z.string().optional(),
+  channelId: z.string().optional(),
   title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
   description: z.string().optional(),
   slot: z.enum(slots),
@@ -48,13 +49,14 @@ interface TaskFormProps {
   projectId?: string;
   parentTaskId?: string;
   leadId?: string;
+  channelId?: string;
   projects?: Project[];
   leads?: Lead[];
   members?: ProjectMember[];
   closeForm: () => void;
 }
 
-export function TaskForm({ task, projectId, parentTaskId, leadId, projects, leads, members, closeForm }: TaskFormProps) {
+export function TaskForm({ task, projectId, parentTaskId, leadId, channelId, projects, leads, members, closeForm }: TaskFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,6 +78,7 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
       projectId: projectId || '',
       parentTaskId: parentTaskId || '',
       leadId: leadId || '',
+      channelId: channelId || '',
       title: '',
       description: '',
       slot: 'morning',
@@ -494,5 +497,3 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, projects, lead
     </div>
   );
 }
-
-    

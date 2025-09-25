@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { ChannelForm } from './channel-form';
-import { Edit, Trash2, Link as LinkIcon, Star } from 'lucide-react';
+import { Edit, Trash2, Link as LinkIcon, Star, CircleDollarSign, ListChecks } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { deleteDoc, doc, updateDoc } from 'firebase/firestore';
@@ -17,6 +17,8 @@ import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import { logActivity } from '@/lib/activity-log';
 import Link from 'next/link';
+import { FinanceForm } from './finance-form';
+import { TaskForm } from './task-form';
 
 interface ChannelCardProps {
   channel: Channel;
@@ -27,6 +29,9 @@ export function ChannelCard({ channel, project }: ChannelCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isFinanceFormOpen, setIsFinanceFormOpen] = useState(false);
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+
 
   const handleDelete = async () => {
     if (!user) return;
@@ -71,9 +76,29 @@ export function ChannelCard({ channel, project }: ChannelCardProps) {
       </CardContent>
       <CardFooter className="flex justify-between items-center">
         <div className='flex items-center gap-1'>
+            <Dialog open={isFinanceFormOpen} onOpenChange={setIsFinanceFormOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline" size="sm"><CircleDollarSign className='mr-2' /> Finance</Button>
+                </DialogTrigger>
+                <DialogContent className='max-w-4xl'>
+                    <DialogHeader><DialogTitle>Log Finance for {channel.name}</DialogTitle></DialogHeader>
+                    <FinanceForm project={project} channelId={channel.id} closeForm={() => setIsFinanceFormOpen(false)} />
+                </DialogContent>
+            </Dialog>
+            <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline" size="sm"><ListChecks className='mr-2' /> Task</Button>
+                </DialogTrigger>
+                <DialogContent className='max-w-4xl'>
+                    <DialogHeader><DialogTitle>Add Task for {channel.name}</DialogTitle></DialogHeader>
+                    <TaskForm projectId={project.id} channelId={channel.id} members={project.members} closeForm={() => setIsTaskFormOpen(false)} />
+                </DialogContent>
+            </Dialog>
+        </div>
+        <div className='flex items-center -mr-2'>
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">Edit</Button>
+                    <Button variant="ghost" size="icon"><Edit className='h-4 w-4' /></Button>
                 </DialogTrigger>
                 <DialogContent className='max-w-4xl'>
                     <DialogHeader><DialogTitle>Edit Channel</DialogTitle></DialogHeader>
@@ -85,14 +110,9 @@ export function ChannelCard({ channel, project }: ChannelCardProps) {
                     <Link href={channel.url} target='_blank' rel="noopener noreferrer"><LinkIcon className='h-4 w-4' /></Link>
                 </Button>
             )}
-        </div>
-        <div className='flex items-center'>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStar(!channel.starred)}>
-                <Star className={cn("h-4 w-4", channel.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
-            </Button>
             <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                     <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>

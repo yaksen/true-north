@@ -71,6 +71,7 @@ export interface Task {
     projectId: string;
     parentTaskId?: string;
     leadId?: string;
+    channelId?: string;
     title: string;
     description?: string;
     slot: TaskTemplateSlot;

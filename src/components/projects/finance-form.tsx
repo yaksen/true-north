@@ -584,5 +584,3 @@ export function FinanceForm({ finance, project, projects, packages, services, le
     </div>
   );
 }
-
-    
