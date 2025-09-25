@@ -65,7 +65,7 @@ export function TaskTemplateCard({ template, project }: TaskTemplateCardProps) {
         <CardHeader>
             <div className="flex justify-between items-start">
                 <CardTitle className="truncate">{template.title}</CardTitle>
-                <div className='flex items-center -mr-2'>
+                <div className='flex items-center'>
                     <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                         <DialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
@@ -118,4 +118,3 @@ export function TaskTemplateCard({ template, project }: TaskTemplateCardProps) {
     </Card>
   );
 }
-

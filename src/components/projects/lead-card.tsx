@@ -119,7 +119,7 @@ export function LeadCard({ lead, dependencies }: LeadCardProps) {
                         />
                     </DialogContent>
                 </Dialog>
-                <div className='flex items-center -mr-2'>
+                <div className='flex items-center'>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStar(!lead.starred)}>
                         <Star className={cn("h-4 w-4", lead.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
                     </Button>

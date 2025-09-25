@@ -71,7 +71,7 @@ export function FinanceCard({ finance, displayCurrency }: FinanceCardProps) {
                     <div className={cn("p-2 rounded-full", isIncome ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500')}>
                         {isIncome ? <ArrowDownLeft className='h-5 w-5' /> : <ArrowUpRight className='h-5 w-5' />}
                     </div>
-                     <div className="flex items-center -mr-2 -mt-2">
+                     <div className="flex items-center">
                         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                             <DialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>

@@ -98,7 +98,7 @@ export function VendorCard({ vendor, dependencies }: VendorCardProps) {
                         <VendorForm vendor={vendor} projectId={project.id} channels={channels} closeForm={() => setIsEditOpen(false)} />
                     </DialogContent>
                 </Dialog>
-                <div className='flex items-center -mr-2'>
+                <div className='flex items-center'>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStar(!vendor.starred)}>
                         <Star className={cn("h-4 w-4", vendor.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
                     </Button>

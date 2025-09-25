@@ -77,7 +77,7 @@ export function TaskCard({ task, leads, channels }: TaskCardProps) {
                 />
                 {task.title}
             </CardTitle>
-            <div className='flex items-center -mr-2'>
+            <div className='flex items-center'>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStar(!task.starred)}>
                     <Star className={cn("h-4 w-4", task.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
                 </Button>

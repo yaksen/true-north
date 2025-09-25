@@ -96,7 +96,7 @@ export function ChannelCard({ channel, project, leads }: ChannelCardProps) {
                 </DialogContent>
             </Dialog>
         </div>
-        <div className='flex items-center -mr-2'>
+        <div className='flex items-center'>
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogTrigger asChild>
                     <Button variant="ghost" size="icon"><Edit className='h-4 w-4' /></Button>

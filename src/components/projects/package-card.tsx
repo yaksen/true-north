@@ -153,7 +153,7 @@ export function PackageCard({ pkg, project, allServices, allProducts }: PackageC
             <CardHeader className='p-4'>
                 <div className='flex justify-between items-start'>
                     <CardTitle className='text-lg'>{pkg.name}</CardTitle>
-                    <div className="flex items-center -mr-2 -mt-2">
+                    <div className="flex items-center">
                         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                             <DialogTrigger asChild>
                                 <Button size="icon" variant="ghost"><Edit className="h-4 w-4" /></Button>
@@ -212,4 +212,3 @@ export function PackageCard({ pkg, project, allServices, allProducts }: PackageC
         </Card>
     );
 }
-
