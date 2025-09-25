@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Channel, Project } from '@/lib/types';
+import type { Channel, Project, Lead } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
@@ -23,9 +23,10 @@ import { TaskForm } from './task-form';
 interface ChannelCardProps {
   channel: Channel;
   project: Project;
+  leads: Lead[];
 }
 
-export function ChannelCard({ channel, project }: ChannelCardProps) {
+export function ChannelCard({ channel, project, leads }: ChannelCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -91,7 +92,7 @@ export function ChannelCard({ channel, project }: ChannelCardProps) {
                 </DialogTrigger>
                 <DialogContent className='max-w-4xl'>
                     <DialogHeader><DialogTitle>Add Task for {channel.name}</DialogTitle></DialogHeader>
-                    <TaskForm projectId={project.id} channelId={channel.id} members={project.members} closeForm={() => setIsTaskFormOpen(false)} />
+                    <TaskForm projectId={project.id} channelId={channel.id} leads={leads} channels={[channel]} members={project.members} closeForm={() => setIsTaskFormOpen(false)} />
                 </DialogContent>
             </Dialog>
         </div>

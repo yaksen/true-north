@@ -3,7 +3,7 @@
 'use client';
 
 import { useMemo, useState } from "react";
-import { Project, Channel } from "@/lib/types";
+import { Project, Channel, Lead } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
@@ -18,9 +18,10 @@ import { ScrollArea } from "../ui/scroll-area";
 interface ProjectChannelsProps {
     project: Project;
     channels: Channel[];
+    leads: Lead[];
 }
 
-export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
+export function ProjectChannels({ project, channels, leads }: ProjectChannelsProps) {
     const { toast } = useToast();
     const [isChannelFormOpen, setIsChannelFormOpen] = useState(false);
     const [filters, setFilters] = useState({
@@ -71,6 +72,7 @@ export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
                                     key={channel.id}
                                     channel={channel}
                                     project={project}
+                                    leads={leads}
                                 />
                             ))}
                         </div>
