@@ -64,7 +64,7 @@ export function ChannelCard({ channel, project }: ChannelCardProps) {
           <CardTitle className="truncate">{channel.name}</CardTitle>
           <Badge variant={getStatusVariant(channel.status)} className="capitalize">{channel.status}</Badge>
         </div>
-        <CardDescription>{channel.platform}</CardDescription>
+        <CardDescription>{channel.type}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
         <p className="text-sm text-muted-foreground line-clamp-2">{channel.notes || 'No notes for this channel.'}</p>

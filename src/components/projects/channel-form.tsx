@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Channel } from '@/lib/types';
+import type { Channel, ChannelType } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -24,13 +24,13 @@ import { Label } from '../ui/label';
 import Image from 'next/image';
 
 const channelStatuses = ['new', 'active', 'inactive', 'closed'] as const;
-const channelPlatforms = ['Instagram', 'Facebook', 'Twitter', 'LinkedIn', 'Website', 'Referral', 'Other'];
+const channelTypes: ChannelType[] = ['Social', 'Communication', 'Community', 'Money / Business', 'Learning', 'Entertainment', 'Tech / Tools', 'Inspirations', 'Other'];
 
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   sku: z.string().optional(),
-  platform: z.string().min(1, 'Platform is required'),
+  type: z.enum(channelTypes),
   url: z.string().url().optional().or(z.literal('')),
   notes: z.string().optional(),
   status: z.enum(channelStatuses),
@@ -62,7 +62,7 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
     } : {
       name: '',
       sku: `CHAN-${uuidv4().substring(0, 8).toUpperCase()}`,
-      platform: 'Website',
+      type: 'Other',
       url: '',
       notes: '',
       status: 'new',
@@ -122,8 +122,8 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
         });
 
         if (extractedData.name) form.setValue('name', extractedData.name);
-        if (extractedData.platform && channelPlatforms.includes(extractedData.platform)) {
-          form.setValue('platform', extractedData.platform);
+        if (extractedData.type && channelTypes.includes(extractedData.type)) {
+          form.setValue('type', extractedData.type);
         }
         if (extractedData.url) form.setValue('url', extractedData.url);
 
@@ -212,18 +212,18 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
             <div className="grid grid-cols-2 gap-4">
                 <FormField
                     control={form.control}
-                    name="platform"
+                    name="type"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Platform</FormLabel>
+                            <FormLabel>Type</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Platform" />
+                                        <SelectValue placeholder="Type" />
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {channelPlatforms.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                                    {channelTypes.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </FormItem>
@@ -329,5 +329,3 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
     </div>
   );
 }
-
-    

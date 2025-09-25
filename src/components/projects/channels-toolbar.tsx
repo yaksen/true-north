@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,19 +8,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { findChannel, type FindChannelOutput } from '@/ai/flows/find-channel-flow';
-import { ChannelStatus } from '@/lib/types';
+import { ChannelStatus, ChannelType } from '@/lib/types';
 
 interface ChannelsToolbarProps {
-  onFilterChange: (filters: { status: string; platform: string; search: string }) => void;
+  onFilterChange: (filters: { status: string; type: string; search: string }) => void;
 }
 
 const channelStatuses: (ChannelStatus | 'all')[] = ['all', 'new', 'active', 'inactive', 'closed'];
-const channelPlatforms = ['all', 'Instagram', 'Facebook', 'Twitter', 'LinkedIn', 'Website', 'Referral', 'Other'];
+const channelTypes: (ChannelType | 'all')[] = ['all', 'Social', 'Communication', 'Community', 'Money / Business', 'Learning', 'Entertainment', 'Tech / Tools', 'Inspirations', 'Other'];
+
 
 export function ChannelsToolbar({ onFilterChange }: ChannelsToolbarProps) {
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState('all');
-  const [platformFilter, setPlatformFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -27,13 +29,13 @@ export function ChannelsToolbar({ onFilterChange }: ChannelsToolbarProps) {
     const handler = setTimeout(() => {
       onFilterChange({
         status: statusFilter,
-        platform: platformFilter,
+        type: typeFilter,
         search: searchTerm,
       });
     }, 300);
 
     return () => clearTimeout(handler);
-  }, [searchTerm, statusFilter, platformFilter, onFilterChange]);
+  }, [searchTerm, statusFilter, typeFilter, onFilterChange]);
   
   const handleAiSearch = async () => {
     if (!searchTerm) {
@@ -46,7 +48,7 @@ export function ChannelsToolbar({ onFilterChange }: ChannelsToolbarProps) {
         const result: FindChannelOutput = await findChannel({ prompt: searchTerm });
         
         setStatusFilter(result.status || 'all');
-        setPlatformFilter(result.platform || 'all');
+        setTypeFilter(result.type || 'all');
         setSearchTerm(result.searchTerm || '');
 
         toast({ title: 'AI Search Complete', description: 'Filters have been updated.' });
@@ -61,7 +63,7 @@ export function ChannelsToolbar({ onFilterChange }: ChannelsToolbarProps) {
 
   const clearFilters = () => {
     setStatusFilter('all');
-    setPlatformFilter('all');
+    setTypeFilter('all');
     setSearchTerm('');
   };
 
@@ -92,13 +94,13 @@ export function ChannelsToolbar({ onFilterChange }: ChannelsToolbarProps) {
                     ))}
                 </SelectContent>
             </Select>
-            <Select value={platformFilter} onValueChange={(value) => setPlatformFilter(value)}>
+            <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value)}>
                 <SelectTrigger className="w-36 h-9 text-sm">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                    {channelPlatforms.map(platform => (
-                        <SelectItem key={platform} value={platform} className="capitalize">{platform}</SelectItem>
+                    {channelTypes.map(type => (
+                        <SelectItem key={type} value={type} className="capitalize">{type}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>

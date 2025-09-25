@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState } from "react";
@@ -24,17 +25,17 @@ export function ProjectChannels({ project, channels }: ProjectChannelsProps) {
     const [isChannelFormOpen, setIsChannelFormOpen] = useState(false);
     const [filters, setFilters] = useState({
         status: 'all',
-        platform: 'all',
+        type: 'all',
         search: ''
     });
 
     const filteredChannels = useMemo(() => {
         return channels.filter(channel => {
             const statusMatch = filters.status === 'all' || channel.status === filters.status;
-            const platformMatch = filters.platform === 'all' || channel.platform === filters.platform;
+            const typeMatch = filters.type === 'all' || channel.type === filters.type;
             const searchMatch = !filters.search || channel.name.toLowerCase().includes(filters.search.toLowerCase());
 
-            return statusMatch && platformMatch && searchMatch;
+            return statusMatch && typeMatch && searchMatch;
         });
     }, [channels, filters]);
 

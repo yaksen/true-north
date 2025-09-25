@@ -9,6 +9,10 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { ChannelType } from '@/lib/types';
+
+const channelTypes: [ChannelType, ...ChannelType[]] = ['Social', 'Communication', 'Community', 'Money / Business', 'Learning', 'Entertainment', 'Tech / Tools', 'Inspirations', 'Other'];
+
 
 const ExtractChannelDetailsInputSchema = z.object({
   prompt: z.string().describe('Unstructured text containing channel information.'),
@@ -18,7 +22,7 @@ export type ExtractChannelDetailsInput = z.infer<typeof ExtractChannelDetailsInp
 
 const ExtractChannelDetailsOutputSchema = z.object({
   name: z.string().optional().describe("The name of the channel (e.g., 'Company Blog', 'Summer Campaign')."),
-  platform: z.string().optional().describe("The platform of the channel (e.g., Instagram, Facebook, Website, Other)."),
+  type: z.enum(channelTypes).optional().describe("The type of the channel."),
   url: z.string().optional().describe("The full URL for the channel."),
 }).describe('Structured channel information extracted from the provided text and/or image.');
 export type ExtractChannelDetailsOutput = z.infer<typeof ExtractChannelDetailsOutputSchema>;
@@ -28,7 +32,9 @@ const prompt = ai.definePrompt({
   name: 'extractChannelDetailsPrompt',
   input: { schema: ExtractChannelDetailsInputSchema },
   output: { schema: ExtractChannelDetailsOutputSchema },
-  prompt: `You are an expert data entry assistant. Your task is to extract marketing channel information from the provided text and/or image. Identify the channel's name, its platform (e.g., Instagram, Facebook, Website, Referral), and its URL.
+  prompt: `You are an expert data entry assistant. Your task is to extract marketing channel information from the provided text and/or image. Identify the channel's name, its type, and its URL.
+
+The available channel types are: ${channelTypes.join(', ')}.
 
 If an image is provided, use it as the primary source. Use the text prompt for additional context.
 

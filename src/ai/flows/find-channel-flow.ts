@@ -9,7 +9,9 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { ChannelStatus } from '@/lib/types';
+import { ChannelStatus, ChannelType } from '@/lib/types';
+
+const channelTypes: [ChannelType, ...ChannelType[]] = ['Social', 'Communication', 'Community', 'Money / Business', 'Learning', 'Entertainment', 'Tech / Tools', 'Inspirations', 'Other'];
 
 const FindChannelInputSchema = z.object({
   prompt: z.string().describe('Unstructured text containing search criteria for a channel.'),
@@ -19,7 +21,7 @@ export type FindChannelInput = z.infer<typeof FindChannelInputSchema>;
 const FindChannelOutputSchema = z.object({
   searchTerm: z.string().optional().describe("A general search term extracted from the query. This will be used for a broad text search across all channel fields."),
   status: z.enum(['new', 'active', 'inactive', 'closed', 'all']).optional().describe("The specific status of the channel to filter by."),
-  platform: z.string().optional().describe("The platform to filter by (e.g., Instagram, Website)."),
+  type: z.enum(channelTypes).optional().describe("The type of channel to filter by."),
 }).describe('Structured search criteria extracted from the provided inputs.');
 export type FindChannelOutput = z.infer<typeof FindChannelOutputSchema>;
 
@@ -32,7 +34,7 @@ const prompt = ai.definePrompt({
 Your goal is to populate the output JSON with the following:
 1.  'searchTerm': A general keyword or phrase to use for text search (e.g., a channel name or URL).
 2.  'status': If the query mentions a specific status (new, active, inactive, closed), set it here.
-3.  'platform': If the query mentions a platform (e.g., Instagram, Facebook, Website, Referral), set it here.
+3.  'type': If the query mentions a channel type (e.g., ${channelTypes.join(', ')}), set it here.
 
 Analyze the input to make the best determination.
 

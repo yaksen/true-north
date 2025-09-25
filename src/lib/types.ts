@@ -1,4 +1,5 @@
 
+
 import { CurrencyCode } from "@/context/CurrencyContext";
 
 export type UserRole = 'admin' | 'manager' | 'member';
@@ -8,6 +9,7 @@ export type TaskStatus = 'Call' | 'Meeting' | 'Project' | 'Order' | 'Deliver' | 
 export type FinanceType = 'income' | 'expense';
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 export type ChannelStatus = 'new' | 'active' | 'inactive' | 'closed';
+export type ChannelType = 'Social' | 'Communication' | 'Community' | 'Money / Business' | 'Learning' | 'Entertainment' | 'Tech / Tools' | 'Inspirations' | 'Other';
 export type DiscountType = 'percentage' | 'flat';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void' | 'partial' | 'unpaid';
 export type PaymentMethod = 'cash' | 'bank transfer' | 'online' | 'other';
@@ -163,7 +165,7 @@ export interface Channel {
     id: string;
     projectId: string;
     name: string;
-    platform: string;
+    type: ChannelType;
     url?: string;
     status: ChannelStatus;
     notes?: string;
@@ -472,5 +474,3 @@ export interface PersonalChatMessage {
     createdAt: Date;
     userId?: string; // ID of the user who sent the message
 }
-
-    
