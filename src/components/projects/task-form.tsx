@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Task, Project, Lead, ProjectMember, TaskStatus } from '@/lib/types';
+import type { Task, Project, Lead, ProjectMember, TaskStatus, Channel } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -52,11 +53,12 @@ interface TaskFormProps {
   channelId?: string;
   projects?: Project[];
   leads?: Lead[];
+  channels?: Channel[];
   members?: ProjectMember[];
   closeForm: () => void;
 }
 
-export function TaskForm({ task, projectId, parentTaskId, leadId, channelId, projects, leads, members, closeForm }: TaskFormProps) {
+export function TaskForm({ task, projectId, parentTaskId, leadId, channelId, projects, leads, channels, members, closeForm }: TaskFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,6 +101,7 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, channelId, pro
   useEffect(() => {
     // Reset lead selection when project changes
     form.setValue('leadId', '');
+    form.setValue('channelId', '');
   }, [selectedProjectId, form]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -279,7 +282,6 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, channelId, pro
             />
             )}
             <div className='grid grid-cols-2 gap-4'>
-                {leads && (
                 <FormField
                     control={form.control}
                     name="leadId"
@@ -302,7 +304,30 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, channelId, pro
                         </FormItem>
                     )}
                 />
-                )}
+                <FormField
+                    control={form.control}
+                    name="channelId"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Channel (Optional)</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value} disabled={!selectedProjectId}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Assign to a channel..." />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {channels?.map(c => (
+                                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+             <div className='grid grid-cols-2 gap-4'>
                 <FormField
                     control={form.control}
                     name="assigneeUid"
@@ -321,6 +346,50 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, channelId, pro
                                     ))}
                                 </SelectContent>
                             </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="dueDate"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                            <FormLabel>Due Date</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                <FormControl>
+                                    <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "pl-3 text-left font-normal",
+                                        !field.value && "text-muted-foreground"
+                                    )}
+                                    >
+                                    {field.value ? (
+                                        format(new Date(field.value), "PPP")
+                                    ) : (
+                                        <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    disabled={(date) => date < new Date("1900-01-01")}
+                                    initialFocus
+                                />
+                                <div className="p-2 border-t flex gap-1">
+                                    <Button size="sm" variant="ghost" onClick={() => field.onChange(new Date())}>Today</Button>
+                                    <Button size="sm" variant="ghost" onClick={() => field.onChange(addDays(new Date(), 1))}>Tomorrow</Button>
+                                    <Button size="sm" variant="ghost" onClick={() => field.onChange(addDays(new Date(), 2))}>Day After</Button>
+                                </div>
+                                </PopoverContent>
+                            </Popover>
                             <FormMessage />
                         </FormItem>
                     )}
@@ -367,70 +436,24 @@ export function TaskForm({ task, projectId, parentTaskId, leadId, channelId, pro
                 </FormItem>
             )}
             />
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                    control={form.control}
-                    name="slot"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Slot</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent>
-                                {slots.map(slot => (
-                                    <SelectItem key={slot} value={slot} className="capitalize">{slot}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="dueDate"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>Due Date</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                <FormControl>
-                                    <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "pl-3 text-left font-normal",
-                                        !field.value && "text-muted-foreground"
-                                    )}
-                                    >
-                                    {field.value ? (
-                                        format(new Date(field.value), "PPP")
-                                    ) : (
-                                        <span>Pick a date</span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    disabled={(date) => date < new Date("1900-01-01")}
-                                    initialFocus
-                                />
-                                <div className="p-2 border-t flex gap-1">
-                                    <Button size="sm" variant="ghost" onClick={() => field.onChange(new Date())}>Today</Button>
-                                    <Button size="sm" variant="ghost" onClick={() => field.onChange(addDays(new Date(), 1))}>Tomorrow</Button>
-                                    <Button size="sm" variant="ghost" onClick={() => field.onChange(addDays(new Date(), 2))}>Day After</Button>
-                                </div>
-                                </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
+            <FormField
+                control={form.control}
+                name="slot"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Slot</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            {slots.map(slot => (
+                                <SelectItem key={slot} value={slot} className="capitalize">{slot}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
             
             <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>

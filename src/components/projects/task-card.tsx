@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import { useState } from 'react';
-import type { Task, Lead } from '@/lib/types';
+import type { Task, Lead, Channel } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
@@ -22,9 +23,10 @@ import { logActivity } from '@/lib/activity-log';
 interface TaskCardProps {
   task: Task;
   leads: Lead[];
+  channels: Channel[];
 }
 
-export function TaskCard({ task, leads }: TaskCardProps) {
+export function TaskCard({ task, leads, channels }: TaskCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -60,6 +62,7 @@ export function TaskCard({ task, leads }: TaskCardProps) {
 
   const updatedAt = task.updatedAt ? new Date(task.updatedAt) : null;
   const lead = leads.find(l => l.id === task.leadId);
+  const channel = channels.find(c => c.id === task.channelId);
 
   return (
     <Card className="flex flex-col">
@@ -84,7 +87,7 @@ export function TaskCard({ task, leads }: TaskCardProps) {
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader><DialogTitle>Edit Task</DialogTitle></DialogHeader>
-                        <TaskForm task={task} projectId={task.projectId} leads={leads} closeForm={() => setIsEditOpen(false)} />
+                        <TaskForm task={task} projectId={task.projectId} leads={leads} channels={channels} closeForm={() => setIsEditOpen(false)} />
                     </DialogContent>
                 </Dialog>
                 <AlertDialog>
@@ -111,9 +114,10 @@ export function TaskCard({ task, leads }: TaskCardProps) {
         <p className="text-sm text-muted-foreground line-clamp-3">{task.description}</p>
       </CardContent>
       <CardFooter className="flex justify-between items-center">
-        <div className='flex items-center gap-2'>
+        <div className='flex items-center gap-2 flex-wrap'>
             {task.dueDate && <Badge variant="outline">{format(new Date(task.dueDate), 'PPP')}</Badge>}
             {lead && <Badge variant="secondary">{lead.name}</Badge>}
+            {channel && <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">{channel.name}</Badge>}
         </div>
         <Badge 
             variant="outline" 

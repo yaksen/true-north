@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import { useMemo, useState } from "react";
-import { Project, Task, Lead, TaskTemplateSlot, UserProfile } from "@/lib/types";
+import { Project, Task, Lead, TaskTemplateSlot, UserProfile, Channel } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle, History } from "lucide-react";
@@ -22,9 +23,10 @@ interface ProjectTasksProps {
     project: Project;
     tasks: Task[];
     leads: Lead[];
+    channels: Channel[];
 }
 
-export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
+export function ProjectTasks({ project, tasks, leads, channels }: ProjectTasksProps) {
     const { toast } = useToast();
     const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
@@ -93,7 +95,7 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
                                     <DialogHeader>
                                         <DialogTitle>Add New Task</DialogTitle>
                                     </DialogHeader>
-                                    <TaskForm projectId={project.id} leads={leads} members={project.members} closeForm={() => setIsTaskFormOpen(false)} />
+                                    <TaskForm projectId={project.id} leads={leads} channels={channels} members={project.members} closeForm={() => setIsTaskFormOpen(false)} />
                                 </DialogContent>
                             </Dialog>
                         </div>
@@ -104,7 +106,7 @@ export function ProjectTasks({ project, tasks, leads }: ProjectTasksProps) {
                     <ScrollArea className="h-[calc(100vh-30rem)]">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
                             {filteredTasks.map(task => (
-                                <TaskCard key={task.id} task={task} leads={leads} />
+                                <TaskCard key={task.id} task={task} leads={leads} channels={channels} />
                             ))}
                         </div>
                     </ScrollArea>

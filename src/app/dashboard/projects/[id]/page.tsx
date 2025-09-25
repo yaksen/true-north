@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -230,7 +231,7 @@ export default function ProjectDetailPage() {
                 <ProjectFinance project={project} finances={finances} />
             </TabsContent>
              <TabsContent value="tasks">
-                <ProjectTasks project={project} tasks={tasks} leads={leads} />
+                <ProjectTasks project={project} tasks={tasks} leads={leads} channels={channels} />
             </TabsContent>
             <TabsContent value="templates">
                 <ProjectTemplates project={project} templates={taskTemplates} tasks={tasks} />
