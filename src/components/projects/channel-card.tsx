@@ -75,51 +75,53 @@ export function ChannelCard({ channel, project, leads }: ChannelCardProps) {
       <CardContent className="flex-grow">
         <p className="text-sm text-muted-foreground line-clamp-2">{channel.notes || 'No notes for this channel.'}</p>
       </CardContent>
-      <CardFooter className="flex justify-between items-center">
-        <div className='flex items-center gap-1'>
-            <Dialog open={isFinanceFormOpen} onOpenChange={setIsFinanceFormOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="outline" size="sm"><CircleDollarSign className='mr-2' /> Finance</Button>
-                </DialogTrigger>
-                <DialogContent className='max-w-4xl'>
-                    <DialogHeader><DialogTitle>Log Finance for {channel.name}</DialogTitle></DialogHeader>
-                    <FinanceForm project={project} channelId={channel.id} closeForm={() => setIsFinanceFormOpen(false)} />
-                </DialogContent>
-            </Dialog>
-            <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="outline" size="sm"><ListChecks className='mr-2' /> Task</Button>
-                </DialogTrigger>
-                <DialogContent className='max-w-4xl'>
-                    <DialogHeader><DialogTitle>Add Task for {channel.name}</DialogTitle></DialogHeader>
-                    <TaskForm projectId={project.id} channelId={channel.id} leads={leads} channels={[channel]} members={project.members} closeForm={() => setIsTaskFormOpen(false)} />
-                </DialogContent>
-            </Dialog>
-        </div>
-        <div className='flex items-center'>
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon"><Edit className='h-4 w-4' /></Button>
-                </DialogTrigger>
-                <DialogContent className='max-w-4xl'>
-                    <DialogHeader><DialogTitle>Edit Channel</DialogTitle></DialogHeader>
-                    <ChannelForm channel={channel} projectId={project.id} closeForm={() => setIsEditOpen(false)} />
-                </DialogContent>
-            </Dialog>
-            {channel.url && (
-                <Button asChild size="icon" variant="ghost">
-                    <Link href={channel.url} target='_blank' rel="noopener noreferrer"><LinkIcon className='h-4 w-4' /></Link>
-                </Button>
-            )}
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction></AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+      <CardFooter className="p-4 pt-0">
+        <div className='flex justify-between items-center w-full'>
+            <div className='flex items-center gap-1'>
+                <Dialog open={isFinanceFormOpen} onOpenChange={setIsFinanceFormOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm"><CircleDollarSign className='mr-2' /> Finance</Button>
+                    </DialogTrigger>
+                    <DialogContent className='max-w-4xl'>
+                        <DialogHeader><DialogTitle>Log Finance for {channel.name}</DialogTitle></DialogHeader>
+                        <FinanceForm project={project} channelId={channel.id} closeForm={() => setIsFinanceFormOpen(false)} />
+                    </DialogContent>
+                </Dialog>
+                <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm"><ListChecks className='mr-2' /> Task</Button>
+                    </DialogTrigger>
+                    <DialogContent className='max-w-4xl'>
+                        <DialogHeader><DialogTitle>Add Task for {channel.name}</DialogTitle></DialogHeader>
+                        <TaskForm projectId={project.id} channelId={channel.id} leads={leads} channels={[channel]} members={project.members} closeForm={() => setIsTaskFormOpen(false)} />
+                    </DialogContent>
+                </Dialog>
+            </div>
+            <div className='flex items-center'>
+                <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon"><Edit className='h-4 w-4' /></Button>
+                    </DialogTrigger>
+                    <DialogContent className='max-w-4xl'>
+                        <DialogHeader><DialogTitle>Edit Channel</DialogTitle></DialogHeader>
+                        <ChannelForm channel={channel} projectId={project.id} closeForm={() => setIsEditOpen(false)} />
+                    </DialogContent>
+                </Dialog>
+                {channel.url && (
+                    <Button asChild size="icon" variant="ghost">
+                        <Link href={channel.url} target='_blank' rel="noopener noreferrer"><LinkIcon className='h-4 w-4' /></Link>
+                    </Button>
+                )}
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction></AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
         </div>
       </CardFooter>
     </Card>

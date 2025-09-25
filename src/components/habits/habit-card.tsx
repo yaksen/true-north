@@ -120,7 +120,7 @@ export function HabitCard({ habit, log, allLogs, streak, onLog, onDelete }: Habi
             </div>
         )}
       </CardContent>
-      <CardFooter>
+      <CardFooter className="p-4 pt-0">
         <Button onClick={() => onLog(habit, log)} className={cn("w-full", buttonColorClass)} disabled={isComplete}>
             {buttonText}
         </Button>

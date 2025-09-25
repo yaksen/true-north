@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -113,23 +112,25 @@ export function TaskCard({ task, leads, channels }: TaskCardProps) {
       <CardContent className="flex-grow space-y-2">
         <p className="text-sm text-muted-foreground line-clamp-3">{task.description}</p>
       </CardContent>
-      <CardFooter className="flex justify-between items-center">
-        <div className='flex items-center gap-2 flex-wrap'>
-            {task.dueDate && <Badge variant="outline">{format(new Date(task.dueDate), 'PPP')}</Badge>}
-            {lead && <Badge variant="secondary">{lead.name}</Badge>}
-            {channel && <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">{channel.name}</Badge>}
+      <CardFooter className="p-4 pt-0">
+        <div className='w-full flex justify-between items-center'>
+            <div className='flex items-center gap-2 flex-wrap'>
+                {task.dueDate && <Badge variant="outline">{format(new Date(task.dueDate), 'PPP')}</Badge>}
+                {lead && <Badge variant="secondary">{lead.name}</Badge>}
+                {channel && <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">{channel.name}</Badge>}
+            </div>
+            <Badge 
+                variant="outline" 
+                className={cn(
+                    "capitalize",
+                    task.slot === 'morning' && "bg-amber-500/20 text-amber-500 border-amber-500/30",
+                    task.slot === 'midday' && "bg-sky-500/20 text-sky-500 border-sky-500/30",
+                    task.slot === 'night' && "bg-indigo-500/20 text-indigo-400 border-indigo-500/30"
+                )}
+            >
+                {task.slot}
+            </Badge>
         </div>
-        <Badge 
-            variant="outline" 
-            className={cn(
-                "capitalize",
-                task.slot === 'morning' && "bg-amber-500/20 text-amber-500 border-amber-500/30",
-                task.slot === 'midday' && "bg-sky-500/20 text-sky-500 border-sky-500/30",
-                task.slot === 'night' && "bg-indigo-500/20 text-indigo-400 border-indigo-500/30"
-            )}
-        >
-            {task.slot}
-        </Badge>
       </CardFooter>
     </Card>
   );
