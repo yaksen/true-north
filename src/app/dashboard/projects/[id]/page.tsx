@@ -7,7 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, AIPrompt, Invoice, Product, Channel, TaskTemplate } from '@/lib/types';
+import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, AIPrompt, Invoice, Product, Channel, TaskTemplate, Vendor, Partner } from '@/lib/types';
 import { Loader2, BookText } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -184,7 +184,16 @@ export default function ProjectDetailPage() {
                 </TabsList>
             </div>
             <TabsContent value="dashboard">
-                <ProjectDashboard project={project} tasks={tasks} finances={finances} channels={channels} />
+                <ProjectDashboard 
+                    project={project} 
+                    tasks={tasks} 
+                    finances={finances} 
+                    channels={channels}
+                    leads={leads}
+                    services={services}
+                    products={products}
+                    invoices={invoices}
+                />
             </TabsContent>
             <TabsContent value="workspace">
                 <ProjectWorkspace 

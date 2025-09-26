@@ -1,28 +1,28 @@
 
 'use client';
 
-import { Project, Task, Finance, Lead, Channel } from "@/lib/types";
+import { Project, Task, Finance, Lead, Channel, Service, Product, Invoice } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
-import { Button } from "../ui/button";
-import { PlusCircle } from "lucide-react";
-import { Progress } from "../ui/progress";
 import { useState, useMemo, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
-import { TaskForm } from "./task-form";
-import { FinanceForm } from "./finance-form";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useCurrency } from "@/context/CurrencyContext";
-import { TaskCard } from "./task-card";
 import { FinancialChart, type MonthlyData } from "./financial-chart";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ArrowDown, ArrowUp, TrendingUp, TrendingDown, AlertTriangle, FileText, ShoppingBag, Radio, ListChecks, Banknote, VenetianMask } from 'lucide-react';
+import { formatCurrency } from "@/lib/utils";
+
 
 interface ProjectDashboardProps {
     project: Project;
     tasks: Task[];
     finances: Finance[];
     channels: Channel[];
+    leads: Lead[];
+    services: Service[];
+    products: Product[];
+    invoices: Invoice[];
 }
 
 // Mock conversion rates - replace with a real API call in a real app
@@ -35,24 +35,31 @@ const convert = (amount: number, from: string, to: string) => {
 };
 
 
-export function ProjectDashboard({ project, tasks, finances, channels }: ProjectDashboardProps) {
-    const [leads, setLeads] = useState<Lead[]>([]);
+export function ProjectDashboard({ project, tasks, finances, channels, leads, services, products, invoices }: ProjectDashboardProps) {
     const { globalCurrency } = useCurrency();
     const displayCurrency = globalCurrency || project.currency;
 
-    useEffect(() => {
-        const q = query(collection(db, 'leads'), where('projectId', '==', project.id));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
-        });
-        return () => unsubscribe();
-    }, [project.id]);
+    const { 
+        profitLoss, 
+        monthlyChartData,
+        monthlyNetGrowth,
+        leadConversionRate,
+        topRevenueSource,
+        overdueTasksCount,
+        cashFlowForecast,
+        criticalAlerts,
+    } = useMemo(() => {
+        const now = new Date();
+        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
-    const { profitLoss, taskCompletionRate, completedTasks, monthlyChartData } = useMemo(() => {
         const monthlyData: { [key: string]: { income: number; expense: number } } = {};
+        let totalExpensesLast30Days = 0;
         
         finances.forEach(f => {
-            const month = format(new Date(f.date), 'MMM yyyy');
+            const fDate = new Date(f.date);
+            const month = format(fDate, 'MMM yyyy');
             if (!monthlyData[month]) {
                 monthlyData[month] = { income: 0, expense: 0 };
             }
@@ -61,6 +68,9 @@ export function ProjectDashboard({ project, tasks, finances, channels }: Project
                 monthlyData[month].income += convertedAmount;
             } else {
                 monthlyData[month].expense += convertedAmount;
+                 if (fDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)) {
+                    totalExpensesLast30Days += convertedAmount;
+                }
             }
         });
         
@@ -74,31 +84,106 @@ export function ProjectDashboard({ project, tasks, finances, channels }: Project
         const totalExpenses = Object.values(monthlyData).reduce((sum, data) => sum + data.expense, 0);
         const profitLoss = totalIncome - totalExpenses;
         
-        const completedTasks = tasks.filter(t => t.completed).length;
-        const taskCompletionRate = tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0;
+        // Monthly Net Growth
+        const thisMonthNet = (monthlyData[format(thisMonthStart, 'MMM yyyy')]?.income || 0) - (monthlyData[format(thisMonthStart, 'MMM yyyy')]?.expense || 0);
+        const lastMonthNet = (monthlyData[format(lastMonthStart, 'MMM yyyy')]?.income || 0) - (monthlyData[format(lastMonthStart, 'MMM yyyy')]?.expense || 0);
+        let monthlyNetGrowth = 0;
+        if (lastMonthNet !== 0) {
+            monthlyNetGrowth = ((thisMonthNet - lastMonthNet) / Math.abs(lastMonthNet)) * 100;
+        } else if (thisMonthNet > 0) {
+            monthlyNetGrowth = 100; // Growth from 0 is positive
+        }
 
-        return { profitLoss, taskCompletionRate, completedTasks, monthlyChartData };
-    }, [finances, tasks, displayCurrency]);
+        // Lead Conversion Rate
+        const convertedLeads = leads.filter(l => l.status === 'converted').length;
+        const totalRelevantLeads = leads.filter(l => ['new', 'contacted', 'qualified', 'converted'].includes(l.status)).length;
+        const leadConversionRate = totalRelevantLeads > 0 ? (convertedLeads / totalRelevantLeads) * 100 : 0;
 
+        // Top Revenue Source
+        let topSource: { name: string; type: string; revenue: number } | null = null;
+        // This is a simplified version; a real implementation might look at invoice line items
+        const sourceRevenues: { [key: string]: { name: string; type: string; revenue: number } } = {};
+        finances.filter(f => f.type === 'income').forEach(f => {
+            const key = f.category || 'Unknown';
+            if (!sourceRevenues[key]) {
+                sourceRevenues[key] = { name: key, type: 'Category', revenue: 0 };
+            }
+            sourceRevenues[key].revenue += convert(f.amount, f.currency, displayCurrency);
+        });
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: displayCurrency }).format(amount);
-    }
+        if (Object.keys(sourceRevenues).length > 0) {
+            topSource = Object.values(sourceRevenues).sort((a, b) => b.revenue - a.revenue)[0];
+        }
 
-    const recentTasks = useMemo(() => {
-        return tasks.filter(t => !t.archived).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
-    }, [tasks]);
+        // Overdue Tasks
+        const overdueTasksCount = tasks.filter(t => !t.completed && t.dueDate && new Date(t.dueDate) < new Date()).length;
+        
+        // Cash Flow Forecast
+        const dailyBurnRate = totalExpensesLast30Days / 30;
+        const cashFlowForecast = dailyBurnRate > 0 ? (totalIncome - totalExpenses) / dailyBurnRate : Infinity;
+
+        // Critical Alerts
+        const overdueInvoices = invoices.filter(i => i.status === 'unpaid' && new Date(i.dueDate) < now).length;
+        const stalledLeads = leads.filter(l => l.status === 'contacted' && l.updatedAt && new Date(l.updatedAt).getTime() < now.getTime() - 7 * 24 * 60 * 60 * 1000).length;
+        const criticalAlerts = overdueInvoices + stalledLeads;
+
+        return { profitLoss, monthlyChartData, monthlyNetGrowth, leadConversionRate, topRevenueSource, overdueTasksCount, cashFlowForecast, criticalAlerts };
+    }, [finances, tasks, leads, invoices, displayCurrency]);
 
 
     return (
         <div className="grid gap-6 mt-4">
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Monthly Net Growth</CardTitle>
+                        {monthlyNetGrowth >= 0 ? <TrendingUp className="h-4 w-4 text-muted-foreground" /> : <TrendingDown className="h-4 w-4 text-muted-foreground" />}
+                    </CardHeader>
+                    <CardContent>
+                        <div className={`text-2xl font-bold ${monthlyNetGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {monthlyNetGrowth >= 0 ? '+' : ''}{monthlyNetGrowth.toFixed(1)}%
+                        </div>
+                        <p className="text-xs text-muted-foreground">vs. last month</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Lead Conversion Rate</CardTitle>
+                        <VenetianMask className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{leadConversionRate.toFixed(1)}%</div>
+                        <p className="text-xs text-muted-foreground">from qualified leads</p>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Overdue Tasks</CardTitle>
+                        <ListChecks className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className={`text-2xl font-bold ${overdueTasksCount > 0 ? 'text-red-400' : ''}`}>{overdueTasksCount}</div>
+                        <p className="text-xs text-muted-foreground">tasks need attention</p>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Critical Alerts</CardTitle>
+                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className={`text-2xl font-bold ${criticalAlerts > 0 ? 'text-amber-400' : ''}`}>{criticalAlerts}</div>
+                        <p className="text-xs text-muted-foreground">Overdue invoices, stalled leads</p>
+                    </CardContent>
+                </Card>
+            </div>
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="lg:col-span-2">
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle>Financial Overview</CardTitle>
                             <p className={cn("text-xl font-bold", profitLoss >= 0 ? 'text-green-400' : 'text-red-400')}>
-                                {formatCurrency(profitLoss)}
+                                {formatCurrency(profitLoss, displayCurrency)}
                             </p>
                         </div>
                         <CardDescription>Income vs. Expenses for the last 6 months.</CardDescription>
@@ -107,55 +192,33 @@ export function ProjectDashboard({ project, tasks, finances, channels }: Project
                        <FinancialChart data={monthlyChartData} currency={displayCurrency} />
                     </CardContent>
                 </Card>
-                
-                <div className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Task Completion</CardTitle>
-                            <CardDescription>{completedTasks} of {tasks.length} tasks completed</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Progress value={taskCompletionRate} className="mb-2" />
-                            <p className="text-2xl font-bold text-right">{taskCompletionRate.toFixed(0)}%</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Leads & Channels</CardTitle>
-                            <CardDescription>Active lead and channel counts</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-2">
-                            <div>
-                                <p className="text-xs text-muted-foreground">Active Leads</p>
-                                <p className="text-2xl font-bold">{leads.length}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted-foreground">Channels</p>
-                                <p className="text-2xl font-bold">{channels.length}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-            
-            <Card>
-                <CardHeader>
-                    <CardTitle>Recent Tasks</CardTitle>
-                    <CardDescription>Your 5 most recently created tasks for this project.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {recentTasks.map(task => (
-                            <TaskCard key={task.id} task={task} leads={leads} channels={channels} />
-                        ))}
-                    </div>
-                     {recentTasks.length === 0 && (
-                        <div className="text-center text-muted-foreground py-12">
-                            <p>No recent tasks.</p>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Top Revenue Source</CardTitle>
+                        {topRevenueSource?.type === 'Service' && <FileText className="h-4 w-4 text-muted-foreground" />}
+                        {topRevenueSource?.type === 'Product' && <ShoppingBag className="h-4 w-4 text-muted-foreground" />}
+                        {topRevenueSource?.type === 'Channel' && <Radio className="h-4 w-4 text-muted-foreground" />}
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{topRevenueSource ? topRevenueSource.name : 'N/A'}</div>
+                        <p className="text-xs text-muted-foreground">
+                            {topRevenueSource ? `${formatCurrency(topRevenueSource.revenue, displayCurrency)} in revenue` : 'No income recorded yet'}
+                        </p>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Cash Flow Runway</CardTitle>
+                        <Banknote className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">
+                            {isFinite(cashFlowForecast) ? `${Math.floor(cashFlowForecast)} days` : '∞'}
                         </div>
-                    )}
-                </CardContent>
-            </Card>
+                        <p className="text-xs text-muted-foreground">Based on last 30 days burn rate</p>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     )
 }
