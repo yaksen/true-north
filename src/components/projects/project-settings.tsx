@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { MembersList } from './members-list';
-import { Loader2, Trash2, UserPlus, File, User as UserIcon, Contact, LogOut } from 'lucide-react';
+import { Loader2, Trash2, UserPlus, File, User as UserIcon, Contact, LogOut, CheckCircle, AlertCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,8 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from 
 import { MemberForm } from './member-form';
 import { GoogleAuthProvider, linkWithPopup, unlink } from 'firebase/auth';
 import { storeGoogleTokens, disconnectGoogle } from '@/app/actions/google-link';
+import { testGoogleDriveConnection } from '@/app/actions/google-drive';
+import { testGoogleContactsConnection } from '@/app/actions/google-contacts';
 
 interface ProjectSettingsProps {
   project: Project;
@@ -39,6 +41,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [isTesting, setIsTesting] = useState<'drive' | 'contacts' | null>(null);
   
   const isOwner = user?.uid === project.ownerUid;
 
@@ -112,7 +115,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const handleDisconnect = async (service: 'drive' | 'contacts') => {
     if (!user) return;
     try {
-        await unlinkProvider();
+        // Unlinking is problematic if the same Google account is used for login
+        // await unlinkProvider();
         await disconnectGoogle(project.id, service);
         toast({ title: 'Success', description: `Your Google account has been disconnected from ${service}.`});
         router.refresh();
@@ -121,6 +125,40 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         toast({ variant: 'destructive', title: 'Disconnection Failed', description: error.message });
     }
   };
+  
+  const handleTestConnection = async (service: 'drive' | 'contacts') => {
+    setIsTesting(service);
+    try {
+        let result;
+        if (service === 'drive') {
+            if (!project.googleDriveAccessToken) throw new Error("Not connected to Google Drive");
+            result = await testGoogleDriveConnection(project.googleDriveAccessToken);
+        } else {
+            if (!project.googleContactsAccessToken) throw new Error("Not connected to Google Contacts");
+            result = await testGoogleContactsConnection(project.googleContactsAccessToken);
+        }
+
+        if (result.success) {
+            toast({
+                title: 'Connection Successful',
+                description: result.message,
+                action: <CheckCircle className="text-green-500" />,
+            });
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Connection Test Failed',
+            description: error.message,
+            action: <AlertCircle className="text-white" />,
+        });
+    } finally {
+        setIsTesting(null);
+    }
+  }
+
 
   return (
     <div className="grid gap-6 mt-4 max-w-4xl mx-auto">
@@ -140,21 +178,27 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                 </div>
                  <div className='flex items-center gap-2'>
                     {project.googleContactsRefreshToken ? (
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="outline"><LogOut className='mr-2' />Disconnect</Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>This will disconnect your Google Contacts integration.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDisconnect('contacts')}>Disconnect</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                        <>
+                            <Button variant="outline" onClick={() => handleTestConnection('contacts')} disabled={isTesting === 'contacts'}>
+                                {isTesting === 'contacts' ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : null}
+                                Test Connection
+                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline"><LogOut className='mr-2' />Disconnect</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>This will disconnect your Google Contacts integration.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDisconnect('contacts')}>Disconnect</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </>
                     ) : (
                         <Button onClick={() => handleConnect('contacts')}>Connect</Button>
                     )}
@@ -170,21 +214,27 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                 </div>
                 <div className='flex items-center gap-2'>
                     {project.googleDriveRefreshToken ? (
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="outline"><LogOut className='mr-2' />Disconnect</Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>This will disconnect your Google Drive integration.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDisconnect('drive')}>Disconnect</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                        <>
+                            <Button variant="outline" onClick={() => handleTestConnection('drive')} disabled={isTesting === 'drive'}>
+                               {isTesting === 'drive' ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : null}
+                                Test Connection
+                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline"><LogOut className='mr-2' />Disconnect</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>This will disconnect your Google Drive integration.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDisconnect('drive')}>Disconnect</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </>
                     ) : (
                         <Button onClick={() => handleConnect('drive.file')}>Connect</Button>
                     )}

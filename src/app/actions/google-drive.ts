@@ -145,3 +145,19 @@ export async function uploadFileToDrive(
         };
     }
 }
+
+export async function testGoogleDriveConnection(accessToken: string): Promise<{ success: boolean; message: string; }> {
+    try {
+        const auth = new google.auth.OAuth2();
+        auth.setCredentials({ access_token: accessToken });
+        const drive = google.drive({ version: 'v3', auth });
+        
+        // A simple read-only operation to test the connection
+        await drive.about.get({ fields: 'user' });
+        
+        return { success: true, message: "Google Drive connection is valid." };
+    } catch (error: any) {
+        console.error('Google Drive connection test error:', error);
+        return { success: false, message: error.message || "Failed to connect to Google Drive." };
+    }
+}

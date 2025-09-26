@@ -1,6 +1,7 @@
 
 'use server';
 
+import { google } from 'googleapis';
 import { Lead, Vendor, Partner } from '@/lib/types';
 
 type Contact = Lead | Vendor | Partner;
@@ -13,28 +14,20 @@ interface ServerActionResult {
 
 // 1. Search for a contact by a query (email or phone)
 async function searchContact(query: string, accessToken: string): Promise<any> {
-    const url = `https://people.googleapis.com/v1/people:searchContacts?query=${encodeURIComponent(query)}&readMask=emailAddresses,phoneNumbers`;
-    const response = await fetch(url, {
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Accept': 'application/json',
-        }
+    const people = google.people({ version: 'v1', headers: { 'Authorization': `Bearer ${accessToken}` } });
+    
+    const response = await people.people.searchContacts({
+        query: query,
+        readMask: 'emailAddresses,phoneNumbers'
     });
 
-    if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Google Contacts search error:', errorData);
-        throw new Error(`Failed to search contacts: ${errorData.error?.message || response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.results;
+    return response.data.results;
 }
 
 // 2. Create a contact
 async function createContact(contact: Contact, accessToken: string): Promise<any> {
-    const url = 'https://people.googleapis.com/v1/people:createContact';
-    
+    const people = google.people({ version: 'v1', headers: { 'Authorization': `Bearer ${accessToken}` } });
+
     const contactData = {
         names: [{ givenName: `${contact.name} - ${contact.sku || contact.id}` }],
         ...(contact.email && { emailAddresses: [{ value: contact.email }] }),
@@ -48,23 +41,11 @@ async function createContact(contact: Contact, accessToken: string): Promise<any
         }),
     };
 
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-        },
-        body: JSON.stringify(contactData),
+    const response = await people.people.createContact({
+        requestBody: contactData
     });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Google Contacts creation error:', errorData);
-        throw new Error(`Failed to create contact: ${errorData.error?.message || response.statusText}`);
-    }
-
-    return await response.json();
+    
+    return response.data;
 }
 
 // Main server action
@@ -92,9 +73,30 @@ export async function saveContactToGoogle(contact: Contact, accessToken: string)
         
         // If no contact is found by either, create a new one
         const newContact = await createContact(contact, accessToken);
-        return { success: true, message: `Contact "${newContact.names[0].displayName}" created successfully.`, data: newContact };
+        const displayName = newContact.names?.[0]?.displayName || 'Unknown';
+        return { success: true, message: `Contact "${displayName}" created successfully.`, data: newContact };
 
     } catch (error: any) {
-        return { success: false, message: error.message };
+        console.error('Google Contacts API error:', error.response?.data?.error || error.message);
+        return { success: false, message: error.response?.data?.error?.message || error.message || "An unknown error occurred." };
+    }
+}
+
+export async function testGoogleContactsConnection(accessToken: string): Promise<{ success: boolean; message: string; }> {
+    try {
+        const people = google.people({ version: 'v1', headers: { 'Authorization': `Bearer ${accessToken}` } });
+
+        // A simple read-only operation to test the connection
+        const response = await people.people.get({
+            resourceName: 'people/me',
+            personFields: 'names,emailAddresses',
+        });
+        
+        const name = response.data.names?.[0]?.displayName;
+
+        return { success: true, message: `Successfully connected as ${name}.` };
+    } catch (error: any) {
+        console.error('Google Contacts connection test error:', error);
+        return { success: false, message: error.message || "Failed to connect to Google Contacts." };
     }
 }
