@@ -61,7 +61,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const handleConnect = async (scope: string) => {
     try {
         const url = await getGoogleAuthUrl(project.id, scope);
-        window.location.href = url;
+        // Open in a new pop-up window for a better UX
+        window.open(url, 'google-auth', 'width=500,height=600');
     } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not generate Google auth URL.'});
     }
