@@ -42,48 +42,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (!firebaseUser) {
+    let unsubscribeProfile: Unsubscribe | undefined;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        
+        // Unsubscribe from previous profile listener if it exists
+        if (unsubscribeProfile) unsubscribeProfile();
+
+        unsubscribeProfile = onSnapshot(userRef, async (userSnap) => {
+          if (userSnap.exists()) {
+            setUserProfile(userSnap.data() as UserProfile);
+          } else {
+            // Create a new profile if it doesn't exist
+            const profile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt' | 'lastLogin'> = {
+              email: firebaseUser.email!,
+              role: 'member',
+              name: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              projects: [],
+            };
+            await setDoc(userRef, { 
+              ...profile, 
+              id: firebaseUser.uid,
+              createdAt: serverTimestamp(), 
+              updatedAt: serverTimestamp(),
+              lastLogin: serverTimestamp() 
+            });
+            // The onSnapshot will trigger again with the new data, setting the userProfile
+          }
+          setLoading(false);
+        });
+      } else {
+        setUser(null);
         setUserProfile(null);
         setLoading(false);
       }
     });
-    return () => unsubscribe();
-  }, []);
 
-  useEffect(() => {
-    let unsubscribe: Unsubscribe | undefined;
-    if (user) {
-      const userRef = doc(db, 'users', user.uid);
-      unsubscribe = onSnapshot(userRef, async (userSnap) => {
-        if (userSnap.exists()) {
-          setUserProfile(userSnap.data() as UserProfile);
-        } else {
-          // Create a new profile if it doesn't exist
-          const profile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt' | 'lastLogin'> = {
-            email: user.email!,
-            role: 'member',
-            name: user.displayName,
-            photoURL: user.photoURL,
-            projects: [],
-          };
-          await setDoc(userRef, { 
-            ...profile, 
-            id: user.uid,
-            createdAt: serverTimestamp(), 
-            updatedAt: serverTimestamp(),
-            lastLogin: serverTimestamp() 
-          });
-          setUserProfile(profile as UserProfile);
-        }
-        setLoading(false);
-      });
-    } else {
-      setLoading(false);
-    }
-    return () => unsubscribe && unsubscribe();
-  }, [user]);
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+      }
+    };
+  }, []);
 
   const updateUserProfile = async (updates: Partial<UserProfile>) => {
     if (!user || !auth.currentUser) throw new Error("Not authenticated");
@@ -125,15 +130,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateUserProfile,
   };
 
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={value}>
-      {loading && !user ? (
-        <div className="flex h-screen w-full items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        children
-      )}
+      {children}
     </AuthContext.Provider>
   );
 }
