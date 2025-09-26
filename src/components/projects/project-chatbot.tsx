@@ -227,8 +227,7 @@ const ChatInterface = ({
     };
   
     return (
-      <div className="flex flex-col h-full">
-        <CardContent className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
+      <CardContent className="flex flex-col flex-1 p-4 gap-4 overflow-hidden">
         <ScrollArea className="flex-1 pr-4" ref={scrollAreaRef}>
             <div className="space-y-6">
               {messages.map((message) => (
@@ -272,8 +271,7 @@ const ChatInterface = ({
               <Send className="h-4 w-4" />
             </Button>
           </form>
-        </CardContent>
-      </div>
+      </CardContent>
     );
 }
 
@@ -312,7 +310,7 @@ export function ProjectChatbot(props: ProjectChatbotProps) {
       }
 
     return (
-        <div className="flex flex-col h-full max-h-[calc(100vh-18rem)]">
+        <div className="flex flex-col flex-1">
             <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
                 <CardTitle className="text-lg">TrueNorth AI</CardTitle>
                 <div className='flex items-center'>
