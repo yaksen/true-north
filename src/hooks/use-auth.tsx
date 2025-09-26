@@ -46,6 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // Just set the basic user for now to speed up login
+        setUser(firebaseUser);
+        
+        // Fetch profile in the background
         const userRef = doc(db, 'users', firebaseUser.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
@@ -77,10 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateUserProfile = async (updates: Partial<UserProfile>) => {
-    if (!user) throw new Error("Not authenticated");
+    if (!user || !auth.currentUser) throw new Error("Not authenticated");
     
     // Update Firebase Auth profile
-    await updateProfile(auth.currentUser!, {
+    await updateProfile(auth.currentUser, {
       displayName: updates.name,
       photoURL: updates.photoURL,
     });
@@ -104,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = () => {
     const provider = new GoogleAuthProvider();
+    // Do not add any custom scopes or parameters
     return signInWithPopup(auth, provider);
   };
 
@@ -123,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {loading ? (
+      {loading && !user ? (
         <div className="flex h-screen w-full items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>

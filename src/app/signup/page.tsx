@@ -20,7 +20,6 @@ import { CrmSettings } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 
-
 const signupSchema = z
   .object({
     email: z.string().email({ message: 'Invalid email address' }),
@@ -89,7 +88,6 @@ export default function SignupPage() {
             }
         } catch (error) {
             console.error("Error fetching signup status:", error);
-            // Default to enabled if settings can't be fetched
             setIsSignupEnabled(true);
         } finally {
             setLoadingSettings(false);
@@ -111,7 +109,7 @@ export default function SignupPage() {
         toast({
             variant: 'destructive',
             title: 'Signups Disabled',
-            description: 'New user registration is currently disabled by the administrator.',
+            description: 'New user registration is currently disabled.',
         });
         return;
     }
@@ -140,17 +138,13 @@ export default function SignupPage() {
         toast({
             variant: 'destructive',
             title: 'Signups Disabled',
-            description: 'New user registration is currently disabled by the administrator.',
+            description: 'New user registration is currently disabled.',
         });
         return;
     }
     setIsSubmitting(true);
     try {
       await signInWithGoogle();
-      toast({
-        title: 'Signup Successful',
-        description: "Welcome!",
-      });
       router.push('/dashboard');
     } catch (error: any) {
       toast({
@@ -188,7 +182,7 @@ export default function SignupPage() {
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Signups Disabled</AlertTitle>
                 <AlertDescription>
-                    New user registration is currently not available. Please contact an administrator if you believe this is an error.
+                    New user registration is not available. Please contact an administrator.
                 </AlertDescription>
             </Alert>
         ) : (

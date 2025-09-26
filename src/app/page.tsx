@@ -76,10 +76,6 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await signInWithEmail(data.email, data.password);
-      toast({
-        title: 'Login Successful',
-        description: "Welcome back!",
-      });
       router.push('/dashboard');
     } catch (error: any) {
       toast({
@@ -96,10 +92,6 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await signInWithGoogle();
-      toast({
-        title: 'Login Successful',
-        description: "Welcome back!",
-      });
       router.push('/dashboard');
     } catch (error: any) {
       toast({
@@ -112,7 +104,7 @@ export default function LoginPage() {
     }
   }
 
-  if (loading || (!loading && user)) {
+  if (loading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
