@@ -18,22 +18,7 @@ import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Dialog, DialogContent } from '../ui/dialog';
 
-interface ProjectChatbotProps {
-  project: Project;
-  tasks: Task[];
-  finances: Finance[];
-  leads: Lead[];
-  channels: Channel[];
-  vendors: Vendor[];
-  partners: Partner[];
-  services: Service[];
-  products: Product[];
-  packages: Package[];
-  invoices: Invoice[];
-  notes: Note[];
-}
-
-interface ChatMessage {
+interface ChatMessageProps {
   id: string;
   sender: 'user' | 'ai';
   text: string;
@@ -42,12 +27,45 @@ interface ChatMessage {
   createdAt: Timestamp | Date;
 }
 
+const getInitials = (nameOrEmail: string | null | undefined) => {
+    if (!nameOrEmail) return 'U';
+    const nameParts = nameOrEmail.split(' ');
+    if (nameParts.length > 1 && nameParts[0] && nameParts[1]) {
+      return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
+    }
+    return nameOrEmail[0].toUpperCase();
+};
+
+const ChatMessage: React.FC<{ message: ChatMessageProps, user: any }> = ({ message, user }) => {
+    const isUser = message.sender === 'user';
+    return (
+        <div className={`flex items-start gap-3 ${isUser ? 'justify-end' : ''}`}>
+            {!isUser && (
+                <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
+                    <AvatarFallback><Bot className="h-5 w-5" /></AvatarFallback>
+                </Avatar>
+            )}
+            <div className={`flex flex-col gap-1.5 rounded-xl px-4 py-3 text-sm ${ isUser ? 'bg-primary text-primary-foreground' : 'bg-muted' }`}>
+                {message.image && <Image src={message.image} alt="user upload" width={200} height={200} className='rounded-md mb-2' />}
+                {message.audio && <audio src={message.audio} controls className='w-full h-10 mb-2' />}
+                <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: message.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>').replace(/`([^`]+)`/g, '<code>$1</code>') }} />
+            </div>
+            {isUser && (
+                <Avatar className="h-8 w-8">
+                    <AvatarFallback>{getInitials(user?.profile?.name ?? user?.email)}</AvatarFallback>
+                </Avatar>
+            )}
+        </div>
+    );
+};
+
+
 const ChatInterface = ({
     project, tasks, finances, leads, channels, vendors, partners, services, products, packages, invoices, notes, isFullscreen = false 
 }: ProjectChatbotProps & { isFullscreen?: boolean }) => {
     const { user } = useAuth();
     const { toast } = useToast();
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [messages, setMessages] = useState<ChatMessageProps[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -65,9 +83,9 @@ const ChatInterface = ({
     useEffect(() => {
       const q = query(messagesCollectionRef, orderBy('createdAt', 'asc'));
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const msgs: ChatMessage[] = [];
+        const msgs: ChatMessageProps[] = [];
         querySnapshot.forEach((doc) => {
-          msgs.push({ id: doc.id, ...doc.data() } as ChatMessage);
+          msgs.push({ id: doc.id, ...doc.data() } as ChatMessageProps);
         });
         setMessages(msgs);
       });
@@ -200,38 +218,13 @@ const ChatInterface = ({
       }
     };
   
-    const getInitials = (nameOrEmail: string | null | undefined) => {
-      if (!nameOrEmail) return 'U';
-      const nameParts = nameOrEmail.split(' ');
-      if (nameParts.length > 1 && nameParts[0] && nameParts[1]) {
-        return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
-      }
-      return nameOrEmail[0].toUpperCase();
-    }
-  
     return (
       <div className="flex flex-col h-full">
         <CardContent className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
         <ScrollArea className="flex-1 pr-4" ref={scrollAreaRef}>
             <div className="space-y-6">
               {messages.map((message) => (
-                <div key={message.id} className={`flex items-start gap-3 ${message.sender === 'user' ? 'justify-end' : ''}`}>
-                  {message.sender === 'ai' && (
-                    <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-                      <AvatarFallback><Bot className="h-5 w-5" /></AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div className={`rounded-xl px-4 py-3 text-sm ${ message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted' }`}>
-                    {message.image && <Image src={message.image} alt="user upload" width={200} height={200} className='rounded-md mb-2' />}
-                    {message.audio && <audio src={message.audio} controls className='w-full h-10 mb-2' />}
-                    <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: message.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>').replace(/`([^`]+)`/g, '<code>$1</code>') }} />
-                  </div>
-                   {message.sender === 'user' && (
-                    <Avatar className="h-8 w-8">
-                       <AvatarFallback>{getInitials(user?.profile?.name ?? user?.email)}</AvatarFallback>
-                    </Avatar>
-                  )}
-                </div>
+                 <ChatMessage key={message.id} message={message} user={user} />
               ))}
               {isLoading && (
                 <div className="flex items-start gap-3">
@@ -274,6 +267,21 @@ const ChatInterface = ({
         </CardContent>
       </div>
     );
+}
+
+interface ProjectChatbotProps {
+    project: Project;
+    tasks: Task[];
+    finances: Finance[];
+    leads: Lead[];
+    channels: Channel[];
+    vendors: Vendor[];
+    partners: Partner[];
+    services: Service[];
+    products: Product[];
+    packages: Package[];
+    invoices: Invoice[];
+    notes: Note[];
 }
 
 export function ProjectChatbot(props: ProjectChatbotProps) {
