@@ -77,7 +77,7 @@ export function ProjectDashboard({ project, tasks, finances, channels }: Project
 
     return (
         <div className="grid gap-6 mt-4">
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader>
                         <CardTitle>Profit / Loss</CardTitle>
@@ -113,36 +113,6 @@ export function ProjectDashboard({ project, tasks, finances, channels }: Project
                             <p className="text-xs text-muted-foreground">Channels</p>
                             <p className="text-2xl font-bold">{channels.length}</p>
                         </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Quick Actions</CardTitle>
-                        <CardDescription>Streamline your workflow</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-2">
-                         <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
-                            <DialogTrigger asChild>
-                                <Button size="sm" variant="outline"><PlusCircle className="mr-2"/> Add Task</Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-4xl">
-                                <DialogHeader>
-                                    <DialogTitle>Add New Task</DialogTitle>
-                                </DialogHeader>
-                                <TaskForm projectId={project.id} leads={leads} closeForm={() => setIsTaskFormOpen(false)} />
-                            </DialogContent>
-                        </Dialog>
-                        <Dialog open={isFinanceFormOpen} onOpenChange={setIsFinanceFormOpen}>
-                            <DialogTrigger asChild>
-                                <Button size="sm" variant="outline"><PlusCircle className="mr-2"/> Log Finance</Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-4xl">
-                                <DialogHeader>
-                                    <DialogTitle>Log Financial Record</DialogTitle>
-                                </DialogHeader>
-                                <FinanceForm project={project} closeForm={() => setIsFinanceFormOpen(false)} />
-                            </DialogContent>
-                        </Dialog>
                     </CardContent>
                 </Card>
             </div>
