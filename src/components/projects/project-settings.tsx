@@ -79,7 +79,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const handleConnect = async (type: 'drive' | 'contacts') => {
     const provider = new GoogleAuthProvider();
     if (type === 'drive') {
-      provider.addScope('https://www.googleapis.com/auth/drive');
+      provider.addScope('https://www.googleapis.com/auth/drive.file');
     } else {
       provider.addScope('https://www.googleapis.com/auth/contacts');
     }
