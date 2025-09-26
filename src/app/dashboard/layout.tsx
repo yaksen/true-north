@@ -63,7 +63,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { writeBatch, doc, collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { VaultFolder, VaultItem, Task, Habit, HabitLog, DiaryEntry, PersonalWallet, WalletTransaction } from '@/lib/types';
+import type { VaultFolder, VaultItem, Task, Habit, HabitLog, DiaryEntry, PersonalWallet, WalletTransaction, PersonalExpense } from '@/lib/types';
 import { VaultClient } from '@/components/vault/vault-client';
 import { PersonalChatbot } from '@/components/dashboard/personal-chatbot';
 
@@ -90,6 +90,7 @@ export default function DashboardLayout({
   const [habits, setHabits] = useState<Habit[]>([]);
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
   const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
+  const [personalExpenses, setPersonalExpenses] = useState<PersonalExpense[]>([]);
 
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -119,6 +120,9 @@ export default function DashboardLayout({
     }));
     unsubs.push(onSnapshot(query(collection(db, 'diaryEntries'), where('userId', '==', user.uid)), (snapshot) => {
         setDiaryEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DiaryEntry)))
+    }));
+    unsubs.push(onSnapshot(query(collection(db, 'personalExpenses'), where('userId', '==', user.uid)), (snapshot) => {
+        setPersonalExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PersonalExpense)))
     }));
     unsubs.push(onSnapshot(query(collection(db, 'personalWallets'), where('userId', '==', user.uid)), (snapshot) => {
         if (!snapshot.empty) {
@@ -262,6 +266,7 @@ export default function DashboardLayout({
                             wallet={personalWallet}
                             walletTransactions={walletTransactions}
                             vaultItems={vaultItems}
+                            personalExpenses={personalExpenses}
                         />
                     )}
                 </div>

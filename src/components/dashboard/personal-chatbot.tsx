@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { VaultItem, PersonalWallet, WalletTransaction, DiaryEntry, Task, Habit, HabitLog } from '@/lib/types';
+import { VaultItem, PersonalWallet, WalletTransaction, DiaryEntry, Task, Habit, HabitLog, PersonalExpense } from '@/lib/types';
 import { CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -25,6 +25,7 @@ interface PersonalChatbotProps {
   wallet: PersonalWallet | null;
   walletTransactions: WalletTransaction[];
   vaultItems: VaultItem[];
+  personalExpenses: PersonalExpense[];
 }
 
 interface ChatMessage {
@@ -44,6 +45,7 @@ export function PersonalChatbot({
   wallet,
   walletTransactions,
   vaultItems,
+  personalExpenses,
 }: PersonalChatbotProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -181,7 +183,8 @@ export function PersonalChatbot({
         diaryEntries,
         wallet: wallet || undefined,
         walletTransactions,
-        vaultItems
+        vaultItems,
+        personalExpenses,
       };
 
       const result = await personalChat(chatInput);

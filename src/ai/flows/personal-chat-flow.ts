@@ -18,6 +18,7 @@ import {
   Task,
   Habit,
   HabitLog,
+  PersonalExpense,
 } from '@/lib/types';
 
 const PersonalChatInputSchema = z.object({
@@ -31,6 +32,7 @@ const PersonalChatInputSchema = z.object({
   wallet: z.custom<PersonalWallet>().optional().describe('The user\'s personal wallet object.'),
   walletTransactions: z.array(z.custom<WalletTransaction>()).describe('A list of all transactions in the user\'s wallet.'),
   vaultItems: z.array(z.custom<VaultItem>()).describe('A list of all items in the user\'s personal vault.'),
+  personalExpenses: z.array(z.custom<PersonalExpense>()).describe("A list of the user's personal expenses."),
 });
 export type PersonalChatInput = z.infer<typeof PersonalChatInputSchema>;
 
@@ -53,6 +55,7 @@ You have access to the following data about the user:
 - Personal Wallet: {{{json wallet}}}
 - Wallet Transactions: {{{json walletTransactions}}}
 - Personal Vault Items: {{{json vaultItems}}}
+- Personal Expenses: {{{json personalExpenses}}}
 
 Analyze the user's message and the provided data to give a relevant and accurate response. If the user asks for information not present in the data, state that you do not have access to that information.
 
