@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { ChannelsToolbar } from "./channels-toolbar";
 import { ChannelCard } from "./channel-card";
 import { ScrollArea } from "../ui/scroll-area";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 interface ProjectChannelsProps {
@@ -30,8 +32,22 @@ export function ProjectChannels({ project, channels, leads }: ProjectChannelsPro
         search: ''
     });
 
+    const handleStar = async (id: string, starred: boolean) => {
+        try {
+            await updateDoc(doc(db, 'channels', id), { starred });
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
+        }
+    }
+
     const filteredChannels = useMemo(() => {
-        return channels.filter(channel => {
+        const sortedChannels = [...channels].sort((a, b) => {
+            if (a.starred && !b.starred) return -1;
+            if (!a.starred && b.starred) return 1;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+
+        return sortedChannels.filter(channel => {
             const statusMatch = filters.status === 'all' || channel.status === filters.status;
             const typeMatch = filters.type === 'all' || channel.type === filters.type;
             const searchMatch = !filters.search || channel.name.toLowerCase().includes(filters.search.toLowerCase());
@@ -73,6 +89,7 @@ export function ProjectChannels({ project, channels, leads }: ProjectChannelsPro
                                     channel={channel}
                                     project={project}
                                     leads={leads}
+                                    onStar={handleStar}
                                 />
                             ))}
                         </div>

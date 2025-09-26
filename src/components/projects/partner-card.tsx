@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -22,6 +23,7 @@ import { saveContactToGoogle } from '@/app/actions/google-contacts';
 interface PartnerCardDependencies {
     project: Project;
     channels: Channel[];
+    onStar: (id: string, starred: boolean) => void;
 }
 
 interface PartnerCardProps {
@@ -35,7 +37,7 @@ export function PartnerCard({ partner, dependencies }: PartnerCardProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [isSavingToGoogle, setIsSavingToGoogle] = useState(false);
-  const { project, channels } = dependencies;
+  const { project, channels, onStar } = dependencies;
 
   const handleDelete = async () => {
     if (!user) return;
@@ -49,11 +51,7 @@ export function PartnerCard({ partner, dependencies }: PartnerCardProps) {
   };
   
   const handleStar = async (starred: boolean) => {
-    try {
-        await updateDoc(doc(db, 'partners', partner.id), { starred });
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
-    }
+    onStar(partner.id, starred);
   }
 
   const handleSaveToContacts = async () => {
@@ -88,36 +86,36 @@ export function PartnerCard({ partner, dependencies }: PartnerCardProps) {
         </CardContent>
         <CardFooter className="flex-col items-start gap-4">
             {channel && <Badge variant="secondary">From: {channel.name}</Badge>}
-            <div className='flex justify-between items-center w-full pt-2'>
+            <div className='w-full pt-2'>
                 <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                     <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">Edit</Button>
+                        <Button variant="outline" size="sm" className="w-full">Edit</Button>
                     </DialogTrigger>
                     <DialogContent className='max-w-4xl'>
                         <DialogHeader><DialogTitle>Edit Partner</DialogTitle></DialogHeader>
                         <PartnerForm partner={partner} projectId={project.id} channels={channels} closeForm={() => setIsEditOpen(false)} />
                     </DialogContent>
                 </Dialog>
-                <div className='flex items-center'>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStar(!partner.starred)}>
-                        <Star className={cn("h-4 w-4", partner.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsQrOpen(true)}>
-                        <QrCode className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveToContacts} disabled={isSavingToGoogle}>
-                    {isSavingToGoogle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Contact className="h-4 w-4" />}
-                    </Button>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction></AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
+            </div>
+             <div className='flex items-center w-full justify-center'>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStar(!partner.starred)}>
+                    <Star className={cn("h-4 w-4", partner.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsQrOpen(true)}>
+                    <QrCode className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveToContacts} disabled={isSavingToGoogle}>
+                {isSavingToGoogle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Contact className="h-4 w-4" />}
+                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction></AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </CardFooter>
         </Card>

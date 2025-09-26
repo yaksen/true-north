@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -13,6 +14,8 @@ import { saveContactToGoogle } from '@/app/actions/google-contacts';
 import { VendorsToolbar } from './vendors-toolbar';
 import { VendorCard } from './vendor-card';
 import { ScrollArea } from '../ui/scroll-area';
+import { updateDoc, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface ProjectVendorsProps {
   project: Project;
@@ -29,8 +32,22 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
     search: '',
   });
 
+  const handleStar = async (id: string, starred: boolean) => {
+    try {
+        await updateDoc(doc(db, 'vendors', id), { starred });
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
+    }
+  }
+
   const filteredVendors = useMemo(() => {
-    return vendors.filter(v => {
+    const sortedVendors = [...vendors].sort((a, b) => {
+        if (a.starred && !b.starred) return -1;
+        if (!a.starred && b.starred) return 1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return sortedVendors.filter(v => {
         const serviceMatch = !filters.serviceType || v.serviceType.toLowerCase().includes(filters.serviceType.toLowerCase());
         const searchMatch = !filters.search ||
             v.name.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -107,7 +124,7 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
                         <VendorCard 
                             key={vendor.id}
                             vendor={vendor}
-                            dependencies={{ project, channels }}
+                            dependencies={{ project, channels, onStar: handleStar }}
                         />
                     ))}
                 </div>

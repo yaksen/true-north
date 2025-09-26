@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -31,8 +32,22 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
     search: '',
   });
 
+  const handleStar = async (id: string, starred: boolean) => {
+    try {
+        await updateDoc(doc(db, 'partners', id), { starred });
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
+    }
+  }
+
   const filteredPartners = useMemo(() => {
-    return partners.filter(p => {
+    const sortedPartners = [...partners].sort((a, b) => {
+        if (a.starred && !b.starred) return -1;
+        if (!a.starred && b.starred) return 1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return sortedPartners.filter(p => {
         const roleMatch = !filters.role || p.roleInProject.toLowerCase().includes(filters.role.toLowerCase());
         const searchMatch = !filters.search ||
             p.name.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -109,7 +124,7 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
                         <PartnerCard 
                             key={partner.id}
                             partner={partner}
-                            dependencies={{ project, channels }}
+                            dependencies={{ project, channels, onStar: handleStar }}
                         />
                     ))}
                 </div>
