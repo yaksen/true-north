@@ -1,5 +1,4 @@
 
-
 import { CurrencyCode } from "@/context/CurrencyContext";
 
 export type UserRole = 'admin' | 'manager' | 'member';
@@ -84,13 +83,21 @@ export interface Task {
     updatedAt: Date;
 }
 
-export interface TaskTemplate {
-    id: string;
-    projectId: string;
+export interface SubTask {
+    id: string; // Unique ID for form key purposes
     title: string;
     description?: string;
     slot: TaskTemplateSlot;
     assigneeUids: string[];
+    channelId?: string;
+}
+
+export interface TaskTemplate {
+    id: string;
+    projectId: string;
+    name: string;
+    description?: string;
+    tasks: SubTask[];
     daysOfWeek: number[]; // 0 for Sunday, 1 for Monday, etc.
     starred?: boolean;
     createdAt: Date;

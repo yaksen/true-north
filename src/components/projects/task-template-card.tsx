@@ -2,13 +2,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { TaskTemplate, Project, UserProfile } from '@/lib/types';
+import type { TaskTemplate, Project, UserProfile, SubTask } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { TaskTemplateForm } from './task-template-form';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, ListChecks, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { deleteDoc, doc, getDocs, collection, query, where } from 'firebase/firestore';
@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 interface TaskTemplateCardProps {
   template: TaskTemplate;
   project: Project;
+  channels: any[];
 }
 
 const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -32,22 +33,25 @@ const getInitials = (name: string) => {
     return name[0]?.toUpperCase() ?? 'U';
 }
 
-export function TaskTemplateCard({ template, project }: TaskTemplateCardProps) {
+export function TaskTemplateCard({ template, project, channels }: TaskTemplateCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [memberProfiles, setMemberProfiles] = useState<UserProfile[]>([]);
   
+  const allAssigneeUids = template.tasks.flatMap(t => t.assigneeUids);
+  const uniqueAssigneeUids = [...new Set(allAssigneeUids)];
+
   useEffect(() => {
     const fetchMembers = async () => {
-      if (template.assigneeUids.length === 0) return;
+      if (uniqueAssigneeUids.length === 0) return;
       const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('id', 'in', template.assigneeUids));
+      const q = query(usersRef, where('id', 'in', uniqueAssigneeUids));
       const snapshot = await getDocs(q);
       setMemberProfiles(snapshot.docs.map(doc => doc.data() as UserProfile));
     };
     fetchMembers();
-  }, [template.assigneeUids]);
+  }, [template.tasks]);
 
 
   const handleDelete = async () => {
@@ -64,15 +68,15 @@ export function TaskTemplateCard({ template, project }: TaskTemplateCardProps) {
     <Card className="flex flex-col">
         <CardHeader>
             <div className="flex justify-between items-start">
-                <CardTitle className="truncate">{template.title}</CardTitle>
+                <CardTitle className="truncate">{template.name}</CardTitle>
                 <div className='flex items-center'>
                     <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                         <DialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
                         </DialogTrigger>
-                        <DialogContent className='max-w-2xl'>
+                        <DialogContent className='max-w-4xl'>
                             <DialogHeader><DialogTitle>Edit Task Template</DialogTitle></DialogHeader>
-                            <TaskTemplateForm template={template} projectId={project.id} members={project.memberUids} closeForm={() => setIsEditOpen(false)} />
+                            <TaskTemplateForm template={template} projectId={project.id} members={project.members} channels={channels} closeForm={() => setIsEditOpen(false)} />
                         </DialogContent>
                     </Dialog>
                     <AlertDialog>
@@ -96,10 +100,17 @@ export function TaskTemplateCard({ template, project }: TaskTemplateCardProps) {
                     </Badge>
                 ))}
             </div>
-             <Badge variant="secondary" className="capitalize">{template.slot}</Badge>
+             <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                <ListChecks className='h-4 w-4'/> 
+                <span>{template.tasks.length} sub-task(s)</span>
+             </div>
+             <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                <User className='h-4 w-4'/> 
+                <span>Assigned to {uniqueAssigneeUids.length} member(s)</span>
+             </div>
         </CardContent>
         <CardFooter>
-            <div className="flex -space-x-2 overflow-hidden">
+             <div className="flex -space-x-2 overflow-hidden">
                 <TooltipProvider>
                 {memberProfiles.map(member => (
                     <Tooltip key={member.id}>

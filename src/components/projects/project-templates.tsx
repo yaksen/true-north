@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useMemo, useState } from "react";
-import { Project, Task, TaskTemplate, UserProfile } from "@/lib/types";
+import { Project, Task, TaskTemplate, UserProfile, Channel } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
@@ -19,12 +20,12 @@ interface ProjectTemplatesProps {
     project: Project;
     templates: TaskTemplate[];
     tasks: Task[];
+    channels: Channel[];
 }
 
-export function ProjectTemplates({ project, templates, tasks }: ProjectTemplatesProps) {
+export function ProjectTemplates({ project, templates, tasks, channels }: ProjectTemplatesProps) {
     const { toast } = useToast();
     const [isTemplateFormOpen, setIsTemplateFormOpen] = useState(false);
-    const [slotFilter, setSlotFilter] = useState<'all' | 'morning' | 'midday' | 'night'>('all');
     const [dayFilter, setDayFilter] = useState<'all' | string>('all');
     const [assigneeFilter, setAssigneeFilter] = useState<'all' | string>('all');
     const [memberProfiles, setMemberProfiles] = useState<UserProfile[]>([]);
@@ -42,24 +43,14 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
     
     const filteredTemplates = useMemo(() => {
         return templates.filter(template => {
-            const slotMatch = slotFilter === 'all' || template.slot === slotFilter;
             const dayMatch = dayFilter === 'all' || template.daysOfWeek.includes(Number(dayFilter));
-            const assigneeMatch = assigneeFilter === 'all' || template.assigneeUids.includes(assigneeFilter);
-            return slotMatch && dayMatch && assigneeMatch;
+            const assigneeMatch = assigneeFilter === 'all' || template.tasks.some(t => t.assigneeUids.includes(assigneeFilter));
+            return dayMatch && assigneeMatch;
         });
-    }, [templates, slotFilter, dayFilter, assigneeFilter]);
+    }, [templates, dayFilter, assigneeFilter]);
 
     const Toolbar = () => (
         <div className="flex items-center gap-2 mb-4">
-            <Select value={slotFilter} onValueChange={(value) => setSlotFilter(value as any)}>
-                <SelectTrigger className="w-36 h-9 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Slots</SelectItem>
-                    <SelectItem value="morning">Morning</SelectItem>
-                    <SelectItem value="midday">Midday</SelectItem>
-                    <SelectItem value="night">Night</SelectItem>
-                </SelectContent>
-            </Select>
             <Select value={dayFilter} onValueChange={(value) => setDayFilter(value)}>
                 <SelectTrigger className="w-36 h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -82,8 +73,8 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
                     ))}
                 </SelectContent>
             </Select>
-            {(slotFilter !== 'all' || dayFilter !== 'all' || assigneeFilter !== 'all') && (
-                 <Button variant="ghost" size="sm" onClick={() => { setSlotFilter('all'); setDayFilter('all'); setAssigneeFilter('all'); }}>
+            {(dayFilter !== 'all' || assigneeFilter !== 'all') && (
+                 <Button variant="ghost" size="sm" onClick={() => { setDayFilter('all'); setAssigneeFilter('all'); }}>
                     Clear Filters
                 </Button>
             )}
@@ -104,11 +95,11 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
                                 <DialogTrigger asChild>
                                     <Button size="sm"><PlusCircle className="mr-2"/> New Template</Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-2xl">
+                                <DialogContent className="max-w-4xl">
                                     <DialogHeader>
                                         <DialogTitle>Create New Task Template</DialogTitle>
                                     </DialogHeader>
-                                    <TaskTemplateForm projectId={project.id} members={project.memberUids} closeForm={() => setIsTemplateFormOpen(false)} />
+                                    <TaskTemplateForm projectId={project.id} members={project.members} channels={channels} closeForm={() => setIsTemplateFormOpen(false)} />
                                 </DialogContent>
                             </Dialog>
                         </div>
@@ -123,6 +114,7 @@ export function ProjectTemplates({ project, templates, tasks }: ProjectTemplates
                                     key={template.id}
                                     template={template}
                                     project={project}
+                                    channels={channels}
                                 />
                             ))}
                         </div>
