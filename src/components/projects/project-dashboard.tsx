@@ -100,8 +100,7 @@ export function ProjectDashboard({ project, tasks, finances, channels, leads, se
         const leadConversionRate = totalRelevantLeads > 0 ? (convertedLeads / totalRelevantLeads) * 100 : 0;
 
         // Top Revenue Source
-        let topSource: { name: string; type: string; revenue: number } | null = null;
-        // This is a simplified version; a real implementation might look at invoice line items
+        let topRevenueSource: { name: string; type: string; revenue: number } | null = null;
         const sourceRevenues: { [key: string]: { name: string; type: string; revenue: number } } = {};
         finances.filter(f => f.type === 'income').forEach(f => {
             const key = f.category || 'Unknown';
@@ -112,7 +111,7 @@ export function ProjectDashboard({ project, tasks, finances, channels, leads, se
         });
 
         if (Object.keys(sourceRevenues).length > 0) {
-            topSource = Object.values(sourceRevenues).sort((a, b) => b.revenue - a.revenue)[0];
+            topRevenueSource = Object.values(sourceRevenues).sort((a, b) => b.revenue - a.revenue)[0];
         }
 
         // Overdue Tasks
