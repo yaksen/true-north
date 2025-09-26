@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { MembersList } from './members-list';
-import { Loader2, Trash2, UserPlus, File, User as UserIcon, Contact } from 'lucide-react';
+import { Loader2, Trash2, UserPlus, File, User as UserIcon, Contact, LogOut } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,15 +26,15 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { MemberForm } from './member-form';
-import { GoogleAuthProvider, linkWithPopup } from 'firebase/auth';
-import { storeGoogleTokens } from '@/app/actions/google-link';
+import { GoogleAuthProvider, linkWithPopup, unlink } from 'firebase/auth';
+import { storeGoogleTokens, disconnectGoogle } from '@/app/actions/google-link';
 
 interface ProjectSettingsProps {
   project: Project;
 }
 
 export function ProjectSettings({ project }: ProjectSettingsProps) {
-  const { user } = useAuth();
+  const { user, unlinkProvider } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -67,7 +68,6 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     const provider = new GoogleAuthProvider();
     provider.addScope(`https://www.googleapis.com/auth/${scope}`);
     
-    // This configuration forces Google to issue a refresh token every time.
     provider.setCustomParameters({
         access_type: 'offline',
         prompt: 'consent'
@@ -81,8 +81,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
             throw new Error('Could not get credential from result.');
         }
         
-        // This is a temporary server-side auth code.
-        // @ts-ignore - 'serverAuthCode' is not in the type def but exists
+        // @ts-ignore
         const serverAuthCode = credential.serverAuthCode;
 
         if (!serverAuthCode) {
@@ -110,6 +109,19 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     }
   };
 
+  const handleDisconnect = async (service: 'drive' | 'contacts') => {
+    if (!user) return;
+    try {
+        await unlinkProvider();
+        await disconnectGoogle(project.id, service);
+        toast({ title: 'Success', description: `Your Google account has been disconnected from ${service}.`});
+        router.refresh();
+    } catch (error: any) {
+        console.error("Google Disconnect Error:", error);
+        toast({ variant: 'destructive', title: 'Disconnection Failed', description: error.message });
+    }
+  };
+
   return (
     <div className="grid gap-6 mt-4 max-w-4xl mx-auto">
       <Card>
@@ -126,9 +138,27 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                         <p className='text-sm text-muted-foreground'>Sync leads, vendors, and partners.</p>
                     </div>
                 </div>
-                 <Button onClick={() => handleConnect('contacts')} disabled={!!project.googleContactsRefreshToken}>
-                    {project.googleContactsRefreshToken ? 'Connected' : 'Connect'}
-                </Button>
+                 <div className='flex items-center gap-2'>
+                    {project.googleContactsRefreshToken ? (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="outline"><LogOut className='mr-2' />Disconnect</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>This will disconnect your Google Contacts integration.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDisconnect('contacts')}>Disconnect</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    ) : (
+                        <Button onClick={() => handleConnect('contacts')}>Connect</Button>
+                    )}
+                 </div>
             </div>
              <div className='flex items-center justify-between p-4 border rounded-lg'>
                 <div className='flex items-center gap-3'>
@@ -138,9 +168,27 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                         <p className='text-sm text-muted-foreground'>Upload & manage project files.</p>
                     </div>
                 </div>
-                 <Button onClick={() => handleConnect('drive.file')} disabled={!!project.googleDriveRefreshToken}>
-                    {project.googleDriveRefreshToken ? 'Connected' : 'Connect'}
-                </Button>
+                <div className='flex items-center gap-2'>
+                    {project.googleDriveRefreshToken ? (
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="outline"><LogOut className='mr-2' />Disconnect</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>This will disconnect your Google Drive integration.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDisconnect('drive')}>Disconnect</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    ) : (
+                        <Button onClick={() => handleConnect('drive.file')}>Connect</Button>
+                    )}
+                 </div>
             </div>
         </CardContent>
       </Card>

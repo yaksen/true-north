@@ -1,3 +1,4 @@
+
 'use server';
 
 import { google } from 'googleapis';
@@ -46,4 +47,33 @@ export async function storeGoogleTokens(
     console.error('Error storing Google tokens:', error.message);
     return { success: false, error: 'Failed to retrieve and store tokens.' };
   }
+}
+
+export async function disconnectGoogle(
+    projectId: string,
+    service: 'drive' | 'contacts'
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const projectRef = doc(db, 'projects', projectId);
+        let updates: any = {};
+
+        if (service === 'drive') {
+            updates = {
+                googleDriveAccessToken: null,
+                googleDriveRefreshToken: null,
+            };
+        } else if (service === 'contacts') {
+            updates = {
+                googleContactsAccessToken: null,
+                googleContactsRefreshToken: null,
+            };
+        }
+
+        await updateDoc(projectRef, updates);
+        return { success: true };
+
+    } catch (error: any) {
+        console.error('Error disconnecting Google service:', error.message);
+        return { success: false, error: 'Failed to disconnect the service.' };
+    }
 }

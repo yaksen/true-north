@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -17,6 +18,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   updateProfile,
+  unlink,
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, Unsubscribe } from 'firebase/firestore';
@@ -32,6 +34,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<any>;
   signOut: () => Promise<void>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  unlinkProvider: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,17 +47,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let unsubscribeProfile: Unsubscribe | undefined;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      // Unsubscribe from previous profile listener if it exists
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+        unsubscribeProfile = undefined;
+      }
+      
       if (firebaseUser) {
         setUser(firebaseUser);
         const userRef = doc(db, 'users', firebaseUser.uid);
         
-        // Unsubscribe from previous profile listener if it exists
-        if (unsubscribeProfile) unsubscribeProfile();
-
         unsubscribeProfile = onSnapshot(userRef, async (userSnap) => {
           if (userSnap.exists()) {
             setUserProfile(userSnap.data() as UserProfile);
+            setLoading(false);
           } else {
             // Create a new profile if it doesn't exist
             const profile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt' | 'lastLogin'> = {
@@ -64,16 +71,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               photoURL: firebaseUser.photoURL,
               projects: [],
             };
-            await setDoc(userRef, { 
-              ...profile, 
-              id: firebaseUser.uid,
-              createdAt: serverTimestamp(), 
-              updatedAt: serverTimestamp(),
-              lastLogin: serverTimestamp() 
-            });
-            // The onSnapshot will trigger again with the new data, setting the userProfile
+            try {
+              await setDoc(userRef, { 
+                ...profile, 
+                id: firebaseUser.uid,
+                createdAt: serverTimestamp(), 
+                updatedAt: serverTimestamp(),
+                lastLogin: serverTimestamp() 
+              });
+              // The onSnapshot will trigger again with the new data, setting the userProfile and loading state
+            } catch (error) {
+                console.error("Error creating user profile:", error);
+                setLoading(false);
+            }
           }
-          setLoading(false);
+        }, (error) => {
+            console.error("Error fetching user profile:", error);
+            setLoading(false);
         });
       } else {
         setUser(null);
@@ -102,6 +116,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await setDoc(userRef, { ...updates, updatedAt: serverTimestamp() }, { merge: true });
   };
 
+  const unlinkProvider = async () => {
+    if (!auth.currentUser) throw new Error("Not authenticated");
+    
+    // Unlink the 'google.com' provider
+    // This will invalidate the refresh tokens on the client
+    await unlink(auth.currentUser, 'google.com');
+  };
+
   const signUpWithEmail = (email: string, password: string) => {
     return createUserWithEmailAndPassword(auth, email, password);
   };
@@ -128,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithGoogle,
     signOut,
     updateUserProfile,
+    unlinkProvider,
   };
 
   if (loading) {
