@@ -42,7 +42,7 @@ const ChatMessage: React.FC<{ message: ChatMessageProps, user: any }> = ({ messa
         <div className={`flex items-start gap-3 ${isUser ? 'justify-end' : ''}`}>
             {!isUser && (
                 <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-                    <AvatarFallback><Bot className="h-5 w-5" /></AvatarFallback>
+                    <Image src="/bot_icon.png" alt="AI Assistant" width={20} height={20} className='m-auto' />
                 </Avatar>
             )}
             <div className={`flex flex-col gap-1.5 rounded-xl px-4 py-3 text-sm ${ isUser ? 'bg-primary text-primary-foreground' : 'bg-muted' }`}>
@@ -52,7 +52,7 @@ const ChatMessage: React.FC<{ message: ChatMessageProps, user: any }> = ({ messa
             </div>
             {isUser && (
                 <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.profile?.photoURL} alt={user?.profile?.name} />
+                    <AvatarImage src={user?.profile?.photoURL ?? undefined} alt={user?.profile?.name ?? ''} />
                     <AvatarFallback>{getInitials(user?.profile?.name ?? user?.email)}</AvatarFallback>
                 </Avatar>
             )}
@@ -230,7 +230,7 @@ const ChatInterface = ({
               {isLoading && (
                 <div className="flex items-start gap-3">
                    <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-                      <AvatarFallback><Bot className="h-5 w-5" /></AvatarFallback>
+                      <Image src="/bot_icon.png" alt="AI Assistant" width={20} height={20} className='m-auto' />
                     </Avatar>
                   <div className="max-w-md rounded-xl bg-muted px-4 py-3 text-sm">
                     <Loader2 className="h-5 w-5 animate-spin" />
