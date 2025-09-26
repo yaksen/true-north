@@ -9,7 +9,7 @@ import { Button } from '../ui/button';
 import { Send, Loader2, Bot, Paperclip, Mic, StopCircle, X, AudioLines, Trash2, Expand } from 'lucide-react';
 import { projectChat, ProjectChatInput } from '@/ai/flows/project-chat-flow';
 import { ScrollArea } from '../ui/scroll-area';
-import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, Timestamp, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -52,6 +52,7 @@ const ChatMessage: React.FC<{ message: ChatMessageProps, user: any }> = ({ messa
             </div>
             {isUser && (
                 <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.profile?.photoURL} alt={user?.profile?.name} />
                     <AvatarFallback>{getInitials(user?.profile?.name ?? user?.email)}</AvatarFallback>
                 </Avatar>
             )}
