@@ -101,7 +101,7 @@ export function LeadCard({ lead, dependencies }: LeadCardProps) {
         <CardContent className="flex-grow">
             <p className="text-sm text-muted-foreground line-clamp-2">{lead.notes || 'No notes for this lead.'}</p>
         </CardContent>
-        <CardFooter className="flex-col items-start gap-4">
+        <CardFooter className="flex-col items-start gap-2">
             {channel && <Badge variant="secondary">From: {channel.name}</Badge>}
             <div className='flex justify-between items-center w-full pt-2'>
                 <Dialog open={isSaleOpen} onOpenChange={setIsSaleOpen}>
@@ -119,7 +119,8 @@ export function LeadCard({ lead, dependencies }: LeadCardProps) {
                         />
                     </DialogContent>
                 </Dialog>
-                <div className='flex items-center'>
+            </div>
+            <div className='flex items-center w-full justify-end'>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStar(!lead.starred)}>
                         <Star className={cn("h-4 w-4", lead.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
                     </Button>
@@ -148,7 +149,6 @@ export function LeadCard({ lead, dependencies }: LeadCardProps) {
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
-            </div>
         </CardFooter>
         </Card>
         <QrCodeModal
