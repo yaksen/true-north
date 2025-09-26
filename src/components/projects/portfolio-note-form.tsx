@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 const formSchema = z.object({
   title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
-  description: z.string().min(10, { message: 'Please provide a more detailed description.' }),
+  description: z.string().optional(),
   categoryId: z.string().nonempty("Category is required."),
   serviceId: z.string().nonempty("Service is required."),
 });
@@ -107,7 +107,7 @@ export function PortfolioNoteForm({ note, projectId, categories, services, close
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel>Description (Optional)</FormLabel>
               <FormControl>
                 <Textarea placeholder="A brief description of this collection of work." {...field} />
               </FormControl>
