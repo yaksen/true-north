@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { MembersList } from './members-list';
-import { Loader2, Trash2, UserPlus, File, User as UserIcon, HelpCircle, Link as LinkIcon, Contact } from 'lucide-react';
+import { Loader2, Trash2, UserPlus, File, User as UserIcon, Contact } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,12 +21,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { MemberForm } from './member-form';
-import { getGoogleAuthUrl } from '@/app/actions/google-auth';
-
+import { GoogleAuthProvider, linkWithPopup } from 'firebase/auth';
+import { storeGoogleTokens } from '@/app/actions/google-link';
 
 interface ProjectSettingsProps {
   project: Project;
@@ -40,36 +40,6 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   
   const isOwner = user?.uid === project.ownerUid;
-
-  useEffect(() => {
-    const handleAuthMessage = (event: MessageEvent) => {
-        // IMPORTANT: Check the origin of the message for security
-        if (event.origin !== window.location.origin) {
-            return;
-        }
-
-        const { type, projectId, error } = event.data;
-        if (type === 'auth-success' && projectId === project.id) {
-            toast({
-                title: 'Success!',
-                description: 'Your Google account has been connected.',
-            });
-            // Refresh the page to show the "Connected" state
-            router.refresh();
-        } else if (type === 'auth-error') {
-             toast({
-                variant: 'destructive',
-                title: 'Authentication Failed',
-                description: error || 'An unknown error occurred during authentication.'
-            });
-        }
-    };
-
-    window.addEventListener('message', handleAuthMessage);
-    return () => {
-        window.removeEventListener('message', handleAuthMessage);
-    };
-}, [project.id, router, toast]);
 
   async function handleDeleteProject() {
     if (!isOwner) {
@@ -87,15 +57,58 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
       setIsDeleting(false);
     }
   }
-  
-  const handleConnect = async (scope: string) => {
-    try {
-        const url = await getGoogleAuthUrl(project.id, scope);
-        window.open(url, 'google-auth', 'width=500,height=600,popup');
-    } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not generate Google auth URL.'});
+
+  const handleConnect = async (scope: 'drive.file' | 'contacts') => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Not Authenticated' });
+        return;
     }
-  }
+    
+    const provider = new GoogleAuthProvider();
+    provider.addScope(`https://www.googleapis.com/auth/${scope}`);
+    
+    // This configuration forces Google to issue a refresh token every time.
+    provider.setCustomParameters({
+        access_type: 'offline',
+        prompt: 'consent'
+    });
+
+    try {
+        const result = await linkWithPopup(user, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+
+        if (!credential) {
+            throw new Error('Could not get credential from result.');
+        }
+        
+        // This is a temporary server-side auth code.
+        // @ts-ignore - 'serverAuthCode' is not in the type def but exists
+        const serverAuthCode = credential.serverAuthCode;
+
+        if (!serverAuthCode) {
+            throw new Error('Server auth code not found. Please try connecting again.');
+        }
+
+        const storeResult = await storeGoogleTokens(project.id, serverAuthCode, scope);
+
+        if (storeResult.success) {
+            toast({ title: 'Success!', description: 'Your Google account has been connected.' });
+            router.refresh();
+        } else {
+            throw new Error(storeResult.error || 'Failed to store tokens on the server.');
+        }
+
+    } catch (error: any) {
+        console.error("Google Link Error:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Connection Failed',
+            description: error.code === 'auth/credential-already-in-use'
+                ? 'This Google account is already linked to another user.'
+                : error.message || 'An unknown error occurred during authentication.'
+        });
+    }
+  };
 
   return (
     <div className="grid gap-6 mt-4 max-w-4xl mx-auto">
@@ -113,8 +126,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                         <p className='text-sm text-muted-foreground'>Sync leads, vendors, and partners.</p>
                     </div>
                 </div>
-                 <Button onClick={() => handleConnect('contacts')} disabled={!!project.googleContactsAccessToken}>
-                    {project.googleContactsAccessToken ? 'Connected' : 'Connect'}
+                 <Button onClick={() => handleConnect('contacts')} disabled={!!project.googleContactsRefreshToken}>
+                    {project.googleContactsRefreshToken ? 'Connected' : 'Connect'}
                 </Button>
             </div>
              <div className='flex items-center justify-between p-4 border rounded-lg'>
@@ -125,8 +138,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                         <p className='text-sm text-muted-foreground'>Upload & manage project files.</p>
                     </div>
                 </div>
-                 <Button onClick={() => handleConnect('drive.file')} disabled={!!project.googleDriveAccessToken}>
-                    {project.googleDriveAccessToken ? 'Connected' : 'Connect'}
+                 <Button onClick={() => handleConnect('drive.file')} disabled={!!project.googleDriveRefreshToken}>
+                    {project.googleDriveRefreshToken ? 'Connected' : 'Connect'}
                 </Button>
             </div>
         </CardContent>
