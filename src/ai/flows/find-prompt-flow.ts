@@ -5,11 +5,14 @@
  *
  * - findPrompt - A function that handles the prompt finding process.
  * - FindPromptInput - The input type for the findPrompt function.
- * - FindPromptOutput - The return type for the findPrompt function.
+ * - FindPromptOutput - The return type for the findPromptOutput function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { PromptType } from '@/lib/types';
+
+const promptTypes: [PromptType, ...PromptType[]] = ["Content Creation", "Marketing & Ads", "Sales Outreach", "Lead Nurturing", "Customer Support", "Task Automation", "Finance & Reporting", "Research & Insights", "Brainstorming & Idea Generation", "Personal Productivity", "Technical Help & Coding", "Training & Education", "Strategy & Planning"];
 
 const FindPromptInputSchema = z.object({
   prompt: z.string().describe('Unstructured text containing search criteria for an AI prompt.'),
@@ -18,8 +21,7 @@ export type FindPromptInput = z.infer<typeof FindPromptInputSchema>;
 
 const FindPromptOutputSchema = z.object({
   searchTerm: z.string().optional().describe("A general search term for the prompt title or description."),
-  category: z.string().optional().describe("The category to filter by (e.g., Marketing, Content Creation)."),
-  tags: z.array(z.string()).optional().describe("A list of tags to filter by."),
+  category: z.enum(promptTypes).optional().describe("The category to filter by."),
 }).describe('Structured search criteria extracted from the provided inputs.');
 export type FindPromptOutput = z.infer<typeof FindPromptOutputSchema>;
 
@@ -31,8 +33,7 @@ const prompt = ai.definePrompt({
 
 Your goal is to populate the output JSON with the following:
 1.  'searchTerm': A general keyword from the title or description (e.g., 'blog post ideas', 'summarize').
-2.  'category': If a specific category is mentioned, extract it.
-3.  'tags': Extract any terms that seem like tags for filtering.
+2.  'category': If a specific category is mentioned from the available list, extract it. Available categories are: ${promptTypes.join(', ')}.
 
 Analyze the input to make the best determination.
 

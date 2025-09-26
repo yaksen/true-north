@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -14,21 +15,25 @@ import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/fi
 import { db } from '@/lib/firebase';
 import { Loader2, X } from 'lucide-react';
 import { Input } from '../ui/input';
-import { AIPrompt } from '@/lib/types';
+import { AIPrompt, PromptType } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Badge } from '../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Switch } from '../ui/switch';
+
+const promptTypes: PromptType[] = ["Content Creation", "Marketing & Ads", "Sales Outreach", "Lead Nurturing", "Customer Support", "Task Automation", "Finance & Reporting", "Research & Insights", "Brainstorming & Idea Generation", "Personal Productivity", "Technical Help & Coding", "Training & Education", "Strategy & Planning"];
 
 const formSchema = z.object({
-  title: z.string().min(1, 'Title is required.'),
+  title: z.string().min(1, { message: 'Title is required.' }),
   description: z.string().optional(),
-  category: z.string().optional(),
+  type: z.enum(promptTypes),
+  aiAccessible: z.boolean().default(true),
   role: z.string().min(1, 'Role/Context is required.'),
   task: z.string().min(1, 'Task is required.'),
   constraints: z.string().min(1, 'Constraints are required.'),
   examples: z.string().optional(),
   instructions: z.string().optional(),
   outputFormat: z.string().min(1, 'Output format is required.'),
-  tags: z.array(z.string()).default([]),
 });
 
 type PromptFormValues = z.infer<typeof formSchema>;
@@ -43,7 +48,6 @@ export function PromptForm({ prompt, projectId, closeForm }: PromptFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tagInput, setTagInput] = useState('');
 
   const form = useForm<PromptFormValues>({
     resolver: zodResolver(formSchema),
@@ -56,32 +60,16 @@ export function PromptForm({ prompt, projectId, closeForm }: PromptFormProps) {
     } : {
       title: '',
       description: '',
-      category: '',
+      type: 'Content Creation',
+      aiAccessible: true,
       role: '',
       task: '',
       constraints: '',
       examples: '',
       instructions: '',
       outputFormat: '',
-      tags: [],
     },
   });
-
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      const newTag = tagInput.trim();
-      if (newTag && !form.getValues('tags').includes(newTag)) {
-        form.setValue('tags', [...form.getValues('tags'), newTag]);
-      }
-      setTagInput('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    form.setValue('tags', form.getValues('tags').filter(tag => tag !== tagToRemove));
-  };
-
 
   async function onSubmit(values: PromptFormValues) {
     if (!user) {
@@ -122,7 +110,7 @@ export function PromptForm({ prompt, projectId, closeForm }: PromptFormProps) {
         <div className="space-y-4 p-4">
             <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Generate blog post ideas" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category</FormLabel><FormControl><Input placeholder="e.g., Marketing" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{promptTypes.map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
             </div>
             <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="What is this prompt for?" {...field} /></FormControl><FormMessage /></FormItem>)} />
             
@@ -132,34 +120,22 @@ export function PromptForm({ prompt, projectId, closeForm }: PromptFormProps) {
             <FormField control={form.control} name="examples" render={({ field }) => (<FormItem><FormLabel>Examples (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Title 1: 'The Future of AI'" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="instructions" render={({ field }) => (<FormItem><FormLabel>Step-by-step Instructions (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., 1. Analyze the topic. 2. Brainstorm keywords..." {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="outputFormat" render={({ field }) => (<FormItem><FormLabel>Output Format</FormLabel><FormControl><Textarea placeholder="e.g., A JSON array of strings" {...field} /></FormControl><FormMessage /></FormItem>)} />
-
+            
             <FormField
                 control={form.control}
-                name="tags"
+                name="aiAccessible"
                 render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Tags</FormLabel>
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                            <FormLabel>AI Accessible</FormLabel>
+                            <FormMessage />
+                        </div>
                         <FormControl>
-                            <>
-                                <Input
-                                    placeholder="Add tags and press Enter"
-                                    value={tagInput}
-                                    onChange={(e) => setTagInput(e.target.value)}
-                                    onKeyDown={handleTagKeyDown}
-                                />
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                    {field.value.map(tag => (
-                                        <Badge key={tag} variant="secondary">
-                                            {tag}
-                                            <button type="button" onClick={() => removeTag(tag)} className="ml-2 rounded-full hover:bg-muted-foreground/20">
-                                                <X className="h-3 w-3" />
-                                            </button>
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </>
+                            <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            />
                         </FormControl>
-                        <FormMessage />
                     </FormItem>
                 )}
             />

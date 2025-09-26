@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { AIPrompt } from '@/lib/types';
@@ -18,7 +19,7 @@ export function PromptList({ prompts }: PromptListProps) {
   }
 
   const promptsByCategory = prompts.reduce((acc, prompt) => {
-    const category = prompt.category || 'Uncategorized';
+    const category = prompt.type || 'Uncategorized';
     if (!acc[category]) {
       acc[category] = [];
     }

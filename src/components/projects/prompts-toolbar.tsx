@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,18 +8,18 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { findPrompt, type FindPromptOutput } from '@/ai/flows/find-prompt-flow';
-import { Badge } from '../ui/badge';
-import { X } from 'lucide-react';
+import { PromptType } from '@/lib/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+
+const promptTypes: (PromptType | 'all')[] = ["all", "Content Creation", "Marketing & Ads", "Sales Outreach", "Lead Nurturing", "Customer Support", "Task Automation", "Finance & Reporting", "Research & Insights", "Brainstorming & Idea Generation", "Personal Productivity", "Technical Help & Coding", "Training & Education", "Strategy & Planning"];
 
 interface PromptsToolbarProps {
-  onFilterChange: (filters: { searchTerm: string; category: string; tags: string[] }) => void;
+  onFilterChange: (filters: { searchTerm: string; type: string; }) => void;
 }
 
 export function PromptsToolbar({ onFilterChange }: PromptsToolbarProps) {
   const { toast } = useToast();
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [tagsFilter, setTagsFilter] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -26,12 +27,11 @@ export function PromptsToolbar({ onFilterChange }: PromptsToolbarProps) {
     const handler = setTimeout(() => {
       onFilterChange({
         searchTerm,
-        category: categoryFilter,
-        tags: tagsFilter,
+        type: typeFilter,
       });
     }, 300);
     return () => clearTimeout(handler);
-  }, [searchTerm, categoryFilter, tagsFilter, onFilterChange]);
+  }, [searchTerm, typeFilter, onFilterChange]);
   
   const handleAiSearch = async () => {
     if (!searchTerm) {
@@ -42,8 +42,7 @@ export function PromptsToolbar({ onFilterChange }: PromptsToolbarProps) {
     try {
       const result: FindPromptOutput = await findPrompt({ prompt: searchTerm });
       setSearchTerm(result.searchTerm || '');
-      setCategoryFilter(result.category || '');
-      setTagsFilter(result.tags || []);
+      setTypeFilter(result.category || 'all');
       toast({ title: 'AI Search Complete', description: 'Filters have been updated.' });
     } catch (error) {
       console.error("AI Search Error:", error);
@@ -53,25 +52,9 @@ export function PromptsToolbar({ onFilterChange }: PromptsToolbarProps) {
     }
   };
 
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
-      e.preventDefault();
-      if (!tagsFilter.includes(tagInput.trim())) {
-        setTagsFilter([...tagsFilter, tagInput.trim()]);
-      }
-      setTagInput('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setTagsFilter(tagsFilter.filter(tag => tag !== tagToRemove));
-  };
-
   const clearFilters = () => {
     setSearchTerm('');
-    setCategoryFilter('');
-    setTagsFilter([]);
-    setTagInput('');
+    setTypeFilter('all');
   };
 
   return (
@@ -79,7 +62,7 @@ export function PromptsToolbar({ onFilterChange }: PromptsToolbarProps) {
         <div className='flex gap-2 items-center'>
             <Sparkles className='h-5 w-5 text-primary flex-shrink-0' />
             <Input
-                placeholder="Search titles or ask AI..."
+                placeholder="Search prompts or ask AI..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="h-9"
@@ -91,29 +74,16 @@ export function PromptsToolbar({ onFilterChange }: PromptsToolbarProps) {
         </div>
         <div className="flex items-center gap-2 pt-2 border-t mt-2 flex-wrap">
             <span className='text-sm font-medium text-muted-foreground'>Filters:</span>
-            <Input 
-                placeholder="Filter by category..."
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="h-9 w-40"
-            />
-            <div className="flex items-center gap-2 border rounded-md px-2 h-9">
-              <Input 
-                  placeholder="Filter by tags..."
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={handleTagKeyDown}
-                  className="h-auto border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
-              />
-              {tagsFilter.map(tag => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                  <button type="button" onClick={() => removeTag(tag)} className="ml-1 rounded-full hover:bg-muted-foreground/20">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
+             <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-48 h-9 text-sm">
+                    <SelectValue placeholder="Filter by type..." />
+                </SelectTrigger>
+                <SelectContent>
+                    {promptTypes.map(type => (
+                        <SelectItem key={type} value={type} className="capitalize">{type}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
             <Button variant="ghost" size="sm" onClick={clearFilters}>
                 Clear All
             </Button>

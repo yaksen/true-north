@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -77,13 +78,7 @@ export function PromptCard({ prompt }: PromptCardProps) {
         ))}
       </CardContent>
       <CardFooter className="flex-col items-start gap-4">
-        {prompt.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {prompt.tags.map(tag => (
-              <Badge key={tag} variant="secondary">{tag}</Badge>
-            ))}
-          </div>
-        )}
+        {prompt.type && <Badge variant="secondary">{prompt.type}</Badge>}
         <div className="flex w-full justify-between items-center">
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogTrigger asChild>

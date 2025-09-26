@@ -19,6 +19,7 @@ export type VaultItemType = 'note' | 'link' | 'prompt';
 export type HabitType = 'good' | 'bad';
 export type HabitFrequency = 'daily' | 'weekly';
 export type NoteType = "Message Templates" | "Meeting Notes" | "Ideas & Brainstorms" | "Processes & SOPs" | "Knowledge Snippets" | "AI Prompts Library" | "Client/Lead Notes" | "Marketing Copy Drafts" | "Decision Logs";
+export type PromptType = "Content Creation" | "Marketing & Ads" | "Sales Outreach" | "Lead Nurturing" | "Customer Support" | "Task Automation" | "Finance & Reporting" | "Research & Insights" | "Brainstorming & Idea Generation" | "Personal Productivity" | "Technical Help & Coding" | "Training & Education" | "Strategy & Planning";
 
 
 export interface UserProfile {
@@ -369,7 +370,8 @@ export interface AIPrompt {
     projectId: string;
     title: string;
     description?: string;
-    category?: string;
+    type?: PromptType;
+    aiAccessible: boolean;
     role?: string;
     task?: string;
     constraints?: string;
@@ -377,7 +379,6 @@ export interface AIPrompt {
     instructions?: string;
     outputFormat?: string;
     body: string;
-    tags: string[];
     createdAt: Date;
     updatedAt: Date;
 }

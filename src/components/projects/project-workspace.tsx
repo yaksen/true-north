@@ -59,8 +59,7 @@ export function ProjectWorkspace({
 
   const [promptFilters, setPromptFilters] = useState({
     searchTerm: '',
-    category: '',
-    tags: [] as string[],
+    type: 'all',
   });
 
   const filteredNotes = notes.filter(note => {
@@ -73,10 +72,9 @@ export function ProjectWorkspace({
   const filteredPrompts = aiPrompts.filter(prompt => {
     const searchTermMatch = prompt.title.toLowerCase().includes(promptFilters.searchTerm.toLowerCase()) ||
                             (prompt.description && prompt.description.toLowerCase().includes(promptFilters.searchTerm.toLowerCase()));
-    const categoryMatch = !promptFilters.category || (prompt.category && prompt.category.toLowerCase().includes(promptFilters.category.toLowerCase()));
-    const tagsMatch = promptFilters.tags.length === 0 || promptFilters.tags.every(filterTag => prompt.tags.some(promptTag => promptTag.toLowerCase().includes(filterTag.toLowerCase())));
+    const typeMatch = promptFilters.type === 'all' || prompt.type === promptFilters.type;
 
-    return searchTermMatch && categoryMatch && tagsMatch;
+    return searchTermMatch && typeMatch;
   });
 
   return (
