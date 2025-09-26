@@ -19,7 +19,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -48,34 +48,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (firebaseUser) {
         const userRef = doc(db, 'users', firebaseUser.uid);
         const userSnap = await getDoc(userRef);
-
         if (userSnap.exists()) {
-          const profile = userSnap.data() as UserProfile;
-          await updateDoc(userRef, { lastLogin: serverTimestamp() });
-          setUser({ ...firebaseUser, profile: {...profile, lastLogin: new Date()} });
+          setUser({ ...firebaseUser, profile: userSnap.data() as UserProfile });
         } else {
-            const profile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt' | 'lastLogin'> = {
-                email: firebaseUser.email!,
-                role: 'member', // Default role for new signups
-                name: firebaseUser.displayName ?? firebaseUser.email ?? undefined,
-                photoURL: firebaseUser.photoURL ?? undefined,
-                projects: [],
-            };
-            const newUserProfile = {
-                ...profile,
-                id: firebaseUser.uid,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                lastLogin: new Date(),
-            }
-            await setDoc(userRef, { 
-                ...profile, 
-                id: firebaseUser.uid,
-                createdAt: serverTimestamp(), 
-                updatedAt: serverTimestamp(), 
-                lastLogin: serverTimestamp() 
-            });
-            setUser({ ...firebaseUser, profile: newUserProfile });
+          // Create a new profile if it doesn't exist
+          const profile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt' | 'lastLogin'> = {
+            email: firebaseUser.email!,
+            role: 'member',
+            name: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            projects: [],
+          };
+          await setDoc(userRef, { 
+            ...profile, 
+            id: firebaseUser.uid,
+            createdAt: serverTimestamp(), 
+            updatedAt: serverTimestamp(),
+            lastLogin: serverTimestamp() 
+          });
+          setUser({ ...firebaseUser, profile: profile as UserProfile });
         }
       } else {
         setUser(null);
@@ -87,56 +78,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateUserProfile = async (updates: Partial<UserProfile>) => {
     if (!user) throw new Error("Not authenticated");
-
-    const authUpdates: { displayName?: string, photoURL?: string } = {};
-    if (updates.name) authUpdates.displayName = updates.name;
-    if (updates.photoURL) authUpdates.photoURL = updates.photoURL;
-
-    if (Object.keys(authUpdates).length > 0) {
-      await updateProfile(auth.currentUser!, authUpdates);
-    }
-
-    const userRef = doc(db, 'users', user.uid);
-    await updateDoc(userRef, { ...updates, updatedAt: serverTimestamp() });
     
-    const updatedUserDoc = await getDoc(userRef);
-    const updatedProfile = updatedUserDoc.data() as UserProfile;
-    setUser(prevUser => prevUser ? ({ ...prevUser, profile: updatedProfile }) : null);
-  };
-
-  const signUpWithEmail = async (email: string, password: string): Promise<any> => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const firebaseUser = userCredential.user;
-    
-    const userRef = doc(db, "users", firebaseUser.uid);
-    const newUserProfile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt' | 'lastLogin'> = {
-        email: email,
-        name: email, 
-        role: 'member',
-        projects: [],
-    };
-
-    await setDoc(userRef, {
-        ...newUserProfile,
-        id: firebaseUser.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        lastLogin: serverTimestamp(),
+    // Update Firebase Auth profile
+    await updateProfile(auth.currentUser!, {
+      displayName: updates.name,
+      photoURL: updates.photoURL,
     });
+    
+    // Update Firestore profile
+    const userRef = doc(db, 'users', user.uid);
+    await setDoc(userRef, { ...updates, updatedAt: serverTimestamp() }, { merge: true });
 
-    return userCredential;
+    // Refresh local user state
+    const updatedUserDoc = await getDoc(userRef);
+    setUser(prev => prev ? ({ ...prev, profile: updatedUserDoc.data() as UserProfile }) : null);
   };
 
-  const signInWithEmail = (email: string, password: string): Promise<any> => {
+  const signUpWithEmail = (email: string, password: string) => {
+    return createUserWithEmailAndPassword(auth, email, password);
+  };
+
+  const signInWithEmail = (email: string, password: string) => {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signInWithGoogle = async (): Promise<any> => {
+  const signInWithGoogle = () => {
     const provider = new GoogleAuthProvider();
     return signInWithPopup(auth, provider);
   };
 
-  const signOut = async (): Promise<void> => {
+  const signOut = () => {
     return firebaseSignOut(auth);
   };
 
