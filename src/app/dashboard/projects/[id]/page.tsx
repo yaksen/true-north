@@ -7,7 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, AIPrompt, Invoice, Product, Channel, TaskTemplate, Vendor, Partner } from '@/lib/types';
+import type { Project, Task, Finance, Lead, Category, Service, Package, ActivityRecord, Note, AIPrompt, Invoice, Product, Channel, TaskTemplate, Vendor, Partner, PortfolioNote, PortfolioItem } from '@/lib/types';
 import { Loader2, BookText } from 'lucide-react';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -71,6 +71,8 @@ export default function ProjectDetailPage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [aiPrompts, setAIPrompts] = useState<AIPrompt[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [portfolioNotes, setPortfolioNotes] = useState<PortfolioNote[]>([]);
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -139,6 +141,11 @@ export default function ProjectDetailPage() {
     const unsubscribeNotes = createCollectionSubscription<Note>('notes', setNotes);
     const unsubscribeAIPrompts = createCollectionSubscription<AIPrompt>('aiPrompts', setAIPrompts);
     const unsubscribeInvoices = createCollectionSubscription<Invoice>('invoices', setInvoices);
+    const unsubscribePortfolioNotes = createCollectionSubscription<PortfolioNote>('portfolioNotes', setPortfolioNotes);
+    const unsubscribePortfolioItems = onSnapshot(query(collection(db, 'portfolioItems')), (snapshot) => {
+      setPortfolioItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PortfolioItem)));
+    });
+
 
     return () => {
         unsubscribeProject();
@@ -158,6 +165,8 @@ export default function ProjectDetailPage() {
         unsubscribeNotes();
         unsubscribeAIPrompts();
         unsubscribeInvoices();
+        unsubscribePortfolioNotes();
+        unsubscribePortfolioItems();
     };
   }, [user, id, router]);
 
@@ -210,6 +219,8 @@ export default function ProjectDetailPage() {
                     products={products}
                     packages={packages}
                     invoices={invoices}
+                    portfolioNotes={portfolioNotes}
+                    portfolioItems={portfolioItems}
                 />
             </TabsContent>
             <TabsContent value="leads">

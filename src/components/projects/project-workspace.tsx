@@ -3,7 +3,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Project, Note, AIPrompt, Task, Finance, Lead, Channel, Vendor, Partner, Service, Product, Package, Invoice } from '@/lib/types';
+import type { Project, Note, AIPrompt, Task, Finance, Lead, Channel, Vendor, Partner, Service, Product, Package, Invoice, PortfolioNote, PortfolioItem } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NoteList } from './note-list';
 import { PromptList } from './prompt-list';
@@ -17,6 +17,7 @@ import { ProjectChatbot } from './project-chatbot';
 import { Card } from '../ui/card';
 import { PromptsToolbar } from './prompts-toolbar';
 import { NotesToolbar } from './notes-toolbar';
+import { ProjectPortfolio } from './project-portfolio';
 
 interface ProjectWorkspaceProps {
   project: Project;
@@ -32,6 +33,8 @@ interface ProjectWorkspaceProps {
   products: Product[];
   packages: Package[];
   invoices: Invoice[];
+  portfolioNotes: PortfolioNote[];
+  portfolioItems: PortfolioItem[];
 }
 
 export function ProjectWorkspace({ 
@@ -47,7 +50,9 @@ export function ProjectWorkspace({
     services,
     products,
     packages,
-    invoices
+    invoices,
+    portfolioNotes,
+    portfolioItems
 }: ProjectWorkspaceProps) {
   const [isNoteFormOpen, setIsNoteFormOpen] = useState(false);
   const [isPromptFormOpen, setIsPromptFormOpen] = useState(false);
@@ -84,6 +89,7 @@ export function ProjectWorkspace({
           <TabsTrigger value="chatbot">Chatbot</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
           <TabsTrigger value="ai-prompts">AI Prompts</TabsTrigger>
+          <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
         </TabsList>
       </div>
 
@@ -136,6 +142,14 @@ export function ProjectWorkspace({
             </Dialog>
         </div>
         <PromptList prompts={filteredPrompts} />
+      </TabsContent>
+
+      <TabsContent value="portfolio">
+        <ProjectPortfolio
+            project={project}
+            portfolioNotes={portfolioNotes}
+            portfolioItems={portfolioItems}
+        />
       </TabsContent>
     </Tabs>
   );
