@@ -166,4 +166,3 @@ export function PortfolioNoteForm({ note, projectId, closeForm }: PortfolioNoteF
     </Form>
   );
 }
-
