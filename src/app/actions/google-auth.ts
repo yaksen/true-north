@@ -32,7 +32,7 @@ export async function getGoogleAuthUrl(projectId: string, scope: string): Promis
     return url;
 }
 
-export async function getTokensAndStore(code: string, state: string) {
+export async function getTokensAndStore(code: string, state: string): Promise<{ projectId: string }> {
     if (!state) {
         throw new Error("State parameter is missing or invalid.");
     }
@@ -68,11 +68,10 @@ export async function getTokensAndStore(code: string, state: string) {
         }
 
         await updateDoc(projectRef, updates);
+        return { projectId };
 
     } catch (error: any) {
         console.error('Error getting tokens:', error.message);
         throw new Error('Failed to retrieve and store tokens.');
-    } finally {
-        redirect(`/dashboard/projects/${projectId}/settings`);
     }
 }
