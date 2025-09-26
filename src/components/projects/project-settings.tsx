@@ -45,33 +45,25 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   
   const isOwner = user?.uid === project.ownerUid;
 
-  // This effect will run on component mount to sync tokens if needed
-  useEffect(() => {
-    const syncTokens = async () => {
-        // Check if user is logged in via Google and has a server auth code
-        if (userProfile?.googleServerAuthCode) {
-            // Check if either of the tokens are missing for this project
-            if (!project.googleDriveRefreshToken || !project.googleContactsRefreshToken) {
-                console.log("Found auth code, attempting to store tokens for project...");
-                const result = await storeGoogleTokens(project.id, userProfile.googleServerAuthCode, 'drive.file contacts');
-                if (result.success) {
-                    toast({ title: 'Success!', description: 'Google account linked to this project.' });
-                    router.refresh(); // Refresh to get the updated project props
-                } else {
-                    toast({ variant: 'destructive', title: 'Auto-link failed', description: result.error || 'Could not link Google account.'});
-                }
-            }
-        }
-    };
-    syncTokens();
-  }, [project, userProfile, router, toast]);
-
   const handleConnect = async (scope: 'drive.file' | 'contacts') => {
     if (!user) {
         toast({ variant: 'destructive', title: 'Not Authenticated' });
         return;
     }
     
+    // If user has a server auth code from a recent Google sign-in, use it directly.
+    if (userProfile?.googleServerAuthCode) {
+        const result = await storeGoogleTokens(project.id, userProfile.googleServerAuthCode, scope);
+        if (result.success) {
+            toast({ title: 'Success!', description: 'Your Google account has been connected.' });
+            router.refresh();
+        } else {
+            toast({ variant: 'destructive', title: 'Link failed', description: result.error || 'Could not link Google account.'});
+        }
+        return;
+    }
+
+    // Fallback to linkWithPopup if no auth code is available (e.g., for email users)
     const provider = new GoogleAuthProvider();
     provider.addScope(`https://www.googleapis.com/auth/${scope}`);
     
@@ -114,7 +106,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                 variant: 'destructive',
                 duration: 10000,
                 title: 'Account Already in Use',
-                description: "This Google account is already linked to another user in this app. Please sign out and sign back in with that Google account to use it, or disconnect it from the other user.",
+                description: "This Google account is already linked to another user. Sign out, then sign back in using that Google account to proceed.",
             });
         } else {
             toast({
