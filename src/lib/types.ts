@@ -66,7 +66,9 @@ export interface Project {
   timezone?: string;
   googleApiKey?: string;
   googleDriveAccessToken?: string;
+  googleDriveRefreshToken?: string;
   googleContactsAccessToken?: string;
+  googleContactsRefreshToken?: string;
 }
 
 export interface Task {
