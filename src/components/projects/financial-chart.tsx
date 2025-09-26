@@ -3,7 +3,7 @@
 
 import { Bar, BarChart, CartesianGrid, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { formatCurrency } from '@/lib/utils';
 
 export interface MonthlyData {
@@ -17,6 +17,18 @@ interface FinancialChartProps {
   currency: string;
 }
 
+const chartConfig = {
+  income: {
+    label: "Income",
+    color: "hsl(var(--primary))",
+  },
+  expenses: {
+    label: "Expenses",
+    color: "hsl(var(--destructive))",
+  },
+} satisfies ChartConfig;
+
+
 export function FinancialChart({ data, currency }: FinancialChartProps) {
   if (data.length === 0) {
     return (
@@ -27,7 +39,7 @@ export function FinancialChart({ data, currency }: FinancialChartProps) {
   }
 
   return (
-    <div className="h-64 w-full">
+    <ChartContainer config={chartConfig} className="h-64 w-full">
         <ResponsiveContainer>
             <BarChart data={data}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
@@ -49,6 +61,6 @@ export function FinancialChart({ data, currency }: FinancialChartProps) {
                 <Bar dataKey="expenses" fill="hsl(var(--destructive))" radius={4} />
             </BarChart>
         </ResponsiveContainer>
-    </div>
+    </ChartContainer>
   );
 }
