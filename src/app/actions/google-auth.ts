@@ -4,7 +4,6 @@
 import { google } from 'googleapis';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { redirect } from 'next/navigation';
 
 const REDIRECT_URI = process.env.NEXT_PUBLIC_URL 
     ? `${process.env.NEXT_PUBLIC_URL}/auth/callback` 
