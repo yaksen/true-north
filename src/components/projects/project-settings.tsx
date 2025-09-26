@@ -26,7 +26,7 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { MemberForm } from './member-form';
-import { GoogleAuthProvider, linkWithPopup, unlink } from 'firebase/auth';
+import { GoogleAuthProvider, linkWithPopup, signInWithPopup } from 'firebase/auth';
 import { storeGoogleTokens, disconnectGoogle } from '@/app/actions/google-link';
 import { testGoogleDriveConnection } from '@/app/actions/google-drive';
 import { testGoogleContactsConnection } from '@/app/actions/google-contacts';
@@ -36,7 +36,7 @@ interface ProjectSettingsProps {
 }
 
 export function ProjectSettings({ project }: ProjectSettingsProps) {
-  const { user, unlinkProvider } = useAuth();
+  const { user, auth } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -84,7 +84,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
             throw new Error('Could not get credential from result.');
         }
         
-        // @ts-ignore
+        // @ts-ignore - serverAuthCode is available on the credential object from popups
         const serverAuthCode = credential.serverAuthCode;
 
         if (!serverAuthCode) {
@@ -102,21 +102,27 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
 
     } catch (error: any) {
         console.error("Google Link Error:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Connection Failed',
-            description: error.code === 'auth/credential-already-in-use'
-                ? 'This Google account is already linked to another user.'
-                : error.message || 'An unknown error occurred during authentication.'
-        });
+        
+        if (error.code === 'auth/credential-already-in-use') {
+             toast({
+                variant: 'destructive',
+                duration: 10000,
+                title: 'Account Already in Use',
+                description: "This Google account is already linked to another user in this app. Please sign out and sign back in with that Google account to use it.",
+            });
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Connection Failed',
+                description: error.message || 'An unknown error occurred during authentication.'
+            });
+        }
     }
   };
 
   const handleDisconnect = async (service: 'drive' | 'contacts') => {
     if (!user) return;
     try {
-        // Unlinking is problematic if the same Google account is used for login
-        // await unlinkProvider();
         await disconnectGoogle(project.id, service);
         toast({ title: 'Success', description: `Your Google account has been disconnected from ${service}.`});
         router.refresh();
