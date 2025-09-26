@@ -14,6 +14,8 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useCurrency } from "@/context/CurrencyContext";
 import { TaskCard } from "./task-card";
+import { FinancialChart, type MonthlyData } from "./financial-chart";
+import { format } from "date-fns";
 
 interface ProjectDashboardProps {
     project: Project;
@@ -45,21 +47,36 @@ export function ProjectDashboard({ project, tasks, finances, channels }: Project
         return () => unsubscribe();
     }, [project.id]);
 
-    const { profitLoss, taskCompletionRate, completedTasks } = useMemo(() => {
-        const totalIncome = finances
-            .filter(f => f.type === 'income')
-            .reduce((sum, f) => sum + convert(f.amount, f.currency, displayCurrency), 0);
+    const { profitLoss, taskCompletionRate, completedTasks, monthlyChartData } = useMemo(() => {
+        const monthlyData: { [key: string]: { income: number; expense: number } } = {};
         
-        const totalExpenses = finances
-            .filter(f => f.type === 'expense')
-            .reduce((sum, f) => sum + convert(f.amount, f.currency, displayCurrency), 0);
-            
+        finances.forEach(f => {
+            const month = format(new Date(f.date), 'MMM yyyy');
+            if (!monthlyData[month]) {
+                monthlyData[month] = { income: 0, expense: 0 };
+            }
+            const convertedAmount = convert(f.amount, f.currency, displayCurrency);
+            if (f.type === 'income') {
+                monthlyData[month].income += convertedAmount;
+            } else {
+                monthlyData[month].expense += convertedAmount;
+            }
+        });
+        
+        const monthlyChartData: MonthlyData[] = Object.keys(monthlyData).map(month => ({
+            month,
+            income: monthlyData[month].income,
+            expenses: monthlyData[month].expense
+        })).slice(-6); // Last 6 months
+
+        const totalIncome = Object.values(monthlyData).reduce((sum, data) => sum + data.income, 0);
+        const totalExpenses = Object.values(monthlyData).reduce((sum, data) => sum + data.expense, 0);
         const profitLoss = totalIncome - totalExpenses;
         
         const completedTasks = tasks.filter(t => t.completed).length;
         const taskCompletionRate = tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0;
 
-        return { profitLoss, taskCompletionRate, completedTasks };
+        return { profitLoss, taskCompletionRate, completedTasks, monthlyChartData };
     }, [finances, tasks, displayCurrency]);
 
 
@@ -75,43 +92,44 @@ export function ProjectDashboard({ project, tasks, finances, channels }: Project
     return (
         <div className="grid gap-6 mt-4">
              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Card>
+                <Card className="lg:col-span-2">
                     <CardHeader>
-                        <CardTitle>Profit / Loss</CardTitle>
-                        <CardDescription>Total income minus expenses</CardDescription>
+                        <CardTitle>Financial Overview</CardTitle>
+                        <CardDescription>Income vs. Expenses for the last 6 months.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className={`text-2xl font-bold ${profitLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                            {formatCurrency(profitLoss)}
-                        </p>
+                       <FinancialChart data={monthlyChartData} currency={displayCurrency} />
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Task Completion</CardTitle>
-                        <CardDescription>{completedTasks} of {tasks.length} tasks completed</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Progress value={taskCompletionRate} className="mb-2" />
-                        <p className="text-2xl font-bold text-right">{taskCompletionRate.toFixed(0)}%</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Leads & Channels</CardTitle>
-                        <CardDescription>Active lead and channel counts</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-rows-2 gap-2">
-                        <div>
-                             <p className="text-xs text-muted-foreground">Active Leads</p>
-                            <p className="text-2xl font-bold">{leads.length}</p>
-                        </div>
-                         <div>
-                            <p className="text-xs text-muted-foreground">Channels</p>
-                            <p className="text-2xl font-bold">{channels.length}</p>
-                        </div>
-                    </CardContent>
-                </Card>
+                
+                <div className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Task Completion</CardTitle>
+                            <CardDescription>{completedTasks} of {tasks.length} tasks completed</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Progress value={taskCompletionRate} className="mb-2" />
+                            <p className="text-2xl font-bold text-right">{taskCompletionRate.toFixed(0)}%</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Leads & Channels</CardTitle>
+                            <CardDescription>Active lead and channel counts</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-2">
+                            <div>
+                                <p className="text-xs text-muted-foreground">Active Leads</p>
+                                <p className="text-2xl font-bold">{leads.length}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground">Channels</p>
+                                <p className="text-2xl font-bold">{channels.length}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
             
             <Card>
