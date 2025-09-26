@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -8,7 +9,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { PackageForm } from './package-form';
-import { ArrowRight, Edit, Percent, Tag, Trash2, X } from 'lucide-react';
+import { ArrowRight, Edit, Percent, Tag, Trash2, X, Star } from 'lucide-react';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -29,12 +30,14 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/lib/activity-log';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 interface PackageCardProps {
     pkg: Package;
     project: Project;
     allServices: Service[];
     allProducts: Product[];
+    onStar: (id: string, starred: boolean) => void;
 }
 
 interface DiscountCalculatorProps {
@@ -125,7 +128,7 @@ const DiscountCalculator: React.FC<DiscountCalculatorProps> = ({ pkg }) => {
 };
 
 
-export function PackageCard({ pkg, project, allServices, allProducts }: PackageCardProps) {
+export function PackageCard({ pkg, project, allServices, allProducts, onStar }: PackageCardProps) {
     const { toast } = useToast();
     const { user } = useAuth();
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -146,14 +149,14 @@ export function PackageCard({ pkg, project, allServices, allProducts }: PackageC
     return (
         <Card className='flex flex-col'>
             {pkg.imageUrl && (
-                <div className="relative aspect-square w-full">
+                <div className="relative aspect-video w-full">
                     <Image src={pkg.imageUrl} alt={pkg.name} layout="fill" className="rounded-t-lg object-cover" />
                 </div>
             )}
             <CardHeader className='p-4'>
                 <div className='flex justify-between items-start'>
                     <CardTitle className='text-lg'>{pkg.name}</CardTitle>
-                    <div className="flex items-center">
+                     <div className='flex items-center'>
                         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                             <DialogTrigger asChild>
                                 <Button size="icon" variant="ghost"><Edit className="h-4 w-4" /></Button>
@@ -193,21 +196,28 @@ export function PackageCard({ pkg, project, allServices, allProducts }: PackageC
                     {includedServices.length > 3 && <li>+ {includedServices.length - 3} more...</li>}
                 </ul>
             </CardContent>
-            <CardFooter className='p-4 pt-0 flex items-center justify-between'>
-                <div>
-                    <p className='text-xs text-muted-foreground'>Price</p>
-                    <p className='text-lg font-bold'>
-                        {new Intl.NumberFormat("en-US", { style: "currency", currency: pkg.currency }).format(pkg.price)}
-                    </p>
+            <CardFooter className='p-4 pt-0 flex flex-col items-start gap-2'>
+                 <div className="flex w-full justify-between items-end">
+                    <div>
+                        <p className='text-xs text-muted-foreground'>Price</p>
+                        <p className='text-lg font-bold'>
+                            {new Intl.NumberFormat("en-US", { style: "currency", currency: pkg.currency }).format(pkg.price)}
+                        </p>
+                    </div>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm">Calculator</Button>
+                        </PopoverTrigger>
+                        <PopoverContent className='w-96'>
+                            <DiscountCalculator pkg={pkg} />
+                        </PopoverContent>
+                    </Popover>
                 </div>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">Calculator</Button>
-                    </PopoverTrigger>
-                    <PopoverContent className='w-96'>
-                        <DiscountCalculator pkg={pkg} />
-                    </PopoverContent>
-                </Popover>
+                <div className='flex items-center w-full justify-center'>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onStar(pkg.id, !pkg.starred)}>
+                        <Star className={cn("h-4 w-4", pkg.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
+                    </Button>
+                </div>
             </CardFooter>
         </Card>
     );

@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -8,23 +10,23 @@ import { PlusCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { CategoryForm } from './category-form';
 import { ServiceForm } from './service-form';
-import { DataTable } from '../ui/data-table';
-import { getServicesColumns } from './services-columns';
 import { PackageForm } from './package-form';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { getCategoriesColumns } from './category-columns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { deleteDoc, doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ProductForm } from './product-form';
-import { getProductsColumns } from './product-columns';
 import { useCurrency } from '@/context/CurrencyContext';
 import { PackageCard } from './package-card';
 import { CategoriesToolbar } from './categories-toolbar';
 import { ServicesToolbar } from './services-toolbar';
 import { ProductsToolbar } from './products-toolbar';
 import { PackagesToolbar } from './packages-toolbar';
+import { ScrollArea } from '../ui/scroll-area';
+import { CategoryCard } from './category-card';
+import { ServiceCard } from './service-card';
+import { ProductCard } from './product-card';
 
 interface ProjectProductsProps {
   project: Project;
@@ -59,43 +61,36 @@ export function ProjectProducts({ project, categories, services, products, packa
     }
   }
 
-  const handleDeleteSelected = (collectionName: 'categories' | 'services' | 'products') => async (ids: string[]) => {
-    const batch = writeBatch(db);
-    ids.forEach(id => {
-        batch.delete(doc(db, collectionName, id));
-    });
-    try {
-        await batch.commit();
-        toast({ title: "Success", description: `${ids.length} item(s) deleted.`});
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Error", description: `Could not delete selected items.`})
-    }
-  }
-
-  const categoryColumns = useMemo(() => getCategoriesColumns(handleStar('categories')), []);
-  const serviceColumns = useMemo(() => getServicesColumns({ categories, project, onStar: handleStar('services') }, displayCurrency), [categories, project, displayCurrency]);
-  const productColumns = useMemo(() => getProductsColumns({ categories, project, onStar: handleStar('products') }, displayCurrency), [categories, project, displayCurrency]);
-
   const filteredCategories = useMemo(() => {
-    return categories.filter(c => c.name.toLowerCase().includes(categoryFilters.search.toLowerCase()));
+    return [...categories]
+      .sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0) || a.name.localeCompare(b.name))
+      .filter(c => c.name.toLowerCase().includes(categoryFilters.search.toLowerCase()));
   }, [categories, categoryFilters]);
-
+  
   const filteredServices = useMemo(() => {
-    return services.filter(s => {
+    return [...services]
+        .sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0) || a.name.localeCompare(b.name))
+        .filter(s => {
         const categoryMatch = serviceFilters.categoryId === 'all' || s.categoryId === serviceFilters.categoryId;
-        return categoryMatch; // Global search is handled by data-table
+        const searchMatch = !serviceFilters.search || s.name.toLowerCase().includes(serviceFilters.search.toLowerCase());
+        return categoryMatch && searchMatch;
     });
   }, [services, serviceFilters]);
   
   const filteredProducts = useMemo(() => {
-    return products.filter(p => {
+    return [...products]
+        .sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0) || a.name.localeCompare(b.name))
+        .filter(p => {
         const categoryMatch = productFilters.categoryId === 'all' || p.categoryId === productFilters.categoryId;
-        return categoryMatch; // Global search is handled by data-table
+        const searchMatch = !productFilters.search || p.name.toLowerCase().includes(productFilters.search.toLowerCase());
+        return categoryMatch && searchMatch;
     });
   }, [products, productFilters]);
 
   const filteredPackages = useMemo(() => {
-    return packages.filter(p => {
+    return [...packages]
+      .sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0) || a.name.localeCompare(b.name))
+      .filter(p => {
         const typeMatch = packageFilters.type === 'all' || (p.custom === (packageFilters.type === 'custom'));
         const searchMatch = p.name.toLowerCase().includes(packageFilters.search.toLowerCase()) ||
                             p.description.toLowerCase().includes(packageFilters.search.toLowerCase());
@@ -158,13 +153,15 @@ export function ProjectProducts({ project, categories, services, products, packa
             <CardDescription>Manage the categories for your services and products.</CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable 
-                columns={categoryColumns} 
-                data={filteredCategories} 
-                onDeleteSelected={handleDeleteSelected('categories')}
-                toolbar={<CategoriesToolbar onFilterChange={setCategoryFilters} />}
-                globalFilter={categoryFilters.search}
-            />
+            <CategoriesToolbar onFilterChange={setCategoryFilters} />
+            <ScrollArea className="h-[calc(100vh-35rem)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                {filteredCategories.map(category => (
+                  <CategoryCard key={category.id} category={category} onStar={handleStar('categories')} />
+                ))}
+              </div>
+            </ScrollArea>
+            {filteredCategories.length === 0 && <p className='text-center text-muted-foreground py-12'>No categories found.</p>}
           </CardContent>
         </Card>
       </TabsContent>
@@ -176,13 +173,15 @@ export function ProjectProducts({ project, categories, services, products, packa
             <CardDescription>Manage individual services offered in this project.</CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable 
-                columns={serviceColumns} 
-                data={filteredServices} 
-                toolbar={<ServicesToolbar categories={categories} onFilterChange={setServiceFilters} />} 
-                onDeleteSelected={handleDeleteSelected('services')} 
-                globalFilter={serviceFilters.search}
-            />
+            <ServicesToolbar categories={categories} onFilterChange={setServiceFilters} />
+             <ScrollArea className="h-[calc(100vh-35rem)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                {filteredServices.map(service => (
+                  <ServiceCard key={service.id} service={service} project={project} categories={categories} onStar={handleStar('services')} displayCurrency={displayCurrency} />
+                ))}
+              </div>
+            </ScrollArea>
+             {filteredServices.length === 0 && <p className='text-center text-muted-foreground py-12'>No services found.</p>}
           </CardContent>
         </Card>
       </TabsContent>
@@ -194,13 +193,15 @@ export function ProjectProducts({ project, categories, services, products, packa
             <CardDescription>Manage individual products offered in this project.</CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable 
-                columns={productColumns} 
-                data={filteredProducts} 
-                toolbar={<ProductsToolbar categories={categories} onFilterChange={setProductFilters} />} 
-                onDeleteSelected={handleDeleteSelected('products')} 
-                globalFilter={productFilters.search}
-            />
+            <ProductsToolbar categories={categories} onFilterChange={setProductFilters} />
+            <ScrollArea className="h-[calc(100vh-35rem)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                {filteredProducts.map(product => (
+                  <ProductCard key={product.id} product={product} project={project} categories={categories} onStar={handleStar('products')} displayCurrency={displayCurrency} />
+                ))}
+              </div>
+            </ScrollArea>
+            {filteredProducts.length === 0 && <p className='text-center text-muted-foreground py-12'>No products found.</p>}
           </CardContent>
         </Card>
       </TabsContent>
@@ -217,17 +218,20 @@ export function ProjectProducts({ project, categories, services, products, packa
           </CardHeader>
           <CardContent>
             <PackagesToolbar onFilterChange={setPackageFilters} />
-            <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4'>
-                {filteredPackages.map(pkg => (
-                    <PackageCard 
-                        key={pkg.id} 
-                        pkg={pkg} 
-                        project={project} 
-                        allServices={services} 
-                        allProducts={products} 
-                    />
-                ))}
-            </div>
+            <ScrollArea className="h-[calc(100vh-35rem)]">
+              <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-4 p-1 mt-4'>
+                  {filteredPackages.map(pkg => (
+                      <PackageCard 
+                          key={pkg.id} 
+                          pkg={pkg} 
+                          project={project} 
+                          allServices={services} 
+                          allProducts={products} 
+                          onStar={handleStar('packages')}
+                      />
+                  ))}
+              </div>
+            </ScrollArea>
             {filteredPackages.length === 0 && (
                 <div className="text-center text-muted-foreground py-12">
                     <p>No packages found for the selected filters.</p>
