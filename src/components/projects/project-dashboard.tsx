@@ -16,6 +16,7 @@ import { useCurrency } from "@/context/CurrencyContext";
 import { TaskCard } from "./task-card";
 import { FinancialChart, type MonthlyData } from "./financial-chart";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface ProjectDashboardProps {
     project: Project;
@@ -94,7 +95,12 @@ export function ProjectDashboard({ project, tasks, finances, channels }: Project
              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card className="lg:col-span-2">
                     <CardHeader>
-                        <CardTitle>Financial Overview</CardTitle>
+                        <div className="flex justify-between items-center">
+                            <CardTitle>Financial Overview</CardTitle>
+                            <p className={cn("text-xl font-bold", profitLoss >= 0 ? 'text-green-400' : 'text-red-400')}>
+                                {formatCurrency(profitLoss)}
+                            </p>
+                        </div>
                         <CardDescription>Income vs. Expenses for the last 6 months.</CardDescription>
                     </CardHeader>
                     <CardContent>
