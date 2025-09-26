@@ -207,7 +207,7 @@ export default function ProjectDetailPage() {
                 <ProjectLeads project={project} leads={leads} packages={packages} services={services} channels={channels} />
             </TabsContent>
             <TabsContent value="channels">
-                <ProjectChannels project={project} channels={channels} />
+                <ProjectChannels project={project} channels={channels} leads={leads} />
             </TabsContent>
              <TabsContent value="vendors">
                 <ProjectVendors project={project} vendors={vendors} channels={channels} />

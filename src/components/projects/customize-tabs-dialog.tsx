@@ -95,3 +95,4 @@ export function CustomizeTabsDialog({ project, closeDialog }: CustomizeTabsDialo
     </div>
   );
 }
+
