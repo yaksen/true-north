@@ -26,10 +26,8 @@ import { deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { MemberForm } from './member-form';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
+import { getGoogleAuthUrl } from '@/app/actions/google-auth';
+
 
 interface ProjectSettingsProps {
   project: Project;
@@ -43,6 +41,21 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   
   const isOwner = user?.uid === project.ownerUid;
+
+  const handleConnect = async (api: 'drive' | 'contacts') => {
+    try {
+      const url = await getGoogleAuthUrl(api, project.id);
+      window.location.href = url;
+    } catch (error) {
+      console.error(`Error connecting to Google ${api}:`, error);
+      toast({
+        variant: 'destructive',
+        title: 'Connection Error',
+        description: `Could not initiate connection with Google ${api}.`,
+      });
+    }
+  };
+
 
   async function handleDeleteProject() {
     if (!isOwner) {
@@ -87,6 +100,41 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
           <MembersList project={project} />
         </CardContent>
       </Card>
+
+      {isOwner && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Integrations</CardTitle>
+            <CardDescription>Connect to third-party services to extend functionality.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="flex items-center gap-4">
+                <File className="h-6 w-6" />
+                <div>
+                  <h3 className="font-semibold">Google Drive</h3>
+                  <p className="text-sm text-muted-foreground">Attach files and reports to your project items.</p>
+                </div>
+              </div>
+              <Button onClick={() => handleConnect('drive')} disabled={!!project.googleDriveAccessToken}>
+                {project.googleDriveAccessToken ? 'Connected' : 'Connect'}
+              </Button>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="flex items-center gap-4">
+                <UserIcon className="h-6 w-6" />
+                <div>
+                  <h3 className="font-semibold">Google Contacts</h3>
+                  <p className="text-sm text-muted-foreground">Save leads, vendors, and partners to your Google Contacts.</p>
+                </div>
+              </div>
+              <Button onClick={() => handleConnect('contacts')} disabled={!!project.googleContactsAccessToken}>
+                 {project.googleContactsAccessToken ? 'Connected' : 'Connect'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       {isOwner && (
         <Card className="border-destructive">
