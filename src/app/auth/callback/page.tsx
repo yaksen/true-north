@@ -23,7 +23,11 @@ export default function AuthCallbackPage() {
                         title: 'Success!',
                         description: 'Your Google account has been connected.',
                     });
-                    router.push(`/dashboard/projects/${projectId}/settings`);
+                    // Construct the full, absolute URL for the final redirect
+                    const redirectUrl = `http://localhost:9002/dashboard/projects/${projectId}/settings`;
+                    window.location.href = redirectUrl; // Use window.location for a robust redirect from the popup
+                    // Close the popup after a delay, as the redirect will handle the navigation
+                    setTimeout(() => window.close(), 500);
                 })
                 .catch(error => {
                     toast({
@@ -31,8 +35,8 @@ export default function AuthCallbackPage() {
                         title: 'Authentication Failed',
                         description: error.message || 'An unknown error occurred during authentication.'
                     });
-                    // Redirect to a safe page even on error, perhaps the main dashboard
-                    router.push('/dashboard');
+                     // Close the popup on error as well
+                    window.close();
                 });
         } else {
              toast({
@@ -40,7 +44,7 @@ export default function AuthCallbackPage() {
                 title: 'Authentication Error',
                 description: 'Could not find authorization code. Please try again.'
             });
-            router.push('/dashboard');
+            window.close();
         }
     }, [searchParams, toast, router]);
 
