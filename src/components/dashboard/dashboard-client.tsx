@@ -33,14 +33,14 @@ export function DashboardClient({ projects, tasks, finances, settings }: Dashboa
   const projectSummaries = useMemo<ProjectSummary[]>(() => {
     return projects.map(project => {
       const projectFinances = finances.filter(f => f.projectId === project.id);
-      const projectTasks = tasks.filter(t => t.projectId === project.id);
+      const activeTasks = tasks.filter(t => t.projectId === project.id && !t.archived);
 
       const totalIncome = projectFinances.filter(f => f.type === 'income').reduce((sum, f) => sum + convert(f.amount, f.currency, displayCurrency), 0);
       const totalExpense = projectFinances.filter(f => f.type === 'expense').reduce((sum, f) => sum + convert(f.amount, f.currency, displayCurrency), 0);
       const profitLoss = totalIncome - totalExpense;
 
-      const completedTasks = projectTasks.filter(t => t.completed).length;
-      const taskCompletionRate = projectTasks.length > 0 ? (completedTasks / projectTasks.length) * 100 : 0;
+      const completedTasks = activeTasks.filter(t => t.completed).length;
+      const taskCompletionRate = activeTasks.length > 0 ? (completedTasks / activeTasks.length) * 100 : 0;
       
       const monthlyPL = Array(6).fill(0).map((_, i) => {
         const d = new Date();

@@ -94,7 +94,7 @@ export default function ProjectsPage() {
   const projectSummaries = useMemo(() => {
     return projects.map(project => {
         const projectFinances = finances.filter(f => f.projectId === project.id);
-        const projectTasks = tasks.filter(t => t.projectId === project.id);
+        const activeTasks = tasks.filter(t => t.projectId === project.id && !t.archived);
 
         const income = projectFinances
             .filter(f => f.type === 'income')
@@ -106,14 +106,14 @@ export default function ProjectsPage() {
             
         const profitLoss = income - expense;
         
-        const completedTasks = projectTasks.filter(t => t.completed).length;
-        const taskCompletionRate = projectTasks.length > 0 ? (completedTasks / projectTasks.length) * 100 : 0;
+        const completedTasks = activeTasks.filter(t => t.completed).length;
+        const taskCompletionRate = activeTasks.length > 0 ? (completedTasks / activeTasks.length) * 100 : 0;
         
         return {
             ...project,
             profitLoss,
             taskCompletionRate,
-            totalTasks: projectTasks.length,
+            totalTasks: activeTasks.length,
             completedTasks,
         }
     });
