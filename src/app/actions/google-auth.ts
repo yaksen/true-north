@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-const REDIRECT_URI = 'https://yaksen-crm.firebaseapp.com/auth/callback';
+const REDIRECT_URI = 'https://yaksen-crm.firebaseapp.com/__/auth/handler';
 
 
 export async function getGoogleAuthUrl(projectId: string, scope: string): Promise<string> {
