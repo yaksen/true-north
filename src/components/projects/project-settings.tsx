@@ -45,25 +45,26 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   
   const isOwner = user?.uid === project.ownerUid;
 
-  // Check if the user signed in with Google
-  const isGoogleUser = user?.providerData.some(p => p.providerId === 'google.com');
-
-  async function handleDeleteProject() {
-    if (!isOwner) {
-      toast({ variant: 'destructive', title: 'Unauthorized', description: 'Only the project owner can delete the project.' });
-      return;
-    }
-    setIsDeleting(true);
-    try {
-      await deleteDoc(doc(db, 'projects', project.id));
-      toast({ title: 'Success', description: 'Project has been permanently deleted.' });
-      router.push('/dashboard/projects');
-    } catch (error) {
-      console.error("Error deleting project:", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the project.' });
-      setIsDeleting(false);
-    }
-  }
+  // This effect will run on component mount to sync tokens if needed
+  useEffect(() => {
+    const syncTokens = async () => {
+        // Check if user is logged in via Google and has a server auth code
+        if (userProfile?.googleServerAuthCode) {
+            // Check if either of the tokens are missing for this project
+            if (!project.googleDriveRefreshToken || !project.googleContactsRefreshToken) {
+                console.log("Found auth code, attempting to store tokens for project...");
+                const result = await storeGoogleTokens(project.id, userProfile.googleServerAuthCode, 'drive.file contacts');
+                if (result.success) {
+                    toast({ title: 'Success!', description: 'Google account linked to this project.' });
+                    router.refresh(); // Refresh to get the updated project props
+                } else {
+                    toast({ variant: 'destructive', title: 'Auto-link failed', description: result.error || 'Could not link Google account.'});
+                }
+            }
+        }
+    };
+    syncTokens();
+  }, [project, userProfile, router, toast]);
 
   const handleConnect = async (scope: 'drive.file' | 'contacts') => {
     if (!user) {
@@ -124,6 +125,23 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         }
     }
   };
+
+  async function handleDeleteProject() {
+    if (!isOwner) {
+      toast({ variant: 'destructive', title: 'Unauthorized', description: 'Only the project owner can delete the project.' });
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(db, 'projects', project.id));
+      toast({ title: 'Success', description: 'Project has been permanently deleted.' });
+      router.push('/dashboard/projects');
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the project.' });
+      setIsDeleting(false);
+    }
+  }
 
   const handleDisconnect = async (service: 'drive' | 'contacts') => {
     if (!user) return;
