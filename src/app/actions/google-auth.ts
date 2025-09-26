@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation';
 
 const REDIRECT_URI = process.env.NEXT_PUBLIC_URL 
     ? `${process.env.NEXT_PUBLIC_URL}/auth/callback` 
-    : 'https://9000-firebase-studio-1757237676924.cluster-bqwaigqtxbeautecnatk4o6ynk.cloudworkstations.dev/auth/callback';
+    : 'http://localhost:9002/auth/callback';
 
 
 export async function getGoogleAuthUrl(projectId: string, scope: string): Promise<string> {
