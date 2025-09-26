@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { MembersList } from './members-list';
-import { Loader2, Trash2, UserPlus, File, User as UserIcon, HelpCircle } from 'lucide-react';
+import { Loader2, Trash2, UserPlus, File, User as UserIcon, HelpCircle, Link as LinkIcon, Contact } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +25,7 @@ import { deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { MemberForm } from './member-form';
+import { getGoogleAuthUrl } from '@/app/actions/google-auth';
 
 
 interface ProjectSettingsProps {
@@ -57,9 +57,50 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
       setIsDeleting(false);
     }
   }
+  
+  const handleConnect = async (scope: string) => {
+    try {
+        const url = await getGoogleAuthUrl(project.id, scope);
+        router.push(url);
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not generate Google auth URL.'});
+    }
+  }
 
   return (
     <div className="grid gap-6 mt-4 max-w-4xl mx-auto">
+      <Card>
+        <CardHeader>
+            <CardTitle>API Integrations</CardTitle>
+            <CardDescription>Connect to external services to unlock more features.</CardDescription>
+        </CardHeader>
+        <CardContent className='space-y-4'>
+            <div className='flex items-center justify-between p-4 border rounded-lg'>
+                <div className='flex items-center gap-3'>
+                    <Contact />
+                    <div>
+                        <h4 className='font-semibold'>Google Contacts</h4>
+                        <p className='text-sm text-muted-foreground'>Sync leads, vendors, and partners.</p>
+                    </div>
+                </div>
+                 <Button onClick={() => handleConnect('contacts')} disabled={!!project.googleContactsAccessToken}>
+                    {project.googleContactsAccessToken ? 'Connected' : 'Connect'}
+                </Button>
+            </div>
+             <div className='flex items-center justify-between p-4 border rounded-lg'>
+                <div className='flex items-center gap-3'>
+                    <File />
+                    <div>
+                        <h4 className='font-semibold'>Google Drive</h4>
+                        <p className='text-sm text-muted-foreground'>Upload & manage project files.</p>
+                    </div>
+                </div>
+                 <Button onClick={() => handleConnect('drive.file')} disabled={!!project.googleDriveAccessToken}>
+                    {project.googleDriveAccessToken ? 'Connected' : 'Connect'}
+                </Button>
+            </div>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader className='flex-row items-center justify-between'>
           <div>
