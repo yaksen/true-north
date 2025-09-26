@@ -2,14 +2,13 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { getTokensAndStore } from '@/app/actions/google-auth';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AuthCallbackPage() {
     const searchParams = useSearchParams();
-    const router = useRouter();
     const { toast } = useToast();
 
     useEffect(() => {
@@ -19,15 +18,11 @@ export default function AuthCallbackPage() {
         if (code && state) {
             getTokensAndStore(code, state)
                 .then(({ projectId }) => {
-                    toast({
-                        title: 'Success!',
-                        description: 'Your Google account has been connected.',
-                    });
-                    // Construct the full, absolute URL for the final redirect
-                    const redirectUrl = `http://localhost:9002/dashboard/projects/${projectId}/settings`;
-                    window.location.href = redirectUrl; // Use window.location for a robust redirect from the popup
-                    // Close the popup after a delay, as the redirect will handle the navigation
-                    setTimeout(() => window.close(), 500);
+                    // Inform the opener window to redirect and then close the popup.
+                    if (window.opener) {
+                        window.opener.postMessage({ type: 'auth-success', projectId: projectId }, window.location.origin);
+                    }
+                    window.close();
                 })
                 .catch(error => {
                     toast({
@@ -35,7 +30,9 @@ export default function AuthCallbackPage() {
                         title: 'Authentication Failed',
                         description: error.message || 'An unknown error occurred during authentication.'
                     });
-                     // Close the popup on error as well
+                    if (window.opener) {
+                         window.opener.postMessage({ type: 'auth-error', error: error.message }, window.location.origin);
+                    }
                     window.close();
                 });
         } else {
@@ -46,13 +43,14 @@ export default function AuthCallbackPage() {
             });
             window.close();
         }
-    }, [searchParams, toast, router]);
+    }, [searchParams, toast]);
 
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <div className="flex flex-col items-center gap-4">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 <p className="text-lg text-muted-foreground">Authenticating, please wait...</p>
+                <p className="text-sm text-muted-foreground">This window will close automatically.</p>
             </div>
         </div>
     );

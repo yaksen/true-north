@@ -41,6 +41,36 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   
   const isOwner = user?.uid === project.ownerUid;
 
+  useEffect(() => {
+    const handleAuthMessage = (event: MessageEvent) => {
+        // IMPORTANT: Check the origin of the message for security
+        if (event.origin !== window.location.origin) {
+            return;
+        }
+
+        const { type, projectId, error } = event.data;
+        if (type === 'auth-success' && projectId === project.id) {
+            toast({
+                title: 'Success!',
+                description: 'Your Google account has been connected.',
+            });
+            // Refresh the page to show the "Connected" state
+            router.refresh();
+        } else if (type === 'auth-error') {
+             toast({
+                variant: 'destructive',
+                title: 'Authentication Failed',
+                description: error || 'An unknown error occurred during authentication.'
+            });
+        }
+    };
+
+    window.addEventListener('message', handleAuthMessage);
+    return () => {
+        window.removeEventListener('message', handleAuthMessage);
+    };
+}, [project.id, router, toast]);
+
   async function handleDeleteProject() {
     if (!isOwner) {
       toast({ variant: 'destructive', title: 'Unauthorized', description: 'Only the project owner can delete the project.' });
@@ -61,8 +91,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const handleConnect = async (scope: string) => {
     try {
         const url = await getGoogleAuthUrl(project.id, scope);
-        // Open in a new pop-up window for a better UX
-        window.open(url, 'google-auth', 'width=500,height=600');
+        window.open(url, 'google-auth', 'width=500,height=600,popup');
     } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not generate Google auth URL.'});
     }
