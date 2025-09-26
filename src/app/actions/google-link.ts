@@ -5,18 +5,18 @@ import { google } from 'googleapis';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-const REDIRECT_URI = 'http://localhost:9002';
+const REDIRECT_URI = 'http://localhost:9002'; // This MUST match the one in your Google Cloud Console
 
 export async function storeGoogleTokens(
   projectId: string,
   authorizationCode: string,
-  scope: string
+  scopes: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      REDIRECT_URI // This is not used for redirection here, but required for client init
+      REDIRECT_URI
     );
 
     const { tokens } = await oauth2Client.getToken(authorizationCode);
@@ -29,16 +29,18 @@ export async function storeGoogleTokens(
     const projectRef = doc(db, 'projects', projectId);
     let updates: any = {};
 
-    if (scope.includes('drive.file')) {
-      updates = {
-        googleDriveAccessToken: access_token,
-        googleDriveRefreshToken: refresh_token,
-      };
-    } else if (scope.includes('contacts')) {
-      updates = {
-        googleContactsAccessToken: access_token,
-        googleContactsRefreshToken: refresh_token,
-      };
+    if (scopes.includes('drive.file')) {
+      updates.googleDriveAccessToken = access_token;
+      updates.googleDriveRefreshToken = refresh_token;
+    }
+    
+    if (scopes.includes('contacts')) {
+      updates.googleContactsAccessToken = access_token;
+      updates.googleContactsRefreshToken = refresh_token;
+    }
+
+    if (Object.keys(updates).length === 0) {
+        return { success: false, error: 'No relevant scopes found to store tokens for.' };
     }
 
     await updateDoc(projectRef, updates);

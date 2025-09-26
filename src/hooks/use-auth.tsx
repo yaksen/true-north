@@ -18,12 +18,14 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   updateProfile,
+  linkWithPopup,
   unlink,
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
+import { storeGoogleTokens } from '@/app/actions/google-link';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -35,6 +37,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
   unlinkProvider: () => Promise<void>;
+  auth: typeof auth;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -54,12 +57,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         unsubscribeProfile = undefined;
       }
       
+      setLoading(true);
+
       if (firebaseUser) {
-        setUser(firebaseUser);
         const userRef = doc(db, 'users', firebaseUser.uid);
         
         unsubscribeProfile = onSnapshot(userRef, async (userSnap) => {
           if (userSnap.exists()) {
+            setUser(auth.currentUser);
             setUserProfile(userSnap.data() as UserProfile);
             setLoading(false);
           } else {
@@ -82,11 +87,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               // The onSnapshot will trigger again with the new data, setting the userProfile and loading state
             } catch (error) {
                 console.error("Error creating user profile:", error);
+                setUser(null);
+                setUserProfile(null);
                 setLoading(false);
             }
           }
         }, (error) => {
             console.error("Error fetching user profile:", error);
+            setUser(null);
+            setUserProfile(null);
             setLoading(false);
         });
       } else {
@@ -132,9 +141,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signInWithGoogle = () => {
+  const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+    provider.addScope('https://www.googleapis.com/auth/drive.file');
+    provider.addScope('https://www.googleapis.com/auth/contacts');
+    provider.setCustomParameters({
+        access_type: 'offline',
+        prompt: 'consent'
+    });
+    const result = await signInWithPopup(auth, provider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    // @ts-ignore
+    const serverAuthCode = credential.serverAuthCode;
+
+    if (serverAuthCode && result.user) {
+        const userRef = doc(db, 'users', result.user.uid);
+        await setDoc(userRef, {
+            googleServerAuthCode: serverAuthCode
+        }, { merge: true });
+    }
+    
+    return result;
   };
 
   const signOut = () => {
@@ -151,19 +178,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     updateUserProfile,
     unlinkProvider,
+    auth
   };
-
-  if (loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {loading ? (
+          <div className="flex h-screen w-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+      ) : children}
     </AuthContext.Provider>
   );
 }

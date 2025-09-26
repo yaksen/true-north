@@ -27,6 +27,7 @@ import { useState } from 'react';
 import { Switch } from '../ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { logActivity } from '@/lib/activity-log';
+import { storeGoogleTokens } from '@/app/actions/google-link';
 
 const projectTypes = ['Active', 'Passive', 'Fun', 'Sub'] as const;
 
@@ -49,7 +50,7 @@ interface ProjectFormProps {
 }
 
 export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFormProps) {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -72,7 +73,7 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
   const type = form.watch('type');
 
   async function onSubmit(values: ProjectFormValues) {
-    if (!user || !user.profile) {
+    if (!user || !userProfile) {
       toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
       return;
     }
@@ -94,9 +95,9 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
         // Create new project
         const newMember: ProjectMember = {
           uid: user.uid,
-          displayName: user.profile.name || user.profile.email,
-          email: user.profile.email,
-          photoURL: user.profile.photoURL,
+          displayName: userProfile.name || userProfile.email,
+          email: userProfile.email,
+          photoURL: userProfile.photoURL,
           role: 'owner',
         };
 
@@ -111,6 +112,13 @@ export function ProjectForm({ project, allProjects = [], closeForm }: ProjectFor
         };
         const newProjectRef = await addDoc(collection(db, 'projects'), projectData);
         await logActivity(newProjectRef.id, 'project_created', { name: values.name }, user.uid);
+        
+        // If the user signed in with Google and has a server auth code, store tokens for this new project
+        // @ts-ignore
+        if (userProfile.googleServerAuthCode) {
+            await storeGoogleTokens(newProjectRef.id, userProfile.googleServerAuthCode, 'drive.file contacts');
+        }
+        
         toast({ title: 'Success', description: 'Project created successfully.' });
       }
       closeForm();

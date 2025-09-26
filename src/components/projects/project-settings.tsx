@@ -36,7 +36,7 @@ interface ProjectSettingsProps {
 }
 
 export function ProjectSettings({ project }: ProjectSettingsProps) {
-  const { user, auth } = useAuth();
+  const { user, auth, userProfile } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -44,6 +44,9 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const [isTesting, setIsTesting] = useState<'drive' | 'contacts' | null>(null);
   
   const isOwner = user?.uid === project.ownerUid;
+
+  // Check if the user signed in with Google
+  const isGoogleUser = user?.providerData.some(p => p.providerId === 'google.com');
 
   async function handleDeleteProject() {
     if (!isOwner) {
@@ -77,7 +80,9 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     });
 
     try {
-        const result = await linkWithPopup(user, provider);
+        if (!auth.currentUser) throw new Error("Current user not found in auth object.");
+
+        const result = await linkWithPopup(auth.currentUser, provider);
         const credential = GoogleAuthProvider.credentialFromResult(result);
 
         if (!credential) {
@@ -108,7 +113,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                 variant: 'destructive',
                 duration: 10000,
                 title: 'Account Already in Use',
-                description: "This Google account is already linked to another user in this app. Please sign out and sign back in with that Google account to use it.",
+                description: "This Google account is already linked to another user in this app. Please sign out and sign back in with that Google account to use it, or disconnect it from the other user.",
             });
         } else {
             toast({

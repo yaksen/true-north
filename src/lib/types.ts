@@ -30,6 +30,7 @@ export interface UserProfile {
     photoURL?: string;
     lastLogin?: Date;
     projects: string[]; // List of project IDs the user is a member of
+    googleServerAuthCode?: string; // Temporarily store the auth code
     createdAt: Date;
     updatedAt: Date;
 }
@@ -497,6 +498,7 @@ export interface PortfolioNote {
     description: string;
     categoryId: string;
     serviceId: string;
+    tags: string[];
     createdAt: Date;
     updatedAt: Date;
 }
