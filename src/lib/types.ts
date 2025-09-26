@@ -487,3 +487,23 @@ export interface PersonalChatMessage {
     createdAt: Date;
     userId?: string; // ID of the user who sent the message
 }
+
+export interface PortfolioNote {
+    id: string;
+    projectId: string;
+    title: string;
+    description: string;
+    tags: string[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface PortfolioItem {
+    id: string;
+    portfolioNoteId: string;
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+    fileSize: number;
+    createdAt: Date;
+}
