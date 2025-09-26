@@ -17,13 +17,15 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   updateProfile,
-  linkWithPopup,
-  unlink,
+  linkWithCredential,
+  fetchSignInMethodsForEmail,
+  EmailAuthProvider,
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
+import { useToast } from './use-toast';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -34,7 +36,6 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<any>;
   signOut: () => Promise<void>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
-  unlinkProvider: () => Promise<void>;
   auth: typeof auth;
 }
 
@@ -44,95 +45,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     let unsubscribeProfile: Unsubscribe | undefined;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-      // If user logs out
-      if (!firebaseUser) {
+      setLoading(true);
+      if (unsubscribeProfile) unsubscribeProfile();
+      
+      if (firebaseUser) {
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        unsubscribeProfile = onSnapshot(userRef, (userSnap) => {
+          if (userSnap.exists()) {
+            setUserProfile(userSnap.data() as UserProfile);
+          } else {
+            const profileData: UserProfile = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email!,
+              role: 'member',
+              name: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              projects: [],
+              createdAt: serverTimestamp() as any,
+              updatedAt: serverTimestamp() as any,
+            };
+            setDoc(userRef, profileData).catch(err => console.error("Error creating user doc", err));
+            setUserProfile(profileData);
+          }
+          setUser(firebaseUser); // Set user only after profile is handled
+          setLoading(false);
+        }, (error) => {
+          console.error("Profile snapshot error", error);
+          setUser(null);
+          setUserProfile(null);
+          setLoading(false);
+        });
+      } else {
         setUser(null);
         setUserProfile(null);
-        if (unsubscribeProfile) unsubscribeProfile();
         setLoading(false);
-        return;
       }
-
-      // If user logs in
-      const userRef = doc(db, 'users', firebaseUser.uid);
-      
-      // Set the raw firebase user immediately for SDK functions
-      setUser(firebaseUser);
-
-      // Subscribe to profile changes
-      unsubscribeProfile = onSnapshot(userRef, async (userSnap) => {
-        if (userSnap.exists()) {
-          setUserProfile(userSnap.data() as UserProfile);
-        } else {
-          // Profile doesn't exist, create it
-          const profileData: UserProfile = {
-            id: firebaseUser.uid,
-            email: firebaseUser.email!,
-            role: 'member',
-            name: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
-            projects: [],
-            createdAt: serverTimestamp() as any,
-            updatedAt: serverTimestamp() as any,
-          };
-          try {
-            await setDoc(userRef, profileData);
-            setUserProfile(profileData);
-          } catch (error) {
-            console.error("Error creating user profile:", error);
-            await firebaseSignOut(auth);
-          }
-        }
-        setLoading(false);
-      }, (error) => {
-        console.error("Error fetching user profile:", error);
-        firebaseSignOut(auth);
-        setLoading(false);
-      });
-      
-    }, (error) => {
-        console.error("Auth state change error:", error);
-        setLoading(false);
     });
 
     return () => {
       unsubscribeAuth();
-      if (unsubscribeProfile) {
-        unsubscribeProfile();
-      }
+      if (unsubscribeProfile) unsubscribeProfile();
     };
   }, []);
 
+
   const updateUserProfile = async (updates: Partial<UserProfile>) => {
-    if (!user || !auth.currentUser) throw new Error("Not authenticated");
+    if (!auth.currentUser) throw new Error("Not authenticated");
     
-    // Update Firebase Auth profile
     await updateProfile(auth.currentUser, {
       displayName: updates.name,
       photoURL: updates.photoURL,
     });
     
-    // Update Firestore profile
-    const userRef = doc(db, 'users', user.uid);
+    const userRef = doc(db, 'users', auth.currentUser.uid);
     await setDoc(userRef, { ...updates, updatedAt: serverTimestamp() }, { merge: true });
   };
   
-  const unlinkProvider = async () => {
-    if (!auth.currentUser) throw new Error("Not authenticated");
-    
-    const googleProvider = auth.currentUser.providerData.find(p => p.providerId === 'google.com');
-    if (googleProvider) {
-        await unlink(auth.currentUser, googleProvider.providerId);
-    } else {
-        throw new Error("No Google account is linked to this user.");
-    }
-  };
-
   const signUpWithEmail = (email: string, password: string) => {
     return createUserWithEmailAndPassword(auth, email, password);
   };
@@ -147,21 +121,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     provider.addScope('https://www.googleapis.com/auth/contacts');
     provider.setCustomParameters({
         access_type: 'offline',
-        prompt: 'consent' // Forces the consent screen and refresh token
+        prompt: 'consent'
     });
-    const result = await signInWithPopup(auth, provider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    // @ts-ignore
-    const serverAuthCode = credential.serverAuthCode;
 
-    if (serverAuthCode && result.user) {
-        const userRef = doc(db, 'users', result.user.uid);
-        await setDoc(userRef, {
-            googleServerAuthCode: serverAuthCode
-        }, { merge: true });
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        // @ts-ignore
+        const serverAuthCode = credential.serverAuthCode;
+
+        if (serverAuthCode && result.user) {
+            const userRef = doc(db, 'users', result.user.uid);
+            await setDoc(userRef, { googleServerAuthCode: serverAuthCode }, { merge: true });
+        }
+        return result;
+    } catch (error: any) {
+        if (error.code === 'auth/credential-already-in-use') {
+            const email = error.customData.email;
+            const methods = await fetchSignInMethodsForEmail(auth, email);
+
+            if (methods.includes(EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD)) {
+                const password = prompt(`This Google account is linked to an existing user with the email ${email}. Please enter your password for that account to link them.`);
+                if (password) {
+                    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    const googleCredential = GoogleAuthProvider.credentialFromError(error);
+                    if (userCredential.user && googleCredential) {
+                        await linkWithCredential(userCredential.user, googleCredential);
+                        toast({ title: 'Accounts Linked!', description: 'Your Google account has been successfully linked.' });
+                    }
+                } else {
+                    toast({ variant: 'destructive', title: 'Linking Canceled', description: 'Password not provided. Accounts were not linked.' });
+                }
+            } else {
+                toast({ variant: 'destructive', title: 'Linking Error', description: 'This Google account is associated with another sign-in method.' });
+            }
+        } else {
+            console.error("Google Sign-In Error:", error);
+            toast({ variant: 'destructive', title: 'Sign-In Failed', description: error.message });
+        }
+        throw error;
     }
-    
-    return result;
   };
 
   const signOut = () => {
@@ -177,17 +176,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithGoogle,
     signOut,
     updateUserProfile,
-    unlinkProvider,
     auth,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {loading ? (
-          <div className="flex h-screen w-full items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-      ) : children}
+      {children}
     </AuthContext.Provider>
   );
 }
