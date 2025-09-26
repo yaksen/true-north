@@ -6,11 +6,16 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { redirect } from 'next/navigation';
 
+const REDIRECT_URI = process.env.NEXT_PUBLIC_URL 
+    ? `${process.env.NEXT_PUBLIC_URL}/auth/callback` 
+    : 'https://9000-firebase-studio-1757237676924.cluster-bqwaigqtxbeautecnatk4o6ynk.cloudworkstations.dev/auth/callback';
+
+
 export async function getGoogleAuthUrl(projectId: string, scope: string): Promise<string> {
     const oauth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET,
-        process.env.NEXT_PUBLIC_URL ? `${process.env.NEXT_PUBLIC_URL}/auth/callback` : 'http://localhost:9002/auth/callback'
+        REDIRECT_URI
     );
 
     const scopes = [
@@ -33,7 +38,7 @@ export async function getTokensAndStore(code: string, state: string) {
     const oauth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET,
-        process.env.NEXT_PUBLIC_URL ? `${process.env.NEXT_PUBLIC_URL}/auth/callback` : 'http://localhost:9002/auth/callback'
+        REDIRECT_URI
     );
 
     try {
