@@ -149,7 +149,7 @@ export function PackageCard({ pkg, project, allServices, allProducts, onStar }: 
     return (
         <Card className='flex flex-col'>
             {pkg.imageUrl && (
-                <div className="relative aspect-video w-full">
+                <div className="relative aspect-square w-full">
                     <Image src={pkg.imageUrl} alt={pkg.name} layout="fill" className="rounded-t-lg object-cover" />
                 </div>
             )}
