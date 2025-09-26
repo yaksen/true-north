@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -21,7 +22,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export function UserNav() {
-  const { user, signOut } = useAuth();
+  const { user, userProfile, signOut } = useAuth();
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -44,8 +45,8 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user?.photoURL ?? user?.profile?.photoURL ?? ''} alt={user?.displayName ?? 'User'} />
-            <AvatarFallback>{getInitials(user?.profile?.name ?? user?.email)}</AvatarFallback>
+            <AvatarImage src={userProfile?.photoURL ?? user?.photoURL ?? ''} alt={userProfile?.name ?? 'User'} />
+            <AvatarFallback>{getInitials(userProfile?.name ?? user?.email)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -53,7 +54,7 @@ export function UserNav() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {user?.profile?.name ?? 'User'}
+              {userProfile?.name ?? 'User'}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
               {user?.email}

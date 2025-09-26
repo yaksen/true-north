@@ -22,15 +22,15 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export default function ProfilePage() {
-  const { user, updateUserProfile } = useAuth();
+  const { user, userProfile, updateUserProfile } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: user?.profile?.name || '',
-      photoURL: user?.profile?.photoURL || '',
+      name: userProfile?.name || '',
+      photoURL: userProfile?.photoURL || '',
     },
   });
 
@@ -68,11 +68,11 @@ export default function ProfilePage() {
         <CardContent>
             <div className="flex items-center gap-6 mb-8">
                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={user?.profile?.photoURL} alt={user?.profile?.name} />
-                    <AvatarFallback>{getInitials(user?.profile?.name)}</AvatarFallback>
+                    <AvatarImage src={userProfile?.photoURL} alt={userProfile?.name} />
+                    <AvatarFallback>{getInitials(userProfile?.name)}</AvatarFallback>
                 </Avatar>
                 <div className='space-y-1'>
-                    <h2 className='text-2xl font-bold'>{user?.profile?.name}</h2>
+                    <h2 className='text-2xl font-bold'>{userProfile?.name}</h2>
                     <p className='text-muted-foreground'>{user?.email}</p>
                 </div>
             </div>
