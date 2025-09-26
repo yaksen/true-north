@@ -61,6 +61,3 @@ export function TopProjects({ summaries, currency }: TopProjectsProps) {
     </Card>
   );
 }
-
-
-

@@ -10,10 +10,9 @@ import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { TaskForm } from "./task-form";
 import { FinanceForm } from "./finance-form";
-import { collection, onSnapshot, query, where, doc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useCurrency } from "@/context/CurrencyContext";
-import { ScrollArea } from "../ui/scroll-area";
 import { TaskCard } from "./task-card";
 
 interface ProjectDashboardProps {
@@ -34,8 +33,6 @@ const convert = (amount: number, from: string, to: string) => {
 
 
 export function ProjectDashboard({ project, tasks, finances, channels }: ProjectDashboardProps) {
-    const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
-    const [isFinanceFormOpen, setIsFinanceFormOpen] = useState(false);
     const [leads, setLeads] = useState<Lead[]>([]);
     const { globalCurrency } = useCurrency();
     const displayCurrency = globalCurrency || project.currency;

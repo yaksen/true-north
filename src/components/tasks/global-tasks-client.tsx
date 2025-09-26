@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { Project, Task, Lead, TaskTemplate, UserProfile, ProjectMember } from '@/lib/types';
+import type { Project, Task, Lead, TaskTemplate, UserProfile, ProjectMember, Channel } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Loader2, History, Archive } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -32,6 +32,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   const { toast } = useToast();
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
@@ -89,11 +90,11 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
         // Here you might add logic to check if a task from this template has already been created today
         const newTaskData = {
             projectId: template.projectId,
-            title: template.title,
+            title: template.name,
             description: template.description || '',
-            slot: template.slot,
+            slot: 'morning',
             completed: false,
-            assigneeUid: template.assigneeUids[0] || user.uid, // Default to first assignee or current user
+            assigneeUid: user.uid, // Default to current user
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         };
@@ -140,12 +141,22 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
   useEffect(() => {
     setLoading(true);
     const leadsQuery = query(collection(db, 'leads'));
+    const channelsQuery = query(collection(db, 'channels'));
+    
     const unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
         setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
-        setLoading(false);
     });
 
-    return () => unsubscribeLeads();
+    const unsubscribeChannels = onSnapshot(channelsQuery, (snapshot) => {
+        setChannels(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Channel)));
+    });
+
+    setLoading(false);
+
+    return () => {
+        unsubscribeLeads();
+        unsubscribeChannels();
+    }
   }, []);
 
   const filteredTasks = useMemo(() => {
@@ -209,6 +220,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
                 <TaskForm 
                 projects={projects} 
                 leads={leads}
+                channels={channels}
                 members={projectMembers}
                 closeForm={() => setIsTaskFormOpen(false)} 
                 />
@@ -226,6 +238,7 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
                             key={task.id}
                             task={task}
                             leads={leads}
+                            channels={channels}
                         />
                     ))}
                 </div>
