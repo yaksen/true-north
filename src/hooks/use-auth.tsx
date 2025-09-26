@@ -55,11 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (unsubscribeProfile) unsubscribeProfile();
       
       if (firebaseUser) {
+        setUser(firebaseUser); // Set user immediately
         const userRef = doc(db, 'users', firebaseUser.uid);
         unsubscribeProfile = onSnapshot(userRef, (userSnap) => {
           if (userSnap.exists()) {
             setUserProfile(userSnap.data() as UserProfile);
           } else {
+            // This might happen for a brand new user. Let's create their profile.
             const profileData: UserProfile = {
               id: firebaseUser.uid,
               email: firebaseUser.email!,
@@ -73,7 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setDoc(userRef, profileData).catch(err => console.error("Error creating user doc", err));
             setUserProfile(profileData);
           }
-          setUser(firebaseUser); // Set user only after profile is handled
           setLoading(false);
         }, (error) => {
           console.error("Profile snapshot error", error);
@@ -143,17 +144,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (methods.includes(EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD)) {
                 const password = prompt(`This Google account is linked to an existing user with the email ${email}. Please enter your password for that account to link them.`);
                 if (password) {
-                    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                    const googleCredential = GoogleAuthProvider.credentialFromError(error);
-                    if (userCredential.user && googleCredential) {
-                        await linkWithCredential(userCredential.user, googleCredential);
-                        toast({ title: 'Accounts Linked!', description: 'Your Google account has been successfully linked.' });
+                    try {
+                        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                        const googleCredential = GoogleAuthProvider.credentialFromError(error);
+                        if (userCredential.user && googleCredential) {
+                            await linkWithCredential(userCredential.user, googleCredential);
+                            toast({ title: 'Accounts Linked!', description: 'Your Google account has been successfully linked.' });
+                        }
+                    } catch (linkError: any) {
+                         toast({ variant: 'destructive', title: 'Linking Failed', description: linkError.message || 'Could not link accounts. Please check your password.' });
                     }
                 } else {
                     toast({ variant: 'destructive', title: 'Linking Canceled', description: 'Password not provided. Accounts were not linked.' });
                 }
             } else {
-                toast({ variant: 'destructive', title: 'Linking Error', description: 'This Google account is associated with another sign-in method.' });
+                toast({ variant: 'destructive', title: 'Linking Error', description: 'This Google account is associated with another sign-in method that is not supported for automatic linking.' });
             }
         } else {
             console.error("Google Sign-In Error:", error);
