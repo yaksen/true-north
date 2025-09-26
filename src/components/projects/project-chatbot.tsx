@@ -221,10 +221,10 @@ const ChatInterface = ({
                       <AvatarFallback><Bot className="h-5 w-5" /></AvatarFallback>
                     </Avatar>
                   )}
-                  <div className={`prose dark:prose-invert prose-sm max-w-md rounded-xl px-4 py-3 text-sm ${ message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted' }`}>
+                  <div className={`rounded-xl px-4 py-3 text-sm ${ message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted' }`}>
                     {message.image && <Image src={message.image} alt="user upload" width={200} height={200} className='rounded-md mb-2' />}
                     {message.audio && <audio src={message.audio} controls className='w-full h-10 mb-2' />}
-                    <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: message.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>').replace(/`([^`]+)`/g, '<code>$1</code>') }} />
+                    <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: message.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>').replace(/`([^`]+)`/g, '<code>$1</code>') }} />
                   </div>
                    {message.sender === 'user' && (
                     <Avatar className="h-8 w-8">
@@ -277,6 +277,7 @@ const ChatInterface = ({
 }
 
 export function ProjectChatbot(props: ProjectChatbotProps) {
+    const { toast } = useToast();
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     const handleClearHistory = async () => {
