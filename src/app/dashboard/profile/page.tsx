@@ -11,8 +11,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const profileSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -22,9 +23,10 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export default function ProfilePage() {
-  const { user, userProfile, updateUserProfile } = useAuth();
+  const { user, userProfile, updateUserProfile, unlinkProvider } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUnlinking, setIsUnlinking] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -54,6 +56,18 @@ export default function ProfilePage() {
         setIsSubmitting(false);
     }
   };
+
+  const handleUnlink = async () => {
+    setIsUnlinking(true);
+    try {
+      await unlinkProvider();
+      toast({ title: 'Success', description: 'Your Google Account has been disconnected.' });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not disconnect your Google Account.'});
+    } finally {
+      setIsUnlinking(false);
+    }
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -98,6 +112,41 @@ export default function ProfilePage() {
             </Button>
           </form>
         </CardContent>
+      </Card>
+      
+      <Card className="border-destructive">
+          <CardHeader>
+              <CardTitle>Danger Zone</CardTitle>
+              <CardDescription>This action can resolve authentication conflicts.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-between items-center">
+              <div>
+                  <p className="font-semibold">Disconnect Google Account</p>
+                  <p className="text-sm text-muted-foreground">This will remove the link to your Google Account from this user profile.</p>
+              </div>
+              <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                      <Button variant="destructive" disabled={isUnlinking}>
+                          {isUnlinking ? <Loader2 className="mr-2 animate-spin" /> : <Trash2 className="mr-2"/>}
+                           Disconnect
+                      </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                      <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                          This will disconnect your Google account from your TrueNorth profile. You will need to re-authenticate to use Google integrations.
+                      </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleUnlink}>
+                          Yes, disconnect my account
+                      </AlertDialogAction>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
+          </CardContent>
       </Card>
     </div>
   );

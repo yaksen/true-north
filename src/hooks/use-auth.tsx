@@ -48,56 +48,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let unsubscribeProfile: Unsubscribe | undefined;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
-      if (unsubscribeProfile) {
-        unsubscribeProfile();
-      }
-
-      if (firebaseUser) {
-        setUser(firebaseUser); // Set the raw firebase user immediately
-        const userRef = doc(db, 'users', firebaseUser.uid);
-        
-        unsubscribeProfile = onSnapshot(userRef, async (userSnap) => {
-          if (userSnap.exists()) {
-            setUserProfile(userSnap.data() as UserProfile);
-            setLoading(false);
-          } else {
-            // Create a new profile if it doesn't exist
-            const profileData: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt' | 'lastLogin'> = {
-              email: firebaseUser.email!,
-              role: 'member',
-              name: firebaseUser.displayName,
-              photoURL: firebaseUser.photoURL,
-              projects: [],
-            };
-            try {
-              await setDoc(doc(db, 'users', firebaseUser.uid), {
-                 ...profileData, 
-                id: firebaseUser.uid,
-                createdAt: serverTimestamp(), 
-                updatedAt: serverTimestamp(),
-                lastLogin: serverTimestamp() 
-            });
-            } catch (error) {
-                console.error("Error creating user profile:", error);
-                // In case of error, sign out the user to prevent inconsistent state
-                await firebaseSignOut(auth);
-                setUser(null);
-                setUserProfile(null);
-                setLoading(false);
-            }
-          }
-        }, (error) => {
-            console.error("Error fetching user profile:", error);
-            setUser(null);
-            setUserProfile(null);
-            setLoading(false);
-        });
-      } else {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      // If user logs out
+      if (!firebaseUser) {
         setUser(null);
         setUserProfile(null);
+        if (unsubscribeProfile) unsubscribeProfile();
         setLoading(false);
+        return;
       }
+
+      // If user logs in
+      const userRef = doc(db, 'users', firebaseUser.uid);
+      
+      // Set the raw firebase user immediately for SDK functions
+      setUser(firebaseUser);
+
+      // Subscribe to profile changes
+      unsubscribeProfile = onSnapshot(userRef, async (userSnap) => {
+        if (userSnap.exists()) {
+          setUserProfile(userSnap.data() as UserProfile);
+        } else {
+          // Profile doesn't exist, create it
+          const profileData: UserProfile = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email!,
+            role: 'member',
+            name: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            projects: [],
+            createdAt: serverTimestamp() as any,
+            updatedAt: serverTimestamp() as any,
+          };
+          try {
+            await setDoc(userRef, profileData);
+            setUserProfile(profileData);
+          } catch (error) {
+            console.error("Error creating user profile:", error);
+            await firebaseSignOut(auth);
+          }
+        }
+        setLoading(false);
+      }, (error) => {
+        console.error("Error fetching user profile:", error);
+        firebaseSignOut(auth);
+        setLoading(false);
+      });
+      
+    }, (error) => {
+        console.error("Auth state change error:", error);
+        setLoading(false);
     });
 
     return () => {
@@ -111,21 +111,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUserProfile = async (updates: Partial<UserProfile>) => {
     if (!user || !auth.currentUser) throw new Error("Not authenticated");
     
+    // Update Firebase Auth profile
     await updateProfile(auth.currentUser, {
       displayName: updates.name,
       photoURL: updates.photoURL,
     });
     
+    // Update Firestore profile
     const userRef = doc(db, 'users', user.uid);
     await setDoc(userRef, { ...updates, updatedAt: serverTimestamp() }, { merge: true });
   };
-
+  
   const unlinkProvider = async () => {
     if (!auth.currentUser) throw new Error("Not authenticated");
     
     const googleProvider = auth.currentUser.providerData.find(p => p.providerId === 'google.com');
     if (googleProvider) {
         await unlink(auth.currentUser, googleProvider.providerId);
+    } else {
+        throw new Error("No Google account is linked to this user.");
     }
   };
 
@@ -143,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     provider.addScope('https://www.googleapis.com/auth/contacts');
     provider.setCustomParameters({
         access_type: 'offline',
-        prompt: 'consent'
+        prompt: 'consent' // Forces the consent screen and refresh token
     });
     const result = await signInWithPopup(auth, provider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -174,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     updateUserProfile,
     unlinkProvider,
-    auth
+    auth,
   };
 
   return (
