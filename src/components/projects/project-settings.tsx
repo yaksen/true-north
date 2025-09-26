@@ -42,21 +42,6 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   
-  const [tokens, setTokens] = useState({
-      drive: project.googleDriveAccessToken || null,
-      contacts: project.googleContactsAccessToken || null,
-  });
-
-  const [isConnecting, setIsConnecting] = useState<'drive' | 'contacts' | null>(null);
-  
-  useEffect(() => {
-    setTokens({
-      drive: project.googleDriveAccessToken || null,
-      contacts: project.googleContactsAccessToken || null,
-    });
-  }, [project]);
-
-
   const isOwner = user?.uid === project.ownerUid;
 
   async function handleDeleteProject() {
@@ -75,55 +60,6 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
       setIsDeleting(false);
     }
   }
-  
-  const handleConnect = async (type: 'drive' | 'contacts') => {
-    const provider = new GoogleAuthProvider();
-    if (type === 'drive') {
-      provider.addScope('https://www.googleapis.com/auth/drive.file');
-    } else {
-      provider.addScope('https://www.googleapis.com/auth/contacts');
-    }
-    
-    setIsConnecting(type);
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (credential?.accessToken) {
-        const token = credential.accessToken;
-        const projectRef = doc(db, 'projects', project.id);
-        const updatePayload = type === 'drive' 
-            ? { googleDriveAccessToken: token } 
-            : { googleContactsAccessToken: token };
-            
-        await updateDoc(projectRef, updatePayload);
-        setTokens(prev => ({...prev, [type]: token}));
-        toast({ title: 'Success', description: `Successfully connected to Google ${type === 'drive' ? 'Drive' : 'Contacts'}.` });
-      } else {
-        throw new Error('No access token received.');
-      }
-    } catch (error) {
-      console.error(`Google ${type} connection error:`, error);
-      toast({ variant: 'destructive', title: 'Connection Failed', description: `Could not connect to Google ${type === 'drive' ? 'Drive' : 'Contacts'}.` });
-    } finally {
-      setIsConnecting(null);
-    }
-  };
-
-  const handleDisconnect = async (type: 'drive' | 'contacts') => {
-    const projectRef = doc(db, 'projects', project.id);
-    const updatePayload = type === 'drive' 
-        ? { googleDriveAccessToken: null } 
-        : { googleContactsAccessToken: null };
-    
-    try {
-        await updateDoc(projectRef, updatePayload);
-        setTokens(prev => ({ ...prev, [type]: null }));
-        toast({ title: 'Success', description: 'Disconnected successfully.' });
-    } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not disconnect.' });
-    }
-  };
-
 
   return (
     <div className="grid gap-6 mt-4 max-w-4xl mx-auto">
@@ -149,53 +85,6 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         </CardHeader>
         <CardContent>
           <MembersList project={project} />
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>Integrations</CardTitle>
-              <CardDescription>Connect third-party apps to streamline your workflow.</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border p-3">
-                <div className="flex items-center gap-4">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" alt="Google Drive Icon" width="24" height="24" />
-                    <div>
-                        <p className="font-semibold">Google Drive</p>
-                        <p className="text-sm text-muted-foreground">Store reports and files.</p>
-                    </div>
-                </div>
-                {tokens.drive ? (
-                  <Button variant="outline" onClick={() => handleDisconnect('drive')}>Disconnect</Button>
-                ) : (
-                  <Button variant="outline" onClick={() => handleConnect('drive')} disabled={isConnecting === 'drive'}>
-                      {isConnecting === 'drive' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Connect
-                  </Button>
-                )}
-            </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
-                <div className="flex items-center gap-4">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b7/Google_Contacts_logo.png" alt="Google Contacts Icon" width="24" height="24" />
-                    <div>
-                        <p className="font-semibold">Google Contacts</p>
-                        <p className="text-sm text-muted-foreground">Save leads, vendors, and partners.</p>
-                    </div>
-                </div>
-                {tokens.contacts ? (
-                    <Button variant="outline" size="sm" onClick={() => handleDisconnect('contacts')}>Disconnect</Button>
-                ) : (
-                    <Button variant="outline" onClick={() => handleConnect('contacts')} disabled={isConnecting === 'contacts'}>
-                        {isConnecting === 'contacts' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Connect
-                    </Button>
-                )}
-            </div>
         </CardContent>
       </Card>
       
