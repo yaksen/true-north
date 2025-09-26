@@ -221,6 +221,7 @@ export default function ProjectDetailPage() {
                     invoices={invoices}
                     portfolioNotes={portfolioNotes}
                     portfolioItems={portfolioItems}
+                    categories={categories}
                 />
             </TabsContent>
             <TabsContent value="leads">

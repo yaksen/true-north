@@ -493,7 +493,8 @@ export interface PortfolioNote {
     projectId: string;
     title: string;
     description: string;
-    tags: string[];
+    categoryId: string;
+    serviceId: string;
     createdAt: Date;
     updatedAt: Date;
 }

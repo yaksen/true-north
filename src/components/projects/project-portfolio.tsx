@@ -3,7 +3,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Project, PortfolioNote, PortfolioItem } from '@/lib/types';
+import type { Project, PortfolioNote, PortfolioItem, Category, Service } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
@@ -16,9 +16,11 @@ interface ProjectPortfolioProps {
   project: Project;
   portfolioNotes: PortfolioNote[];
   portfolioItems: PortfolioItem[];
+  categories: Category[];
+  services: Service[];
 }
 
-export function ProjectPortfolio({ project, portfolioNotes, portfolioItems }: ProjectPortfolioProps) {
+export function ProjectPortfolio({ project, portfolioNotes, portfolioItems, categories, services }: ProjectPortfolioProps) {
     const [isNoteFormOpen, setIsNoteFormOpen] = useState(false);
 
     return (
@@ -35,7 +37,12 @@ export function ProjectPortfolio({ project, portfolioNotes, portfolioItems }: Pr
                         </DialogTrigger>
                         <DialogContent className='max-w-xl'>
                             <DialogHeader><DialogTitle>Create New Portfolio Note</DialogTitle></DialogHeader>
-                            <PortfolioNoteForm projectId={project.id} closeForm={() => setIsNoteFormOpen(false)} />
+                            <PortfolioNoteForm 
+                                projectId={project.id}
+                                categories={categories}
+                                services={services}
+                                closeForm={() => setIsNoteFormOpen(false)} 
+                            />
                         </DialogContent>
                     </Dialog>
                 </div>
@@ -48,6 +55,8 @@ export function ProjectPortfolio({ project, portfolioNotes, portfolioItems }: Pr
                                 key={note.id}
                                 note={note}
                                 items={portfolioItems.filter(item => item.portfolioNoteId === note.id)}
+                                categories={categories}
+                                services={services}
                             />
                         ))}
                     </div>

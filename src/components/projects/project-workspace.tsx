@@ -3,7 +3,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Project, Note, AIPrompt, Task, Finance, Lead, Channel, Vendor, Partner, Service, Product, Package, Invoice, PortfolioNote, PortfolioItem } from '@/lib/types';
+import type { Project, Note, AIPrompt, Task, Finance, Lead, Channel, Vendor, Partner, Service, Product, Package, Invoice, PortfolioNote, PortfolioItem, Category } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NoteList } from './note-list';
 import { PromptList } from './prompt-list';
@@ -35,6 +35,7 @@ interface ProjectWorkspaceProps {
   invoices: Invoice[];
   portfolioNotes: PortfolioNote[];
   portfolioItems: PortfolioItem[];
+  categories: Category[];
 }
 
 export function ProjectWorkspace({ 
@@ -52,7 +53,8 @@ export function ProjectWorkspace({
     packages,
     invoices,
     portfolioNotes,
-    portfolioItems
+    portfolioItems,
+    categories,
 }: ProjectWorkspaceProps) {
   const [isNoteFormOpen, setIsNoteFormOpen] = useState(false);
   const [isPromptFormOpen, setIsPromptFormOpen] = useState(false);
@@ -149,6 +151,8 @@ export function ProjectWorkspace({
             project={project}
             portfolioNotes={portfolioNotes}
             portfolioItems={portfolioItems}
+            categories={categories}
+            services={services}
         />
       </TabsContent>
     </Tabs>

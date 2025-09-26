@@ -3,7 +3,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { PortfolioNote, PortfolioItem } from '@/lib/types';
+import type { PortfolioNote, PortfolioItem, Category, Service } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
@@ -21,13 +21,18 @@ import Image from 'next/image';
 interface PortfolioNoteCardProps {
   note: PortfolioNote;
   items: PortfolioItem[];
+  categories: Category[];
+  services: Service[];
 }
 
-export function PortfolioNoteCard({ note, items }: PortfolioNoteCardProps) {
+export function PortfolioNoteCard({ note, items, categories, services }: PortfolioNoteCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+
+  const category = categories.find(c => c.id === note.categoryId);
+  const service = services.find(s => s.id === note.serviceId);
 
   const handleDelete = async () => {
     if (!user) return;
@@ -74,10 +79,10 @@ export function PortfolioNoteCard({ note, items }: PortfolioNoteCardProps) {
                 <CardDescription className='line-clamp-2'>{note.description}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
-                 {note.tags && note.tags.length > 0 && (
+                 {(category || service) && (
                     <div className="flex flex-wrap gap-1">
-                        {note.tags.slice(0,3).map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
-                        {note.tags.length > 3 && <Badge variant="outline">+{note.tags.length - 3}</Badge>}
+                        {category && <Badge variant="secondary">{category.name}</Badge>}
+                        {service && <Badge variant="outline">{service.name}</Badge>}
                     </div>
                 )}
             </CardContent>
@@ -88,9 +93,15 @@ export function PortfolioNoteCard({ note, items }: PortfolioNoteCardProps) {
                         <DialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setIsEditOpen(true);}}><Edit className="h-4 w-4" /></Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className='max-w-xl'>
                             <DialogHeader><DialogTitle>Edit Portfolio Note</DialogTitle></DialogHeader>
-                            <PortfolioNoteForm note={note} projectId={note.projectId} closeForm={() => setIsEditOpen(false)} />
+                            <PortfolioNoteForm 
+                                note={note}
+                                projectId={note.projectId}
+                                categories={categories}
+                                services={services}
+                                closeForm={() => setIsEditOpen(false)} 
+                            />
                         </DialogContent>
                     </Dialog>
                     <AlertDialog>

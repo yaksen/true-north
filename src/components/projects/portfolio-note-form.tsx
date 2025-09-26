@@ -2,26 +2,27 @@
 
 'use client';
 
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { PortfolioNote } from '@/lib/types';
+import { PortfolioNote, Category, Service } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2, X } from 'lucide-react';
-import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { Badge } from '../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const formSchema = z.object({
   title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
   description: z.string().min(10, { message: 'Please provide a more detailed description.' }),
-  tags: z.array(z.string()).default([]),
+  categoryId: z.string().nonempty("Category is required."),
+  serviceId: z.string().nonempty("Service is required."),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -29,39 +30,31 @@ type FormValues = z.infer<typeof formSchema>;
 interface PortfolioNoteFormProps {
   note?: PortfolioNote;
   projectId: string;
+  categories: Category[];
+  services: Service[];
   closeForm: () => void;
 }
 
-export function PortfolioNoteForm({ note, projectId, closeForm }: PortfolioNoteFormProps) {
+export function PortfolioNoteForm({ note, projectId, categories, services, closeForm }: PortfolioNoteFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tagInput, setTagInput] = useState('');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: note || {
       title: '',
       description: '',
-      tags: [],
+      categoryId: '',
+      serviceId: '',
     },
   });
   
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      const newTag = tagInput.trim().toLowerCase();
-      if (newTag && !form.getValues('tags').includes(newTag)) {
-        form.setValue('tags', [...form.getValues('tags'), newTag]);
-      }
-      setTagInput('');
-    }
-  };
+  const selectedCategoryId = form.watch('categoryId');
 
-  const removeTag = (tagToRemove: string) => {
-    form.setValue('tags', form.getValues('tags').filter(tag => tag !== tagToRemove));
-  };
-
+  const filteredServices = useMemo(() => {
+    return services.filter(service => service.categoryId === selectedCategoryId);
+  }, [services, selectedCategoryId]);
 
   async function onSubmit(values: FormValues) {
     if (!user) return;
@@ -122,38 +115,48 @@ export function PortfolioNoteForm({ note, projectId, closeForm }: PortfolioNoteF
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="tags"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tags</FormLabel>
-              <FormControl>
-                <>
-                  <Input
-                    placeholder="Add tags and press Enter"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={handleTagKeyDown}
-                  />
-                  {field.value && field.value.length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-2">
-                      {field.value.map((tag) => (
-                        <Badge key={tag} variant="secondary">
-                          {tag}
-                          <button type="button" onClick={() => removeTag(tag)} className="ml-1 rounded-full hover:bg-muted-foreground/20">
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="categoryId"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select onValueChange={(value) => { field.onChange(value); form.setValue('serviceId', ''); }} value={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a category..." />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {categories.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="serviceId"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Service</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedCategoryId || filteredServices.length === 0}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a service..." />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {filteredServices.map(service => <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
