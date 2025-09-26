@@ -1,13 +1,14 @@
 
+
 'use client';
 
-import { Project, Task, Finance, Lead } from "@/lib/types";
+import { Project, Task, Finance, Lead, Channel } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";
 import { Progress } from "../ui/progress";
 import { DataTable } from "../ui/data-table";
-import { getTaskColumns } from "../projects/task-columns";
+import { getTaskColumns } from "./task-columns";
 import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { TaskForm } from "../projects/task-form";
@@ -20,20 +21,16 @@ interface ProjectDashboardProps {
     project: Project;
     tasks: Task[];
     finances: Finance[];
+    leads: Lead[];
+    services: Service[];
+    products: Product[];
+    invoices: Invoice[];
+    channels: Channel[];
 }
 
-export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardProps) {
+export function ProjectDashboard({ project, tasks, finances, leads, channels, services, products, invoices }: ProjectDashboardProps) {
     const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
     const [isFinanceFormOpen, setIsFinanceFormOpen] = useState(false);
-    const [leads, setLeads] = useState<Lead[]>([]);
-
-    useEffect(() => {
-        const q = query(collection(db, 'leads'), where('projectId', '==', project.id));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
-        });
-        return () => unsubscribe();
-    }, [project.id]);
 
     const handleStar = async (id: string, starred: boolean) => {
         try {
@@ -50,7 +47,7 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
     const totalIncome = finances.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
     const totalExpenses = finances.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
     const profitLoss = totalIncome - totalExpenses;
-
+    
     const activeTasks = tasks.filter(t => !t.archived);
     const completedTasks = activeTasks.filter(t => t.completed).length;
     const taskCompletionRate = activeTasks.length > 0 ? (completedTasks / activeTasks.length) * 100 : 0;
@@ -123,7 +120,7 @@ export function ProjectDashboard({ project, tasks, finances }: ProjectDashboardP
                                 <DialogHeader>
                                     <DialogTitle>Add New Task</DialogTitle>
                                 </DialogHeader>
-                                <TaskForm projectId={project.id} leads={leads} closeForm={() => setIsTaskFormOpen(false)} />
+                                <TaskForm projectId={project.id} leads={leads} channels={channels} members={project.members} closeForm={() => setIsTaskFormOpen(false)} />
                             </DialogContent>
                         </Dialog>
                         <Dialog open={isFinanceFormOpen} onOpenChange={setIsFinanceFormOpen}>
