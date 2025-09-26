@@ -199,6 +199,7 @@ const ChatInterface = ({
       try {
         const chatInput: ProjectChatInput = {
           userMessage: input,
+          history: messages.map(m => ({ sender: m.sender, text: m.text })),
           imageDataUri: imageDataUri,
           audioDataUri: audioDataUri,
           project, tasks, finances, leads, channels, vendors, partners, services, products, packages, invoices, notes,
@@ -310,7 +311,7 @@ export function ProjectChatbot(props: ProjectChatbotProps) {
       }
 
     return (
-        <div className="flex flex-col flex-1">
+        <Card className="flex flex-col flex-1 h-full">
             <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
                 <CardTitle className="text-lg">TrueNorth AI</CardTitle>
                 <div className='flex items-center'>
@@ -346,6 +347,6 @@ export function ProjectChatbot(props: ProjectChatbotProps) {
                     <ChatInterface {...props} isFullscreen={true} />
                 </DialogContent>
             </Dialog>
-        </div>
+        </Card>
     );
 }

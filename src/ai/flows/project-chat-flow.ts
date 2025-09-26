@@ -25,8 +25,14 @@ import {
   Note,
 } from '@/lib/types';
 
+const ChatHistorySchema = z.object({
+    sender: z.enum(['user', 'ai']),
+    text: z.string(),
+});
+
 const ProjectChatInputSchema = z.object({
   userMessage: z.string().describe('The user\'s message or question about the project.'),
+  history: z.array(ChatHistorySchema).optional().describe('The history of the conversation so far.'),
   imageDataUri: z.string().optional().describe("An optional image file attached by the user, as a data URI."),
   audioDataUri: z.string().optional().describe("An optional audio file attached by the user, as a data URI."),
   project: z.custom<Project>().describe('The full project object.'),
@@ -70,6 +76,11 @@ You have access to the following data for the project named "{{project.name}}":
 - Notes: {{{json notes}}}
 
 Analyze the user's message and the provided data to give a relevant and accurate response. If the user asks for information not present in the data, state that you do not have access to that information.
+
+Here is the conversation history. Use it to understand the context and answer questions about previous messages.
+{{#each history}}
+- {{sender}}: {{text}}
+{{/each}}
 
 User's message:
 "{{{userMessage}}}"
