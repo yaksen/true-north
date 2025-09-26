@@ -155,7 +155,7 @@ export function ProjectDashboard({ project, tasks, finances, channels }: Project
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {recentTasks.map(task => (
-                            <TaskCard key={task.id} task={task} leads={leads} />
+                            <TaskCard key={task.id} task={task} leads={leads} channels={channels} />
                         ))}
                     </div>
                      {recentTasks.length === 0 && (
