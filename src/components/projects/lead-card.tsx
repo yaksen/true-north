@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -25,6 +26,7 @@ interface LeadCardDependencies {
     packages: Package[];
     services: Service[];
     channels: Channel[];
+    onStar: (id: string, starred: boolean) => void;
 }
 
 interface LeadCardProps {
@@ -39,7 +41,7 @@ export function LeadCard({ lead, dependencies }: LeadCardProps) {
   const [isSaleOpen, setIsSaleOpen] = useState(false);
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [isSavingToGoogle, setIsSavingToGoogle] = useState(false);
-  const { project, packages, services, channels } = dependencies;
+  const { project, packages, services, channels, onStar } = dependencies;
 
   const handleDelete = async () => {
     if (!user) return;
@@ -53,11 +55,7 @@ export function LeadCard({ lead, dependencies }: LeadCardProps) {
   };
   
   const handleStar = async (starred: boolean) => {
-    try {
-        await updateDoc(doc(db, 'leads', lead.id), { starred });
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
-    }
+    onStar(lead.id, starred);
   }
 
   const handleSaveToContacts = async () => {
@@ -119,8 +117,7 @@ export function LeadCard({ lead, dependencies }: LeadCardProps) {
                         />
                     </DialogContent>
                 </Dialog>
-            </div>
-            <div className='flex items-center w-full justify-center'>
+                <div className='flex items-center'>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStar(!lead.starred)}>
                         <Star className={cn("h-4 w-4", lead.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
                     </Button>
@@ -149,6 +146,7 @@ export function LeadCard({ lead, dependencies }: LeadCardProps) {
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
+            </div>
         </CardFooter>
         </Card>
         <QrCodeModal

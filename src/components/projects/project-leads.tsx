@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState } from "react";
@@ -43,7 +44,13 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
     }
 
     const filteredLeads = useMemo(() => {
-        return leads.filter(lead => {
+        const sortedLeads = [...leads].sort((a, b) => {
+            if (a.starred && !b.starred) return -1;
+            if (!a.starred && b.starred) return 1;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+
+        return sortedLeads.filter(lead => {
             const statusMatch = filters.status === 'all' || lead.status === filters.status;
             const channelMatch = filters.channel === 'all' || lead.channelId === filters.channel;
             const searchMatch = !filters.search || 
@@ -118,7 +125,7 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
                                 <LeadCard 
                                     key={lead.id}
                                     lead={lead}
-                                    dependencies={{ project, packages, services, channels }}
+                                    dependencies={{ project, packages, services, channels, onStar: handleStar }}
                                 />
                             ))}
                         </div>
