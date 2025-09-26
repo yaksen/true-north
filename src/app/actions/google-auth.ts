@@ -33,6 +33,9 @@ export async function getGoogleAuthUrl(projectId: string, scope: string): Promis
 }
 
 export async function getTokensAndStore(code: string, state: string) {
+    if (!state) {
+        throw new Error("State parameter is missing or invalid.");
+    }
     const { projectId, scope } = JSON.parse(state);
     
     const oauth2Client = new google.auth.OAuth2(
