@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -49,13 +50,7 @@ export function NoteCard({ note }: NoteCardProps) {
         <p className="text-sm text-muted-foreground line-clamp-4">{note.content}</p>
       </CardContent>
       <CardFooter className="flex-col items-start gap-4">
-        {note.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {note.tags.map(tag => (
-              <Badge key={tag} variant="secondary">{tag}</Badge>
-            ))}
-          </div>
-        )}
+        {note.type && <Badge variant="secondary">{note.type}</Badge>}
         <div className="flex w-full justify-between items-center">
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogTrigger asChild>

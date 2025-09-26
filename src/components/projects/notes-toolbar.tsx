@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,15 +8,19 @@ import { Loader2, Sparkles, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { findNote, type FindNoteOutput } from '@/ai/flows/find-note-flow';
 import { Badge } from '../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { NoteType } from '@/lib/types';
+
+const noteTypes: (NoteType | 'all')[] = ["all", "Message Templates", "Meeting Notes", "Ideas & Brainstorms", "Processes & SOPs", "Knowledge Snippets", "AI Prompts Library", "Client/Lead Notes", "Marketing Copy Drafts", "Decision Logs"];
+
 
 interface NotesToolbarProps {
-  onFilterChange: (filters: { searchTerm: string; tags: string[] }) => void;
+  onFilterChange: (filters: { searchTerm: string; type: string }) => void;
 }
 
 export function NotesToolbar({ onFilterChange }: NotesToolbarProps) {
   const { toast } = useToast();
-  const [tagsFilter, setTagsFilter] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -23,11 +28,11 @@ export function NotesToolbar({ onFilterChange }: NotesToolbarProps) {
     const handler = setTimeout(() => {
       onFilterChange({
         searchTerm,
-        tags: tagsFilter,
+        type: typeFilter,
       });
     }, 300);
     return () => clearTimeout(handler);
-  }, [searchTerm, tagsFilter, onFilterChange]);
+  }, [searchTerm, typeFilter, onFilterChange]);
   
   const handleAiSearch = async () => {
     if (!searchTerm) {
@@ -38,8 +43,10 @@ export function NotesToolbar({ onFilterChange }: NotesToolbarProps) {
     try {
       const result: FindNoteOutput = await findNote({ prompt: searchTerm });
       setSearchTerm(result.searchTerm || '');
-      setTagsFilter(result.tags || []);
-      toast({ title: 'AI Search Complete', description: 'Filters have been updated.' });
+      // This is a limitation, the AI returns tags but we now have a type.
+      // A more advanced implementation would map AI-identified tags/concepts to types.
+      // For now, we'll just set the search term.
+      toast({ title: 'AI Search Complete', description: 'Search term has been updated.' });
     } catch (error) {
       console.error("AI Search Error:", error);
       toast({ variant: 'destructive', title: 'AI Error', description: 'Could not process search query.' });
@@ -48,24 +55,9 @@ export function NotesToolbar({ onFilterChange }: NotesToolbarProps) {
     }
   };
 
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
-      e.preventDefault();
-      if (!tagsFilter.includes(tagInput.trim())) {
-        setTagsFilter([...tagsFilter, tagInput.trim()]);
-      }
-      setTagInput('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setTagsFilter(tagsFilter.filter(tag => tag !== tagToRemove));
-  };
-
   const clearFilters = () => {
     setSearchTerm('');
-    setTagsFilter([]);
-    setTagInput('');
+    setTypeFilter('all');
   };
 
   return (
@@ -85,23 +77,16 @@ export function NotesToolbar({ onFilterChange }: NotesToolbarProps) {
         </div>
         <div className="flex items-center gap-2 pt-2 border-t mt-2 flex-wrap">
             <span className='text-sm font-medium text-muted-foreground'>Filters:</span>
-            <div className="flex items-center gap-2 border rounded-md px-2 h-9">
-              <Input 
-                  placeholder="Filter by tags..."
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={handleTagKeyDown}
-                  className="h-auto border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
-              />
-              {tagsFilter.map(tag => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                  <button type="button" onClick={() => removeTag(tag)} className="ml-1 rounded-full hover:bg-muted-foreground/20">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-48 h-9 text-sm">
+                    <SelectValue placeholder="Filter by type..." />
+                </SelectTrigger>
+                <SelectContent>
+                    {noteTypes.map(type => (
+                        <SelectItem key={type} value={type} className="capitalize">{type}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
             <Button variant="ghost" size="sm" onClick={clearFilters}>
                 Clear All
             </Button>

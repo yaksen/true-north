@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow for finding notes based on natural language queries.
@@ -9,6 +10,10 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { NoteType } from '@/lib/types';
+
+const noteTypes: [NoteType, ...NoteType[]] = ["Message Templates", "Meeting Notes", "Ideas & Brainstorms", "Processes & SOPs", "Knowledge Snippets", "AI Prompts Library", "Client/Lead Notes", "Marketing Copy Drafts", "Decision Logs"];
+
 
 const FindNoteInputSchema = z.object({
   prompt: z.string().describe('Unstructured text containing search criteria for a note.'),
@@ -17,7 +22,7 @@ export type FindNoteInput = z.infer<typeof FindNoteInputSchema>;
 
 const FindNoteOutputSchema = z.object({
   searchTerm: z.string().optional().describe("A general search term for the note title or content."),
-  tags: z.array(z.string()).optional().describe("A list of tags to filter by."),
+  type: z.enum(noteTypes).optional().describe("The type of note to filter by."),
 }).describe('Structured search criteria extracted from the provided inputs.');
 export type FindNoteOutput = z.infer<typeof FindNoteOutputSchema>;
 
@@ -29,7 +34,7 @@ const prompt = ai.definePrompt({
 
 Your goal is to populate the output JSON with the following:
 1.  'searchTerm': A general keyword from the title or content.
-2.  'tags': Extract any terms that seem like tags for filtering (e.g., #idea, @meeting).
+2.  'type': If the query mentions a specific note type (e.g., ${noteTypes.join(', ')}), set it here.
 
 Analyze the input to make the best determination.
 

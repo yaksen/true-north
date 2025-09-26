@@ -1,4 +1,5 @@
 
+
 import { CurrencyCode } from "@/context/CurrencyContext";
 
 export type UserRole = 'admin' | 'manager' | 'member';
@@ -17,6 +18,8 @@ export type TaskTemplateSlot = 'morning' | 'midday' | 'night';
 export type VaultItemType = 'note' | 'link' | 'prompt';
 export type HabitType = 'good' | 'bad';
 export type HabitFrequency = 'daily' | 'weekly';
+export type NoteType = "Message Templates" | "Meeting Notes" | "Ideas & Brainstorms" | "Processes & SOPs" | "Knowledge Snippets" | "AI Prompts Library" | "Client/Lead Notes" | "Marketing Copy Drafts" | "Decision Logs";
+
 
 export interface UserProfile {
     id: string;
@@ -355,7 +358,8 @@ export interface Note {
     authorUid: string;
     title: string;
     content: string;
-    tags: string[];
+    type: NoteType;
+    aiAccessible: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

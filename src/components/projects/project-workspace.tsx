@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -53,7 +54,7 @@ export function ProjectWorkspace({
   
   const [noteFilters, setNoteFilters] = useState({
     searchTerm: '',
-    tags: [] as string[],
+    type: 'all',
   });
 
   const [promptFilters, setPromptFilters] = useState({
@@ -65,8 +66,8 @@ export function ProjectWorkspace({
   const filteredNotes = notes.filter(note => {
     const searchTermMatch = note.title.toLowerCase().includes(noteFilters.searchTerm.toLowerCase()) ||
                             note.content.toLowerCase().includes(noteFilters.searchTerm.toLowerCase());
-    const tagsMatch = noteFilters.tags.length === 0 || noteFilters.tags.every(filterTag => note.tags.some(noteTag => noteTag.toLowerCase().includes(filterTag.toLowerCase())));
-    return searchTermMatch && tagsMatch;
+    const typeMatch = noteFilters.type === 'all' || note.type === noteFilters.type;
+    return searchTermMatch && typeMatch;
   });
 
   const filteredPrompts = aiPrompts.filter(prompt => {
@@ -102,7 +103,7 @@ export function ProjectWorkspace({
               products={products}
               packages={packages}
               invoices={invoices}
-              notes={notes}
+              notes={notes.filter(n => n.aiAccessible)}
             />
           </Card>
       </TabsContent>

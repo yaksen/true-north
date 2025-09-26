@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -13,15 +14,19 @@ import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { logActivity } from '@/lib/activity-log';
-import { Loader2, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Input } from '../ui/input';
-import { Note } from '@/lib/types';
-import { Badge } from '../ui/badge';
+import { Note, NoteType } from '@/lib/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Switch } from '../ui/switch';
+
+const noteTypes: NoteType[] = ["Message Templates", "Meeting Notes", "Ideas & Brainstorms", "Processes & SOPs", "Knowledge Snippets", "AI Prompts Library", "Client/Lead Notes", "Marketing Copy Drafts", "Decision Logs"];
 
 const formSchema = z.object({
   title: z.string().min(1, { message: 'Title is required.' }),
   content: z.string().min(1, { message: 'Note content cannot be empty.' }),
-  tags: z.array(z.string()).default([]),
+  type: z.enum(noteTypes),
+  aiAccessible: z.boolean().default(true),
 });
 
 type NoteFormValues = z.infer<typeof formSchema>;
@@ -36,32 +41,16 @@ export function NoteForm({ note, projectId, closeForm }: NoteFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tagInput, setTagInput] = useState('');
 
   const form = useForm<NoteFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: note || { 
         title: '',
         content: '',
-        tags: [],
+        type: 'Meeting Notes',
+        aiAccessible: true,
     },
   });
-
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      const newTag = tagInput.trim();
-      if (newTag && !form.getValues('tags').includes(newTag)) {
-        form.setValue('tags', [...form.getValues('tags'), newTag]);
-      }
-      setTagInput('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    form.setValue('tags', form.getValues('tags').filter(tag => tag !== tagToRemove));
-  };
-
 
   async function onSubmit(values: NoteFormValues) {
     if (!user) {
@@ -112,6 +101,24 @@ export function NoteForm({ note, projectId, closeForm }: NoteFormProps) {
             )}
         />
         <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Note Type</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            {noteTypes.map(type => (
+                                <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+        <FormField
           control={form.control}
           name="content"
           render={({ field }) => (
@@ -128,33 +135,21 @@ export function NoteForm({ note, projectId, closeForm }: NoteFormProps) {
             </FormItem>
           )}
         />
-         <FormField
+        <FormField
             control={form.control}
-            name="tags"
+            name="aiAccessible"
             render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Tags</FormLabel>
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                        <FormLabel>AI Accessible</FormLabel>
+                        <FormMessage />
+                    </div>
                     <FormControl>
-                        <>
-                            <Input
-                                placeholder="Add tags and press Enter"
-                                value={tagInput}
-                                onChange={(e) => setTagInput(e.target.value)}
-                                onKeyDown={handleTagKeyDown}
-                            />
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                {field.value.map(tag => (
-                                    <Badge key={tag} variant="secondary">
-                                        {tag}
-                                        <button type="button" onClick={() => removeTag(tag)} className="ml-2 rounded-full hover:bg-muted-foreground/20">
-                                            <X className="h-3 w-3" />
-                                        </button>
-                                    </Badge>
-                                ))}
-                            </div>
-                        </>
+                        <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        />
                     </FormControl>
-                    <FormMessage />
                 </FormItem>
             )}
         />
