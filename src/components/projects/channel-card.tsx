@@ -75,7 +75,7 @@ export function ChannelCard({ channel, project, leads }: ChannelCardProps) {
       <CardContent className="flex-grow">
         <p className="text-sm text-muted-foreground line-clamp-2">{channel.notes || 'No notes for this channel.'}</p>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
+      <CardFooter className="pt-0">
         <div className='flex justify-between items-center w-full'>
             <div className='flex items-center gap-1'>
                 <Dialog open={isFinanceFormOpen} onOpenChange={setIsFinanceFormOpen}>

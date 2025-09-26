@@ -101,54 +101,52 @@ export function LeadCard({ lead, dependencies }: LeadCardProps) {
         <CardContent className="flex-grow">
             <p className="text-sm text-muted-foreground line-clamp-2">{lead.notes || 'No notes for this lead.'}</p>
         </CardContent>
-        <CardFooter className="p-4 pt-0">
-            <div className='flex flex-col items-start gap-2 w-full'>
-                {channel && <Badge variant="secondary">From: {channel.name}</Badge>}
-                <div className='flex justify-between items-center w-full mt-2'>
-                    <Dialog open={isSaleOpen} onOpenChange={setIsSaleOpen}>
+        <CardFooter className="flex-col items-start gap-4">
+            {channel && <Badge variant="secondary">From: {channel.name}</Badge>}
+            <div className='flex justify-between items-center w-full pt-2'>
+                <Dialog open={isSaleOpen} onOpenChange={setIsSaleOpen}>
+                    <DialogTrigger asChild>
+                        <Button size="sm" variant="outline"><PlusCircle className='mr-2' /> Add Sale</Button>
+                    </DialogTrigger>
+                    <DialogContent className='max-w-4xl'>
+                        <DialogHeader><DialogTitle>Add Sale for {lead.name}</DialogTitle></DialogHeader>
+                        <FinanceForm 
+                            project={project}
+                            packages={packages}
+                            services={services}
+                            leadId={lead.id}
+                            closeForm={() => setIsSaleOpen(false)}
+                        />
+                    </DialogContent>
+                </Dialog>
+                <div className='flex items-center'>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStar(!lead.starred)}>
+                        <Star className={cn("h-4 w-4", lead.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsQrOpen(true)}>
+                        <QrCode className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveToContacts} disabled={isSavingToGoogle}>
+                    {isSavingToGoogle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Contact className="h-4 w-4" />}
+                    </Button>
+                    <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                         <DialogTrigger asChild>
-                            <Button size="sm" variant="outline"><PlusCircle className='mr-2' /> Add Sale</Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
                         </DialogTrigger>
                         <DialogContent className='max-w-4xl'>
-                            <DialogHeader><DialogTitle>Add Sale for {lead.name}</DialogTitle></DialogHeader>
-                            <FinanceForm 
-                                project={project}
-                                packages={packages}
-                                services={services}
-                                leadId={lead.id}
-                                closeForm={() => setIsSaleOpen(false)}
-                            />
+                            <DialogHeader><DialogTitle>Edit Lead</DialogTitle></DialogHeader>
+                            <LeadForm lead={lead} projectId={project.id} channels={channels} closeForm={() => setIsEditOpen(false)} />
                         </DialogContent>
                     </Dialog>
-                    <div className='flex items-center'>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStar(!lead.starred)}>
-                            <Star className={cn("h-4 w-4", lead.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsQrOpen(true)}>
-                            <QrCode className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveToContacts} disabled={isSavingToGoogle}>
-                        {isSavingToGoogle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Contact className="h-4 w-4" />}
-                        </Button>
-                        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                            <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                            </DialogTrigger>
-                            <DialogContent className='max-w-4xl'>
-                                <DialogHeader><DialogTitle>Edit Lead</DialogTitle></DialogHeader>
-                                <LeadForm lead={lead} projectId={project.id} channels={channels} closeForm={() => setIsEditOpen(false)} />
-                            </DialogContent>
-                        </Dialog>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction></AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction></AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </div>
         </CardFooter>

@@ -76,7 +76,7 @@ export function TaskCard({ task, leads, channels }: TaskCardProps) {
                 />
                 {task.title}
             </CardTitle>
-            <div className='flex items-center'>
+            <div className='flex items-center -mr-2'>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStar(!task.starred)}>
                     <Star className={cn("h-4 w-4", task.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
                 </Button>
@@ -112,13 +112,13 @@ export function TaskCard({ task, leads, channels }: TaskCardProps) {
       <CardContent className="flex-grow space-y-2">
         <p className="text-sm text-muted-foreground line-clamp-3">{task.description}</p>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
-        <div className='w-full flex justify-between items-center'>
-            <div className='flex items-center gap-2 flex-wrap'>
-                {task.dueDate && <Badge variant="outline">{format(new Date(task.dueDate), 'PPP')}</Badge>}
-                {lead && <Badge variant="secondary">{lead.name}</Badge>}
-                {channel && <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">{channel.name}</Badge>}
-            </div>
+      <CardFooter className="flex-col items-start gap-2">
+        <div className='flex items-center gap-2 flex-wrap'>
+            {task.dueDate && <Badge variant="outline">{format(new Date(task.dueDate), 'PPP')}</Badge>}
+            {lead && <Badge variant="secondary">{lead.name}</Badge>}
+            {channel && <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">{channel.name}</Badge>}
+        </div>
+        <div className='w-full flex justify-end items-center pt-2'>
             <Badge 
                 variant="outline" 
                 className={cn(
