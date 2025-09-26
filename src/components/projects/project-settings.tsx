@@ -26,7 +26,7 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { MemberForm } from './member-form';
-import { GoogleAuthProvider, linkWithPopup, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, linkWithPopup } from 'firebase/auth';
 import { storeGoogleTokens, disconnectGoogle } from '@/app/actions/google-link';
 import { testGoogleDriveConnection } from '@/app/actions/google-drive';
 import { testGoogleContactsConnection } from '@/app/actions/google-contacts';
@@ -36,7 +36,7 @@ interface ProjectSettingsProps {
 }
 
 export function ProjectSettings({ project }: ProjectSettingsProps) {
-  const { user, auth, userProfile } = useAuth();
+  const { user, auth } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -51,22 +51,8 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         return;
     }
     
-    // If user has a server auth code from a recent Google sign-in, use it directly.
-    if (userProfile?.googleServerAuthCode) {
-        const result = await storeGoogleTokens(project.id, userProfile.googleServerAuthCode, scope);
-        if (result.success) {
-            toast({ title: 'Success!', description: 'Your Google account has been connected.' });
-            router.refresh();
-        } else {
-            toast({ variant: 'destructive', title: 'Link failed', description: result.error || 'Could not link Google account.'});
-        }
-        return;
-    }
-
-    // Fallback to linkWithPopup if no auth code is available (e.g., for email users)
     const provider = new GoogleAuthProvider();
     provider.addScope(`https://www.googleapis.com/auth/${scope}`);
-    
     provider.setCustomParameters({
         access_type: 'offline',
         prompt: 'consent'
@@ -106,7 +92,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                 variant: 'destructive',
                 duration: 10000,
                 title: 'Account Already in Use',
-                description: "This Google account is already linked to another user. Sign out, then sign back in using that Google account to proceed.",
+                description: "This Google account is already linked to another user. To resolve this, sign out, then sign back in using that Google account directly.",
             });
         } else {
             toast({
@@ -179,7 +165,6 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         setIsTesting(null);
     }
   }
-
 
   return (
     <div className="grid gap-6 mt-4 max-w-4xl mx-auto">
