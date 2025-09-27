@@ -24,7 +24,7 @@ import { Label } from '../ui/label';
 import Image from 'next/image';
 
 const channelStatuses = ['new', 'active', 'inactive', 'closed'] as const;
-const channelTypes: ChannelType[] = ['Social', 'Communication', 'Community', 'Money / Business', 'Learning', 'Entertainment', 'Tech / Tools', 'Inspirations', 'Other'];
+const channelTypes = ['Social', 'Communication', 'Community', 'Money / Business', 'Learning', 'Entertainment', 'Tech / Tools', 'Inspirations', 'Other'] as const;
 
 
 const formSchema = z.object({

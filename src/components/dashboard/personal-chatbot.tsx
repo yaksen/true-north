@@ -53,7 +53,7 @@ export function PersonalChatbot({
   vaultItems,
   personalExpenses,
 }: PersonalChatbotProps) {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -278,8 +278,8 @@ export function PersonalChatbot({
                 </div>
                  {message.sender === 'user' && (
                   <Avatar className="h-8 w-8">
-                     <AvatarImage src={user?.profile?.photoURL ?? undefined} alt={user?.profile?.name ?? ''}/>
-                     <AvatarFallback>{getInitials(user?.profile?.name ?? user?.email)}</AvatarFallback>
+                     <AvatarImage src={userProfile?.photoURL ?? undefined} alt={userProfile?.name ?? ''}/>
+                     <AvatarFallback>{getInitials(userProfile?.name ?? user?.email)}</AvatarFallback>
                   </Avatar>
                 )}
               </div>
@@ -329,5 +329,3 @@ export function PersonalChatbot({
     </div>
   );
 }
-
-    

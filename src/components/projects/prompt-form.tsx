@@ -21,7 +21,7 @@ import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Switch } from '../ui/switch';
 
-const promptTypes: PromptType[] = ["Content Creation", "Marketing & Ads", "Sales Outreach", "Lead Nurturing", "Customer Support", "Task Automation", "Finance & Reporting", "Research & Insights", "Brainstorming & Idea Generation", "Personal Productivity", "Technical Help & Coding", "Training & Education", "Strategy & Planning"];
+const promptTypes = ["Content Creation", "Marketing & Ads", "Sales Outreach", "Lead Nurturing", "Customer Support", "Task Automation", "Finance & Reporting", "Research & Insights", "Brainstorming & Idea Generation", "Personal Productivity", "Technical Help & Coding", "Training & Education", "Strategy & Planning"] as const;
 
 const formSchema = z.object({
   title: z.string().min(1, { message: 'Title is required.' }),

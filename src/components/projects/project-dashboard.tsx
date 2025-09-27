@@ -2,7 +2,7 @@
 
 'use client';
 
-import { Project, Task, Finance, Lead, Channel } from "@/lib/types";
+import { Project, Task, Finance, Lead, Channel, Service, Product, Invoice } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { PlusCircle } from "lucide-react";

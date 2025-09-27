@@ -20,7 +20,7 @@ import { Note, NoteType } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Switch } from '../ui/switch';
 
-const noteTypes: NoteType[] = ["Message Templates", "Meeting Notes", "Ideas & Brainstorms", "Processes & SOPs", "Knowledge Snippets", "AI Prompts Library", "Client/Lead Notes", "Marketing Copy Drafts", "Decision Logs"];
+const noteTypes = ["Message Templates", "Meeting Notes", "Ideas & Brainstorms", "Processes & SOPs", "Knowledge Snippets", "AI Prompts Library", "Client/Lead Notes", "Marketing Copy Drafts", "Decision Logs"] as const;
 
 const formSchema = z.object({
   title: z.string().min(1, { message: 'Title is required.' }),
