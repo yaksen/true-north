@@ -137,11 +137,7 @@ export function LeadsToolbar({ channels, onFilterChange }: LeadsToolbarProps) {
     try {
         const imageDataUri = imageFile ? await fileToDataUri(imageFile) : undefined;
         const textDataUri = textFile ? await fileToDataUri(textFile) : undefined;
-<<<<<<< HEAD
         const audioFile = audioBlob ? new File([audioBlob], "recording.webm", { type: audioBlob.type }) : undefined;
-=======
-        const audioFile = audioBlob ? new File([audioBlob], "audio.webm", { type: audioBlob.type }) : undefined;
->>>>>>> 4640ae1 (Changes before Firebase Studio auto-run)
         const audioDataUri = audioFile ? await fileToDataUri(audioFile) : undefined;
 
         const availableChannels = channels.map(({ id, name }) => ({ id, name }));
