@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
         const result = await signInWithPopup(auth, provider);
         const credential = GoogleAuthProvider.credentialFromResult(result);
-        // @ts-ignore
+        // @ts-ignore - serverAuthCode is available on the credential object from popups
         const serverAuthCode = credential.serverAuthCode;
 
         if (serverAuthCode && result.user) {

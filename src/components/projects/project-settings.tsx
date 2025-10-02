@@ -46,7 +46,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const isOwner = user?.uid === project.ownerUid;
 
   const handleConnect = async (scope: 'drive.file' | 'contacts') => {
-    if (!user) {
+    if (!user || !auth.currentUser) {
         toast({ variant: 'destructive', title: 'Not Authenticated' });
         return;
     }
@@ -59,8 +59,6 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     });
 
     try {
-        if (!auth.currentUser) throw new Error("Current user not found in auth object.");
-
         const result = await linkWithPopup(auth.currentUser, provider);
         const credential = GoogleAuthProvider.credentialFromResult(result);
 
