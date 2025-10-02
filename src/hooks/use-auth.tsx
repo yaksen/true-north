@@ -137,12 +137,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         return result;
     } catch (error: any) {
-        if (error.code === 'auth/credential-already-in-use') {
+        if (error.code === 'auth/account-exists-with-different-credential') {
             const email = error.customData.email;
             const methods = await fetchSignInMethodsForEmail(auth, email);
 
             if (methods.includes(EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD)) {
-                const password = prompt(`This Google account is linked to an existing user with the email ${email}. Please enter your password for that account to link them.`);
+                const password = prompt(`An account already exists with the email ${email}. Please enter your password for that account to link them.`);
                 if (password) {
                     try {
                         const userCredential = await signInWithEmailAndPassword(auth, email, password);
