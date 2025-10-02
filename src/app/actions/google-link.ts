@@ -22,8 +22,11 @@ export async function storeGoogleTokens(
     const { tokens } = await oauth2Client.getToken(authorizationCode);
     const { access_token, refresh_token } = tokens;
 
-    if (!access_token || !refresh_token) {
-      throw new Error('Access token or refresh token not found in response.');
+    if (!access_token) {
+      throw new Error('Access token not found in response.');
+    }
+     if (!refresh_token) {
+      console.warn('Refresh token not found. You may need to re-authenticate later.');
     }
 
     const projectRef = doc(db, 'projects', projectId);
@@ -31,12 +34,12 @@ export async function storeGoogleTokens(
 
     if (scopes.includes('drive.file')) {
       updates.googleDriveAccessToken = access_token;
-      updates.googleDriveRefreshToken = refresh_token;
+      if (refresh_token) updates.googleDriveRefreshToken = refresh_token;
     }
     
     if (scopes.includes('contacts')) {
       updates.googleContactsAccessToken = access_token;
-      updates.googleContactsRefreshToken = refresh_token;
+      if (refresh_token) updates.googleContactsRefreshToken = refresh_token;
     }
 
     if (Object.keys(updates).length === 0) {
