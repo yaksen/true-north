@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -24,56 +23,82 @@ import {
 } from '@/components/ui/alert-dialog';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { MemberForm } from './member-form';
-import { GoogleAuthProvider, linkWithPopup } from 'firebase/auth';
 import { storeGoogleTokens, disconnectGoogle } from '@/app/actions/google-link';
 import { testGoogleDriveConnection } from '@/app/actions/google-drive';
 import { testGoogleContactsConnection } from '@/app/actions/google-contacts';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+
+interface AuthCodeDialogProps {
+    serviceName: 'Google Drive' | 'Google Contacts';
+    scopes: string[];
+    onConnect: (authCode: string) => Promise<void>;
+    isConnecting: boolean;
+}
+
+function AuthCodeDialog({ serviceName, scopes, onConnect, isConnecting }: AuthCodeDialogProps) {
+    const [authCode, setAuthCode] = useState('');
+    const OAUTH_PLAYGROUND_URL = "https://developers.google.com/oauthplayground";
+
+    return (
+        <div className='space-y-4'>
+            <div className='prose prose-sm dark:prose-invert'>
+                <p>Follow these steps to get your Authorization Code:</p>
+                <ol>
+                    <li>Open the <a href={OAUTH_PLAYGROUND_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google OAuth Playground</a> in a new tab.</li>
+                    <li>In the top-right corner, click the gear icon (OAuth 2.0 configuration). Select <strong>&quot;Use your own OAuth credentials&quot;</strong> and provide the Client ID and Secret from your project's environment variables.</li>
+                    <li>
+                        <p>On the left (Step 1), find and authorize the following API scope:</p>
+                        <ul className='text-xs'>
+                            {scopes.map(scope => <li key={scope}><code>{scope}</code></li>)}
+                        </ul>
+                    </li>
+                    <li>Click <strong>&quot;Authorize APIs&quot;</strong> and sign in with the Google account you want to connect.</li>
+                    <li>Click <strong>&quot;Exchange authorization code for tokens&quot;</strong>.</li>
+                    <li>Copy the <strong>Authorization code</strong> from the request/response panel on the right.</li>
+                </ol>
+            </div>
+            <div className='space-y-2'>
+                <Label htmlFor='auth-code'>Paste Authorization Code</Label>
+                <Input 
+                    id='auth-code'
+                    value={authCode}
+                    onChange={(e) => setAuthCode(e.target.value)}
+                    placeholder='Paste the code here'
+                />
+            </div>
+            <Button onClick={() => onConnect(authCode)} disabled={isConnecting || !authCode} className='w-full'>
+                {isConnecting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+                Verify and Connect
+            </Button>
+        </div>
+    )
+}
+
 
 interface ProjectSettingsProps {
   project: Project;
 }
 
 export function ProjectSettings({ project }: ProjectSettingsProps) {
-  const { user, auth } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [isConnecting, setIsConnecting] = useState<'drive' | 'contacts' | null>(null);
   const [isTesting, setIsTesting] = useState<'drive' | 'contacts' | null>(null);
   
   const isOwner = user?.uid === project.ownerUid;
 
-  const handleConnect = async (scope: 'drive.file' | 'contacts') => {
-    if (!user || !auth.currentUser) {
-        toast({ variant: 'destructive', title: 'Not Authenticated' });
-        return;
-    }
-    
-    const provider = new GoogleAuthProvider();
-    provider.addScope(`https://www.googleapis.com/auth/${scope}`);
-    provider.setCustomParameters({
-        access_type: 'offline',
-        prompt: 'consent'
-    });
+  const handleConnect = async (scope: 'drive.file' | 'contacts', authCode: string) => {
+    if (!user) return;
+    setIsConnecting(scope === 'drive.file' ? 'drive' : 'contacts');
 
     try {
-        const result = await linkWithPopup(auth.currentUser, provider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-
-        if (!credential) {
-            throw new Error('Could not get credential from result.');
-        }
-        
-        // @ts-ignore - serverAuthCode is available on the credential object from popups
-        const serverAuthCode = credential.serverAuthCode;
-
-        if (!serverAuthCode) {
-            throw new Error('Server auth code not found. Please try connecting again.');
-        }
-
-        const storeResult = await storeGoogleTokens(project.id, serverAuthCode, scope);
+        const storeResult = await storeGoogleTokens(project.id, authCode, scope);
 
         if (storeResult.success) {
             toast({ title: 'Success!', description: 'Your Google account has been connected.' });
@@ -83,22 +108,13 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         }
 
     } catch (error: any) {
-        console.error("Google Link Error:", error);
-        
-        if (error.code === 'auth/credential-already-in-use') {
-             toast({
-                variant: 'destructive',
-                duration: 10000,
-                title: 'Account Already in Use',
-                description: "This Google account is already linked to another user. To resolve this, sign out, then sign back in using that Google account directly.",
-            });
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Connection Failed',
-                description: error.message || 'An unknown error occurred during authentication.'
-            });
-        }
+        toast({
+            variant: 'destructive',
+            title: 'Connection Failed',
+            description: error.message || 'An unknown error occurred during authentication.'
+        });
+    } finally {
+        setIsConnecting(null);
     }
   };
 
@@ -204,7 +220,20 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                             </AlertDialog>
                         </>
                     ) : (
-                        <Button onClick={() => handleConnect('contacts')}>Connect</Button>
+                        <Dialog>
+                            <DialogTrigger asChild><Button>Connect</Button></DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Connect to Google Contacts</DialogTitle>
+                                </DialogHeader>
+                                <AuthCodeDialog
+                                    serviceName='Google Contacts'
+                                    scopes={['https://www.googleapis.com/auth/contacts']}
+                                    onConnect={(code) => handleConnect('contacts', code)}
+                                    isConnecting={isConnecting === 'contacts'}
+                                />
+                            </DialogContent>
+                        </Dialog>
                     )}
                  </div>
             </div>
@@ -240,7 +269,20 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                             </AlertDialog>
                         </>
                     ) : (
-                        <Button onClick={() => handleConnect('drive.file')}>Connect</Button>
+                        <Dialog>
+                            <DialogTrigger asChild><Button>Connect</Button></DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Connect to Google Drive</DialogTitle>
+                                </DialogHeader>
+                                <AuthCodeDialog
+                                    serviceName='Google Drive'
+                                    scopes={['https://www.googleapis.com/auth/drive.file']}
+                                    onConnect={(code) => handleConnect('drive.file', code)}
+                                    isConnecting={isConnecting === 'drive'}
+                                />
+                            </DialogContent>
+                        </Dialog>
                     )}
                  </div>
             </div>
