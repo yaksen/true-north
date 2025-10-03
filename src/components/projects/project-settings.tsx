@@ -56,7 +56,7 @@ function AuthCodeDialog({ serviceName, scopes, onConnect, isConnecting }: AuthCo
                         </ul>
                     </li>
                     <li>Click <strong>&quot;Authorize APIs&quot;</strong> and sign in with the Google account you want to connect.</li>
-                    <li>Click <strong>&quot;Exchange authorization code for tokens&quot;</strong>.</li>
+                    <li>After granting permission, you will be redirected. Click <strong>&quot;Exchange authorization code for tokens&quot;</strong>.</li>
                     <li>Copy the <strong>Authorization code</strong> from the request/response panel on the right.</li>
                 </ol>
             </div>
@@ -108,11 +108,20 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         }
 
     } catch (error: any) {
+      if (error.code === 'auth/credential-already-in-use') {
+        toast({
+          variant: 'destructive',
+          title: 'Account Already In Use',
+          description: "This Google account is already linked to another user. Please sign out and sign back in with your Google account to merge them.",
+          duration: 10000,
+        });
+      } else {
         toast({
             variant: 'destructive',
             title: 'Connection Failed',
             description: error.message || 'An unknown error occurred during authentication.'
         });
+      }
     } finally {
         setIsConnecting(null);
     }

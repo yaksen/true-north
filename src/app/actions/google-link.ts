@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-const REDIRECT_URI = 'http://localhost:9002'; // This MUST match the one in your Google Cloud Console
+const REDIRECT_URI = 'https://developers.google.com/oauthplayground'; // This MUST match the one in your Google Cloud Console
 
 export async function storeGoogleTokens(
   projectId: string,
@@ -49,8 +49,8 @@ export async function storeGoogleTokens(
     await updateDoc(projectRef, updates);
     return { success: true };
   } catch (error: any) {
-    console.error('Error storing Google tokens:', error.message);
-    return { success: false, error: 'Failed to retrieve and store tokens.' };
+    console.error('Error storing Google tokens:', error.response?.data || error.message);
+    return { success: false, error: 'Failed to retrieve and store tokens. Check if the auth code has expired or been used already.' };
   }
 }
 
