@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { Project, Lead, LeadStatus, Package, Service, Channel } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
-import { PlusCircle, Contact, Loader2 } from "lucide-react";
+import { PlusCircle, Contact, Loader2, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { LeadForm } from "./lead-form";
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LeadsToolbar } from "./leads-toolbar";
 import { LeadCard } from "./lead-card";
 import { ScrollArea } from "../ui/scroll-area";
+import { exportToGoogleContactsCSV } from "@/lib/utils";
 
 interface ProjectLeadsProps {
     project: Project;
@@ -59,6 +60,14 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
         });
     }, [leads, filters]);
 
+    const handleExport = () => {
+        if (filteredLeads.length === 0) {
+            toast({ description: "No leads to export."});
+            return;
+        }
+        exportToGoogleContactsCSV(filteredLeads, 'leads');
+    }
+
     return (
         <div className="grid gap-6 mt-4">
             <Card>
@@ -69,6 +78,10 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
                             <CardDescription>All leads associated with the &quot;{project.name}&quot; project.</CardDescription>
                         </div>
                         <div className='flex items-center gap-2'>
+                            <Button variant="outline" size="sm" onClick={handleExport} disabled={filteredLeads.length === 0}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Download Contacts
+                            </Button>
                             <Dialog open={isLeadFormOpen} onOpenChange={setIsLeadFormOpen}>
                                 <DialogTrigger asChild>
                                     <Button size="sm"><PlusCircle className="mr-2"/> Add Lead</Button>

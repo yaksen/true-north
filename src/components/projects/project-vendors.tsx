@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 import type { Project, Vendor, Channel } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { PlusCircle, Contact, Loader2 } from 'lucide-react';
+import { PlusCircle, Contact, Loader2, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { VendorForm } from './vendor-form';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +15,7 @@ import { VendorCard } from './vendor-card';
 import { ScrollArea } from '../ui/scroll-area';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { exportToGoogleContactsCSV } from '@/lib/utils';
 
 interface ProjectVendorsProps {
   project: Project;
@@ -55,6 +56,14 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
     });
   }, [vendors, filters]);
 
+  const handleExport = () => {
+    if (filteredVendors.length === 0) {
+        toast({ description: "No vendors to export."});
+        return;
+    }
+    exportToGoogleContactsCSV(filteredVendors, 'vendors');
+  }
+
   return (
     <div className="grid gap-6 mt-4">
       <Card>
@@ -67,6 +76,10 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
               </CardDescription>
             </div>
             <div className='flex items-center gap-2'>
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={filteredVendors.length === 0}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Contacts
+                </Button>
                 <Dialog open={isVendorFormOpen} onOpenChange={setIsVendorFormOpen}>
                 <DialogTrigger asChild>
                     <Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Vendor</Button>

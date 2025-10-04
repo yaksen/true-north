@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 import type { Project, Partner, Channel } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { PlusCircle, Contact, Loader2 } from 'lucide-react';
+import { PlusCircle, Contact, Loader2, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { PartnerForm } from './partner-form';
 import { doc, writeBatch, updateDoc } from 'firebase/firestore';
@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PartnersToolbar } from './partners-toolbar';
 import { PartnerCard } from './partner-card';
 import { ScrollArea } from '../ui/scroll-area';
+import { exportToGoogleContactsCSV } from '@/lib/utils';
 
 interface ProjectPartnersProps {
   project: Project;
@@ -55,6 +56,14 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
     });
   }, [partners, filters]);
 
+  const handleExport = () => {
+    if (filteredPartners.length === 0) {
+        toast({ description: "No partners to export."});
+        return;
+    }
+    exportToGoogleContactsCSV(filteredPartners, 'partners');
+}
+
   return (
     <div className="grid gap-6 mt-4">
       <Card>
@@ -67,6 +76,10 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
               </CardDescription>
             </div>
             <div className='flex items-center gap-2'>
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={filteredPartners.length === 0}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Contacts
+                </Button>
                 <Dialog open={isPartnerFormOpen} onOpenChange={setIsPartnerFormOpen}>
                 <DialogTrigger asChild>
                     <Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Partner</Button>
