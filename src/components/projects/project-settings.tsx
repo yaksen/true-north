@@ -197,7 +197,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     setChannelManagerAccess(checked);
     try {
       const projectRef = doc(db, 'projects', project.id);
-      await setDoc(projectRef, { channelManagerGlobalAccess: checked }, { merge: true });
+      await updateDoc(projectRef, { channelManagerGlobalAccess: checked });
       toast({ title: 'Success', description: 'Setting updated.' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not update setting.' });
