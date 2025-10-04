@@ -3,6 +3,23 @@
 
 import fetch from 'node-fetch';
 import FormData from 'form-data';
+import { Readable } from 'stream';
+
+// Helper function to convert a web ReadableStream to a Node.js Readable stream
+function webStreamToNodeStream(webStream: ReadableStream<Uint8Array>): Readable {
+    const reader = webStream.getReader();
+    return new Readable({
+        async read() {
+            const { done, value } = await reader.read();
+            if (done) {
+                this.push(null); // No more data
+            } else {
+                this.push(Buffer.from(value));
+            }
+        }
+    });
+}
+
 
 export async function uploadToFilelu(
   serverFormData: globalThis.FormData
@@ -16,8 +33,9 @@ export async function uploadToFilelu(
 
   try {
     const apiFormData = new FormData();
-    const buffer = Buffer.from(await file.arrayBuffer());
-    apiFormData.append('file', buffer, {
+    // Convert the web stream to a Node.js stream and append it
+    const nodeStream = webStreamToNodeStream(file.stream());
+    apiFormData.append('file', nodeStream, {
         filename: file.name,
         contentType: file.type,
     });
@@ -30,7 +48,7 @@ export async function uploadToFilelu(
       },
       body: apiFormData,
     });
-
+    
     if (!response.ok) {
         let errorData;
         try {
