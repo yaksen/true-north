@@ -1,5 +1,4 @@
 
-
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { Lead, Partner, Vendor } from "./types";
@@ -38,6 +37,7 @@ export function exportToGoogleContactsCSV(contacts: Contact[], type: ContactType
     const csvRows = [headers.join(',')];
 
     for (const contact of contacts) {
+        const formattedName = `${contact.name} - ${contact.id}`;
         const nameParts = contact.name.split(' ');
         const firstName = nameParts[0] || '';
         const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
@@ -46,7 +46,7 @@ export function exportToGoogleContactsCSV(contacts: Contact[], type: ContactType
         const title = 'roleInProject' in contact ? contact.roleInProject : ('serviceType' in contact ? contact.serviceType : '');
 
         const row = [
-            `"${contact.name}"`, // Name
+            `"${formattedName}"`, // Name
             `"${firstName}"`, // Given Name
             "", // Additional Name
             `"${lastName}"`, // Family Name
