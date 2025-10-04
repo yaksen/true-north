@@ -186,6 +186,7 @@ export interface Channel {
     notes?: string;
     sku?: string;
     starred?: boolean;
+    accessibleOnManager: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

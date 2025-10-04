@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Channel, ChannelType } from '@/lib/types';
@@ -22,6 +22,7 @@ import { extractChannelDetails, type ExtractChannelDetailsOutput } from '@/ai/fl
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Label } from '../ui/label';
 import Image from 'next/image';
+import { Switch } from '../ui/switch';
 
 const channelStatuses = ['new', 'active', 'inactive', 'closed'] as const;
 const channelTypes = ['Social', 'Communication', 'Community', 'Money / Business', 'Learning', 'Entertainment', 'Tech / Tools', 'Inspirations', 'Other'] as const;
@@ -34,6 +35,7 @@ const formSchema = z.object({
   url: z.string().url().optional().or(z.literal('')),
   notes: z.string().optional(),
   status: z.enum(channelStatuses),
+  accessibleOnManager: z.boolean().default(true),
 });
 
 type ChannelFormValues = z.infer<typeof formSchema>;
@@ -66,6 +68,7 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
       url: '',
       notes: '',
       status: 'new',
+      accessibleOnManager: true,
     },
   });
 
@@ -244,24 +247,48 @@ export function ChannelForm({ channel, projectId, closeForm }: ChannelFormProps)
                 />
             </div>
 
-            <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>
-                            {channelStatuses.map(status => (
-                                <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                                {channelStatuses.map(status => (
+                                    <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="accessibleOnManager"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col pt-2">
+                            <FormLabel>Accessibility</FormLabel>
+                            <div className='flex items-center space-x-2 pt-2.5'>
+                                <FormControl>
+                                    <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                                <FormLabel htmlFor="accessibleOnManager">
+                                    Accessible on Channel Manager
+                                </FormLabel>
+                            </div>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+
             <FormField
             control={form.control}
             name="notes"
