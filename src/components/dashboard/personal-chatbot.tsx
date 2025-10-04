@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -179,21 +178,19 @@ export function PersonalChatbot({
     clearMedia();
     
     try {
-      const chatInput: PersonalChatInput = {
+      const result = await personalChat({
         userMessage: input,
         imageDataUri: imageDataUri,
         audioDataUri: audioDataUri,
-        tasks,
-        habits,
-        habitLogs,
-        diaryEntries,
-        wallet: wallet || undefined,
-        walletTransactions,
-        vaultItems,
-        personalExpenses,
-      };
-
-      const result = await personalChat(chatInput);
+        tasks: JSON.parse(JSON.stringify(tasks)),
+        habits: JSON.parse(JSON.stringify(habits)),
+        habitLogs: JSON.parse(JSON.stringify(habitLogs)),
+        diaryEntries: JSON.parse(JSON.stringify(diaryEntries)),
+        wallet: wallet ? JSON.parse(JSON.stringify(wallet)) : undefined,
+        walletTransactions: JSON.parse(JSON.stringify(walletTransactions)),
+        vaultItems: JSON.parse(JSON.stringify(vaultItems)),
+        personalExpenses: JSON.parse(JSON.stringify(personalExpenses)),
+      });
 
       const aiMessageData = {
         sender: 'ai' as const,

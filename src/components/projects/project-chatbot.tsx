@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -197,15 +196,24 @@ const ChatInterface = ({
       clearMedia();
       
       try {
-        const chatInput: ProjectChatInput = {
+        const result = await projectChat({
           userMessage: input,
-          history: messages.map(m => ({ sender: m.sender, text: m.text })),
-          imageDataUri: imageDataUri,
-          audioDataUri: audioDataUri,
-          project, tasks, finances, leads, channels, vendors, partners, services, products, packages, invoices, notes,
-        };
-  
-        const result = await projectChat(chatInput);
+          history: JSON.parse(JSON.stringify(messages.map(m => ({ sender: m.sender, text: m.text })))),
+          imageDataUri,
+          audioDataUri,
+          project: JSON.parse(JSON.stringify(project)),
+          tasks: JSON.parse(JSON.stringify(tasks)),
+          finances: JSON.parse(JSON.stringify(finances)),
+          leads: JSON.parse(JSON.stringify(leads)),
+          channels: JSON.parse(JSON.stringify(channels)),
+          vendors: JSON.parse(JSON.stringify(vendors)),
+          partners: JSON.parse(JSON.stringify(partners)),
+          services: JSON.parse(JSON.stringify(services)),
+          products: JSON.parse(JSON.stringify(products)),
+          packages: JSON.parse(JSON.stringify(packages)),
+          invoices: JSON.parse(JSON.stringify(invoices)),
+          notes: JSON.parse(JSON.stringify(notes.filter(n => n.aiAccessible))),
+        });
   
         const aiMessageData = {
           sender: 'ai' as const,
@@ -250,7 +258,7 @@ const ChatInterface = ({
               <div className="flex items-center gap-2 text-sm p-2 bg-muted rounded-md">
                   {imagePreview && <Image src={imagePreview} alt="Preview" width={40} height={40} className="rounded" />}
                   {audioBlob && <audio src={URL.createObjectURL(audioBlob)} controls className='h-10'/>}
-                  <Button size="icon" variant="ghost" className="h-7 w-7 ml-auto" onClick={clearMedia}><X className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" className="h-6 w-6 ml-auto" onClick={clearMedia}><X className="h-4 w-4" /></Button>
               </div>
           )}
           <form onSubmit={handleSendMessage} className="flex items-center gap-2">

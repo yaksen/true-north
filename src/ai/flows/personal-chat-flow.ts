@@ -25,14 +25,14 @@ const PersonalChatInputSchema = z.object({
   userMessage: z.string().describe("The user's message or question."),
   imageDataUri: z.string().optional().describe("An optional image file attached by the user, as a data URI."),
   audioDataUri: z.string().optional().describe("An optional audio file attached by the user, as a data URI."),
-  tasks: z.array(z.custom<Task>()).describe('A list of all tasks assigned to the user.'),
-  habits: z.array(z.custom<Habit>()).describe('A list of all the user\'s habits.'),
-  habitLogs: z.array(z.custom<HabitLog>()).describe('A list of all habit logs for the user.'),
-  diaryEntries: z.array(z.custom<DiaryEntry>()).describe('A list of all diary entries for the user.'),
-  wallet: z.custom<PersonalWallet>().optional().describe('The user\'s personal wallet object.'),
-  walletTransactions: z.array(z.custom<WalletTransaction>()).describe('A list of all transactions in the user\'s wallet.'),
-  vaultItems: z.array(z.custom<VaultItem>()).describe('A list of all items in the user\'s personal vault.'),
-  personalExpenses: z.array(z.custom<PersonalExpense>()).describe("A list of the user's personal expenses."),
+  tasks: z.any().describe('A list of all tasks assigned to the user.'),
+  habits: z.any().describe('A list of all the user\'s habits.'),
+  habitLogs: z.any().describe('A list of all habit logs for the user.'),
+  diaryEntries: z.any().describe('A list of all diary entries for the user.'),
+  wallet: z.any().optional().describe('The user\'s personal wallet object.'),
+  walletTransactions: z.any().describe('A list of all transactions in the user\'s wallet.'),
+  vaultItems: z.any().describe('A list of all items in the user\'s personal vault.'),
+  personalExpenses: z.any().describe("A list of the user's personal expenses."),
 });
 export type PersonalChatInput = z.infer<typeof PersonalChatInputSchema>;
 
@@ -95,6 +95,4 @@ const personalChatFlow = ai.defineFlow(
 
 export async function personalChat(
   input: PersonalChatInput
-): Promise<PersonalChatOutput> {
-  return await personalChatFlow(input);
-}
+): Promise<Personal
