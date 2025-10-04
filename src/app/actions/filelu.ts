@@ -5,19 +5,16 @@ import fetch from 'node-fetch';
 import FormData from 'form-data';
 import { Readable } from 'stream';
 
-// Helper function to convert a web ReadableStream to a Node.js Readable stream
-function webStreamToNodeStream(webStream: ReadableStream<Uint8Array>): Readable {
-    const reader = webStream.getReader();
-    return new Readable({
-        async read() {
-            const { done, value } = await reader.read();
-            if (done) {
-                this.push(null); // No more data
-            } else {
-                this.push(Buffer.from(value));
-            }
-        }
-    });
+// Helper function to convert a web ReadableStream to a Buffer
+async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffer> {
+    const reader = stream.getReader();
+    const chunks: Uint8Array[] = [];
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) chunks.push(value);
+    }
+    return Buffer.concat(chunks);
 }
 
 
@@ -33,9 +30,9 @@ export async function uploadToFilelu(
 
   try {
     const apiFormData = new FormData();
-    // Convert the web stream to a Node.js stream and append it
-    const nodeStream = webStreamToNodeStream(file.stream());
-    apiFormData.append('file', nodeStream, {
+    const fileBuffer = await streamToBuffer(file.stream());
+    
+    apiFormData.append('file', fileBuffer, {
         filename: file.name,
         contentType: file.type,
     });
