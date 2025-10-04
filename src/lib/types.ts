@@ -65,7 +65,6 @@ export interface Project {
   updatedAt: Date;
   timezone?: string;
   channelManagerGlobalAccess?: boolean;
-  fileluApiKey?: string;
 }
 
 export interface Task {

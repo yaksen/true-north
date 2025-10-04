@@ -15,7 +15,6 @@ import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
 import { PortfolioItemForm } from './portfolio-item-form';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '../ui/input';
-import { uploadToFilelu } from '@/app/actions/filelu';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Image from 'next/image';
@@ -70,44 +69,6 @@ export function PortfolioNoteView({ note, items, project }: PortfolioNoteViewPro
         }
     };
     
-    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        if (!project.fileluApiKey) {
-            toast({ variant: 'destructive', title: 'API Key Missing', description: 'Please set the Filelu API key in project settings.' });
-            return;
-        }
-
-        setIsUploading(true);
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('apiKey', project.fileluApiKey);
-
-            const result = await uploadToFilelu(formData);
-
-            if (result.success && result.url) {
-                await addDoc(collection(db, 'portfolioItems'), {
-                    portfolioNoteId: note.id,
-                    fileName: file.name,
-                    fileUrl: result.url,
-                    fileType: file.type,
-                    fileSize: file.size,
-                    createdAt: serverTimestamp(),
-                });
-                toast({ title: 'Success', description: 'File uploaded and added to portfolio.' });
-            } else {
-                throw new Error(result.message || 'Upload failed');
-            }
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Upload Error', description: error.message || 'Could not upload file.' });
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-
     return (
         <div>
             <DialogHeader>
@@ -123,13 +84,6 @@ export function PortfolioNoteView({ note, items, project }: PortfolioNoteViewPro
                     {isZipping ? <Loader2 className='h-4 w-4 mr-2 animate-spin' /> : <Archive className="mr-2 h-4 w-4" />}
                     Download All as ZIP
                 </Button>
-                <Button asChild variant="outline">
-                    <label htmlFor="portfolio-file-upload" className='cursor-pointer'>
-                         {isUploading ? <Loader2 className='h-4 w-4 mr-2 animate-spin' /> : <Upload className="mr-2 h-4 w-4" />}
-                        Upload File
-                    </label>
-                </Button>
-                <Input id="portfolio-file-upload" type="file" onChange={handleFileUpload} className="hidden" />
                  <Dialog open={isItemFormOpen} onOpenChange={setIsItemFormOpen}>
                     <DialogTrigger asChild>
                         <Button><PlusCircle className='mr-2 h-4 w-4'/> Add Link</Button>

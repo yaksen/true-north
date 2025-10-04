@@ -41,8 +41,6 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [channelManagerAccess, setChannelManagerAccess] = useState(project.channelManagerGlobalAccess ?? true);
-  const [fileluApiKey, setFileluApiKey] = useState(project.fileluApiKey || '');
-  const [isSavingKey, setIsSavingKey] = useState(false);
 
 
   const isOwner = user?.uid === project.ownerUid;
@@ -76,19 +74,6 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     }
   };
 
-  const handleSaveFileluKey = async () => {
-    setIsSavingKey(true);
-    try {
-      const projectRef = doc(db, 'projects', project.id);
-      await updateDoc(projectRef, { fileluApiKey: fileluApiKey });
-      toast({ title: 'Success', description: 'API Key saved successfully.' });
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not save API Key.' });
-    } finally {
-      setIsSavingKey(false);
-    }
-  };
-
   return (
     <div className="grid gap-6 mt-4 max-w-4xl mx-auto">
       <Card>
@@ -109,34 +94,6 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                 onCheckedChange={handleChannelAccessToggle}
               />
             </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>API Integrations</CardTitle>
-          <CardDescription>Connect to external services.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-lg border p-4">
-              <Label htmlFor="filelu-api-key" className="font-medium">Filelu API Key</Label>
-              <p className="text-[0.8rem] text-muted-foreground mb-2">
-                Enter your API key for cloud storage from filelu.com.
-              </p>
-              <div className="flex items-center gap-2">
-                  <Input
-                    id="filelu-api-key"
-                    type="password"
-                    value={fileluApiKey}
-                    onChange={(e) => setFileluApiKey(e.target.value)}
-                    placeholder="Paste your API key here"
-                  />
-                  <Button onClick={handleSaveFileluKey} disabled={isSavingKey}>
-                      {isSavingKey && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Save
-                  </Button>
-              </div>
-          </div>
         </CardContent>
       </Card>
       
