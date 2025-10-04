@@ -70,6 +70,7 @@ export interface Project {
   googleDriveRefreshToken?: string;
   googleContactsAccessToken?: string;
   googleContactsRefreshToken?: string;
+  channelManagerGlobalAccess?: boolean;
 }
 
 export interface Task {

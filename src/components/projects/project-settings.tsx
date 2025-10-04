@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -21,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteDoc, doc } from 'firebase/firestore';
+import { deleteDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { MemberForm } from './member-form';
@@ -30,6 +31,7 @@ import { testGoogleDriveConnection } from '@/app/actions/google-drive';
 import { testGoogleContactsConnection } from '@/app/actions/google-contacts';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { Switch } from '../ui/switch';
 
 interface AuthCodeDialogProps {
     serviceName: 'Google Drive' | 'Google Contacts';
@@ -90,7 +92,9 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [isConnecting, setIsConnecting] = useState<'drive' | 'contacts' | null>(null);
   const [isTesting, setIsTesting] = useState<'drive' | 'contacts' | null>(null);
-  
+  const [channelManagerAccess, setChannelManagerAccess] = useState(project.channelManagerGlobalAccess ?? true);
+
+
   const isOwner = user?.uid === project.ownerUid;
 
   const handleConnect = async (scope: 'drive.file' | 'contacts', authCode: string) => {
@@ -108,7 +112,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
         }
 
     } catch (error: any) {
-      if (error.code === 'auth/credential-already-in-use') {
+      if (error.message?.includes('auth/credential-already-in-use')) {
         toast({
           variant: 'destructive',
           title: 'Account Already In Use',
@@ -187,10 +191,42 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
     } finally {
         setIsTesting(null);
     }
-  }
+  };
+  
+  const handleChannelAccessToggle = async (checked: boolean) => {
+    setChannelManagerAccess(checked);
+    try {
+      const projectRef = doc(db, 'projects', project.id);
+      await setDoc(projectRef, { channelManagerGlobalAccess: checked }, { merge: true });
+      toast({ title: 'Success', description: 'Setting updated.' });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update setting.' });
+      setChannelManagerAccess(!checked); // Revert on failure
+    }
+  };
 
   return (
     <div className="grid gap-6 mt-4 max-w-4xl mx-auto">
+      <Card>
+        <CardHeader>
+            <CardTitle>General Settings</CardTitle>
+            <CardDescription>Global settings for this project.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <p className='font-medium'>Accessible on Channel Manager</p>
+                <p className="text-[0.8rem] text-muted-foreground">
+                  Allow this project's channels to be viewed in the global manager.
+                </p>
+              </div>
+              <Switch
+                checked={channelManagerAccess}
+                onCheckedChange={handleChannelAccessToggle}
+              />
+            </div>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
             <CardTitle>API Integrations</CardTitle>
