@@ -18,6 +18,7 @@ import { Input } from '../ui/input';
 import { uploadToFilelu } from '@/app/actions/filelu';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import Image from 'next/image';
 
 interface PortfolioNoteViewProps {
     note: PortfolioNote;
