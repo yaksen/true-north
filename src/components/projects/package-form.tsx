@@ -32,6 +32,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Label } from '../ui/label';
 import { extractPackageDetails, type ExtractPackageDetailsOutput } from '@/ai/flows/extract-package-details-flow';
 import Image from 'next/image';
+import { uploadToFilelu } from '@/app/actions/filelu';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -270,12 +271,93 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
     }
   }
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!project.fileluApiKey) {
+      toast({
+        variant: 'destructive',
+        title: 'API Key Missing',
+        description: 'Please set the Filelu API key in project settings before uploading.',
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('apiKey', project.fileluApiKey);
+
+      const result = await uploadToFilelu(formData);
+
+      if (result.success && result.url) {
+        form.setValue('imageUrl', result.url, { shouldValidate: true });
+        setPreviewImageUrl(result.url);
+        toast({ title: 'Success', description: 'Image uploaded.' });
+      } else {
+        throw new Error(result.message || 'Upload failed');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Upload Error',
+        description: error.message || 'Could not upload image.',
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+
   const selectedItemsCount = (selectedServiceIds?.length || 0) + (selectedProductIds?.length || 0);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <FormLabel>Package Image</FormLabel>
+              <div className="relative flex items-center justify-center w-full h-48 border-2 border-dashed rounded-lg">
+                {previewImageUrl ? (
+                  <>
+                    <Image src={previewImageUrl} alt="Package preview" layout="fill" objectFit="cover" className="rounded-lg" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-7 w-7"
+                      onClick={() => {
+                        setPreviewImageUrl(null);
+                        form.setValue('imageUrl', '');
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <div className="text-center text-muted-foreground">
+                    {isUploading ? (
+                      <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+                    ) : (
+                      <>
+                        <Upload className="mx-auto h-8 w-8" />
+                        <p>Click to upload image</p>
+                      </>
+                    )}
+                  </div>
+                )}
+                <Input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={isUploading}
+                />
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                 control={form.control}

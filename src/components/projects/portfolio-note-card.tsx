@@ -3,7 +3,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { PortfolioNote, PortfolioItem, Category, Service } from '@/lib/types';
+import type { PortfolioNote, PortfolioItem, Category, Service, Project } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
@@ -20,12 +20,13 @@ import Image from 'next/image';
 
 interface PortfolioNoteCardProps {
   note: PortfolioNote;
+  project: Project;
   items: PortfolioItem[];
   categories: Category[];
   services: Service[];
 }
 
-export function PortfolioNoteCard({ note, items, categories, services }: PortfolioNoteCardProps) {
+export function PortfolioNoteCard({ note, project, items, categories, services }: PortfolioNoteCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -121,7 +122,7 @@ export function PortfolioNoteCard({ note, items, categories, services }: Portfol
         </Card>
         <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
             <DialogContent className="max-w-4xl">
-                <PortfolioNoteView note={note} items={items} />
+                <PortfolioNoteView note={note} items={items} project={project} />
             </DialogContent>
         </Dialog>
     </>

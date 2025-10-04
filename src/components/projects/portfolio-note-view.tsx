@@ -3,20 +3,26 @@
 'use client';
 
 import { useState } from 'react';
-import type { PortfolioNote, PortfolioItem } from '@/lib/types';
+import type { PortfolioNote, PortfolioItem, Project } from '@/lib/types';
 import { DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { ScrollArea } from '../ui/scroll-area';
 import { Button } from '../ui/button';
-import { Download, File, Image as ImageIcon, Music, Video, Archive, Loader2, Link as LinkIcon } from 'lucide-react';
+import { Download, File, Image as ImageIcon, Music, Video, Archive, Loader2, Link as LinkIcon, PlusCircle, Upload } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
 import { PortfolioItemForm } from './portfolio-item-form';
+import { useToast } from '@/hooks/use-toast';
+import { Input } from '../ui/input';
+import { uploadToFilelu } from '@/app/actions/filelu';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface PortfolioNoteViewProps {
     note: PortfolioNote;
     items: PortfolioItem[];
+    project: Project;
 }
 
 const getFileIcon = (fileType: string) => {
@@ -27,23 +33,27 @@ const getFileIcon = (fileType: string) => {
     return <File className="h-5 w-5" />;
 }
 
-export function PortfolioNoteView({ note, items }: PortfolioNoteViewProps) {
+export function PortfolioNoteView({ note, items, project }: PortfolioNoteViewProps) {
+    const { toast } = useToast();
     const [isItemFormOpen, setIsItemFormOpen] = useState(false);
     const [isZipping, setIsZipping] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     const handleDownloadAll = async () => {
         setIsZipping(true);
         const zip = new JSZip();
         
         try {
-            const filePromises = items.map(async (item) => {
-                const response = await fetch(item.fileUrl);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch ${item.fileName}`);
-                }
-                const blob = await response.blob();
-                zip.file(item.fileName, blob);
-            });
+            const filePromises = items
+                .filter(item => item.fileType !== 'link')
+                .map(async (item) => {
+                    const response = await fetch(item.fileUrl);
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch ${item.fileName}`);
+                    }
+                    const blob = await response.blob();
+                    zip.file(item.fileName, blob);
+                });
 
             await Promise.all(filePromises);
             
@@ -53,9 +63,46 @@ export function PortfolioNoteView({ note, items }: PortfolioNoteViewProps) {
 
         } catch (error) {
             console.error("Error creating zip file:", error);
-            // Consider showing a toast message
+            toast({ variant: 'destructive', title: 'Download Error', description: 'Could not download all files.' });
         } finally {
             setIsZipping(false);
+        }
+    };
+    
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (!project.fileluApiKey) {
+            toast({ variant: 'destructive', title: 'API Key Missing', description: 'Please set the Filelu API key in project settings.' });
+            return;
+        }
+
+        setIsUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('apiKey', project.fileluApiKey);
+
+            const result = await uploadToFilelu(formData);
+
+            if (result.success && result.url) {
+                await addDoc(collection(db, 'portfolioItems'), {
+                    portfolioNoteId: note.id,
+                    fileName: file.name,
+                    fileUrl: result.url,
+                    fileType: file.type,
+                    fileSize: file.size,
+                    createdAt: serverTimestamp(),
+                });
+                toast({ title: 'Success', description: 'File uploaded and added to portfolio.' });
+            } else {
+                throw new Error(result.message || 'Upload failed');
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Upload Error', description: error.message || 'Could not upload file.' });
+        } finally {
+            setIsUploading(false);
         }
     };
 
@@ -75,12 +122,19 @@ export function PortfolioNoteView({ note, items }: PortfolioNoteViewProps) {
                     {isZipping ? <Loader2 className='h-4 w-4 mr-2 animate-spin' /> : <Archive className="mr-2 h-4 w-4" />}
                     Download All as ZIP
                 </Button>
+                <Button asChild variant="outline">
+                    <label htmlFor="portfolio-file-upload" className='cursor-pointer'>
+                         {isUploading ? <Loader2 className='h-4 w-4 mr-2 animate-spin' /> : <Upload className="mr-2 h-4 w-4" />}
+                        Upload File
+                    </label>
+                </Button>
+                <Input id="portfolio-file-upload" type="file" onChange={handleFileUpload} className="hidden" />
                  <Dialog open={isItemFormOpen} onOpenChange={setIsItemFormOpen}>
                     <DialogTrigger asChild>
-                        <Button>Add Item</Button>
+                        <Button><PlusCircle className='mr-2 h-4 w-4'/> Add Link</Button>
                     </DialogTrigger>
                     <DialogContent>
-                        <DialogHeader><DialogTitle>Add Item to &quot;{note.title}&quot;</DialogTitle></DialogHeader>
+                        <DialogHeader><DialogTitle>Add Link to &quot;{note.title}&quot;</DialogTitle></DialogHeader>
                         <PortfolioItemForm 
                             projectId={note.projectId}
                             portfolioNoteId={note.id}

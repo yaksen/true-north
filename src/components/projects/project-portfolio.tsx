@@ -54,6 +54,7 @@ export function ProjectPortfolio({ project, portfolioNotes, portfolioItems, cate
                             <PortfolioNoteCard 
                                 key={note.id}
                                 note={note}
+                                project={project}
                                 items={portfolioItems.filter(item => item.portfolioNoteId === note.id)}
                                 categories={categories}
                                 services={services}
