@@ -66,7 +66,7 @@ export function PortfolioNoteView({ note, items }: PortfolioNoteViewProps) {
                 <DialogDescription>{note.description}</DialogDescription>
             </DialogHeader>
             <div className="flex flex-wrap gap-2 my-4">
-                {note.tags.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+                {note.tags && note.tags.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
             </div>
             
             <div className="flex justify-end gap-2 mb-4">
