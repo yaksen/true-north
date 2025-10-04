@@ -37,7 +37,7 @@ export function exportToGoogleContactsCSV(contacts: Contact[], type: ContactType
     const csvRows = [headers.join(',')];
 
     for (const contact of contacts) {
-        const formattedName = `${contact.name} - ${contact.id}`;
+        const formattedName = `${contact.name} - ${contact.sku || contact.id}`;
         const nameParts = contact.name.split(' ');
         const firstName = nameParts[0] || '';
         const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
