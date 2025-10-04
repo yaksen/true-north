@@ -37,7 +37,6 @@ export function PortfolioNoteView({ note, items, project }: PortfolioNoteViewPro
     const { toast } = useToast();
     const [isItemFormOpen, setIsItemFormOpen] = useState(false);
     const [isZipping, setIsZipping] = useState(false);
-    const [isUploading, setIsUploading] = useState(false);
 
     const handleDownloadAll = async () => {
         setIsZipping(true);

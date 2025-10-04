@@ -70,9 +70,6 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
   const [aiImage, setAiImage] = useState<File | null>(null);
   const [pastedImage, setPastedImage] = useState<string | null>(null);
   const [isItemsPopoverOpen, setIsItemsPopoverOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(pkg?.imageUrl || null);
-
 
   const [durationValue, setDurationValue] = useState(() => pkg?.duration?.split(' ')[0] || '1');
   const [durationUnit, setDurationUnit] = useState(() => pkg?.duration?.split(' ')[1] || 'Days');
@@ -398,7 +395,19 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
                     </FormItem>
                 )}
             />
-            
+             <FormField
+                control={form.control}
+                name="imageUrl"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Image URL (Optional)</FormLabel>
+                    <FormControl>
+                        <Input placeholder="https://example.com/image.png" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
             <FormField
                 control={form.control}
                 name="discountPercentage"
@@ -493,10 +502,10 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
             </div>
 
             <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting || isUploading}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting || isUploading}>
-                {isSubmitting || isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {isUploading ? 'Uploading...' : (pkg ? 'Update' : 'Create') + ' Package'}
+            <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {pkg ? 'Update' : 'Create'} Package
             </Button>
             </div>
         </form>
