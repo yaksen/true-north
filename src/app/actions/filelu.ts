@@ -17,7 +17,10 @@ export async function uploadToFilelu(
   try {
     const apiFormData = new FormData();
     const buffer = Buffer.from(await file.arrayBuffer());
-    apiFormData.append('file', buffer, file.name);
+    apiFormData.append('file', buffer, {
+        filename: file.name,
+        contentType: file.type,
+    });
 
     const response = await fetch('https://filelu.com/api/v1/upload', {
       method: 'POST',
@@ -29,15 +32,22 @@ export async function uploadToFilelu(
     });
 
     if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+            errorData = await response.json();
+        } catch (e) {
+            errorData = { message: await response.text() };
+        }
+        console.error('File.lu API Error Response:', errorData);
         throw new Error(errorData.message || `File.lu API Error: ${response.statusText}`);
     }
 
     const result = await response.json() as { success: boolean; data: { file: { url: { full: string } } } };
-
-    if (result.success && result.data.file.url.full) {
+    
+    if (result.success && result.data?.file?.url?.full) {
         return { success: true, message: 'Upload successful!', url: result.data.file.url.full };
     } else {
+        console.error('File.lu success response missing URL:', result);
         throw new Error('File.lu returned success but no URL was found.');
     }
 
