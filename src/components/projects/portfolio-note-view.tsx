@@ -7,7 +7,7 @@ import type { PortfolioNote, PortfolioItem } from '@/lib/types';
 import { DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { ScrollArea } from '../ui/scroll-area';
 import { Button } from '../ui/button';
-import { Download, File, Image as ImageIcon, Music, Video, Archive, Loader2 } from 'lucide-react';
+import { Download, File, Image as ImageIcon, Music, Video, Archive, Loader2, Link as LinkIcon } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -23,6 +23,7 @@ const getFileIcon = (fileType: string) => {
     if (fileType.startsWith('image/')) return <ImageIcon className="h-5 w-5" />;
     if (fileType.startsWith('video/')) return <Video className="h-5 w-5" />;
     if (fileType.startsWith('audio/')) return <Music className="h-5 w-5" />;
+    if (fileType === 'link') return <LinkIcon className="h-5 w-5" />;
     return <File className="h-5 w-5" />;
 }
 
@@ -97,7 +98,7 @@ export function PortfolioNoteView({ note, items }: PortfolioNoteViewProps) {
                                 {getFileIcon(item.fileType)}
                                 <div className="flex flex-col">
                                     <span className="font-medium text-sm truncate">{item.fileName}</span>
-                                    <span className="text-xs text-muted-foreground">{(item.fileSize / 1024 / 1024).toFixed(2)} MB</span>
+                                    {item.fileSize > 0 && <span className="text-xs text-muted-foreground">{(item.fileSize / 1024 / 1024).toFixed(2)} MB</span>}
                                 </div>
                             </div>
                              <a href={item.fileUrl} download={item.fileName} target="_blank" rel="noopener noreferrer">

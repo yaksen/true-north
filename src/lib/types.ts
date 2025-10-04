@@ -30,7 +30,6 @@ export interface UserProfile {
     photoURL?: string;
     lastLogin?: Date;
     projects: string[]; // List of project IDs the user is a member of
-    googleServerAuthCode?: string; // Temporarily store the auth code
     createdAt: Date;
     updatedAt: Date;
 }
@@ -65,11 +64,6 @@ export interface Project {
   createdAt: Date;
   updatedAt: Date;
   timezone?: string;
-  googleApiKey?: string;
-  googleDriveAccessToken?: string;
-  googleDriveRefreshToken?: string;
-  googleContactsAccessToken?: string;
-  googleContactsRefreshToken?: string;
   channelManagerGlobalAccess?: boolean;
 }
 

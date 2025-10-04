@@ -12,7 +12,6 @@ import { PartnerForm } from './partner-form';
 import { doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { saveContactToGoogle } from '@/app/actions/google-contacts';
 import { PartnersToolbar } from './partners-toolbar';
 import { PartnerCard } from './partner-card';
 import { ScrollArea } from '../ui/scroll-area';
@@ -26,7 +25,6 @@ interface ProjectPartnersProps {
 export function ProjectPartners({ project, partners, channels }: ProjectPartnersProps) {
   const { toast } = useToast();
   const [isPartnerFormOpen, setIsPartnerFormOpen] = useState(false);
-  const [isBulkSaving, setIsBulkSaving] = useState(false);
   const [filters, setFilters] = useState({
     role: '',
     search: '',
@@ -57,35 +55,6 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
     });
   }, [partners, filters]);
 
-  const handleBulkSaveToContacts = async () => {
-    if (!project.googleContactsAccessToken) {
-        toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to Google Contacts in Project Settings first.'});
-        return;
-    }
-    setIsBulkSaving(true);
-    let successCount = 0;
-    let existCount = 0;
-    let failCount = 0;
-
-    for (const partner of filteredPartners) {
-        const result = await saveContactToGoogle(partner, project.googleContactsAccessToken);
-        if (result.success) {
-            successCount++;
-        } else if (result.message.includes('already exists')) {
-            existCount++;
-        } else {
-            failCount++;
-        }
-    }
-
-    setIsBulkSaving(false);
-    toast({
-        title: 'Bulk Save Complete',
-        description: `${successCount} new contacts saved, ${existCount} already existed, and ${failCount} failed.`,
-    });
-  }
-
-
   return (
     <div className="grid gap-6 mt-4">
       <Card>
@@ -98,10 +67,6 @@ export function ProjectPartners({ project, partners, channels }: ProjectPartners
               </CardDescription>
             </div>
             <div className='flex items-center gap-2'>
-                <Button size="sm" variant="outline" onClick={handleBulkSaveToContacts} disabled={isBulkSaving || !project.googleContactsAccessToken}>
-                    {isBulkSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Contact className="mr-2 h-4 w-4" />}
-                    Save All to Contacts
-                </Button>
                 <Dialog open={isPartnerFormOpen} onOpenChange={setIsPartnerFormOpen}>
                 <DialogTrigger asChild>
                     <Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Partner</Button>

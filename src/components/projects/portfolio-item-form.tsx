@@ -14,13 +14,13 @@ import { db } from '@/lib/firebase';
 import { Loader2, UploadCloud } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { uploadFileToDrive } from '@/app/actions/google-drive';
 import { doc, getDoc } from 'firebase/firestore';
 import { Project } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 
 const formSchema = z.object({
-  file: z.instanceof(File, { message: 'A file is required.' }),
+  fileUrl: z.string().url({ message: "Please enter a valid URL." }),
+  fileName: z.string().min(1, "File name is required."),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -35,67 +35,35 @@ export function PortfolioItemForm({ projectId, portfolioNoteId, closeForm }: Por
   const { toast } = useToast();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [fileName, setFileName] = useState('');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+        fileUrl: '',
+        fileName: '',
+    }
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      form.setValue('file', file);
-      setFileName(file.name);
-    }
-  };
 
   async function onSubmit(values: FormValues) {
     if (!user) return;
     setIsSubmitting(true);
 
     try {
-        const projectRef = doc(db, 'projects', projectId);
-        const projectSnap = await getDoc(projectRef);
-        if (!projectSnap.exists()) {
-            throw new Error("Project not found.");
-        }
-        const project = projectSnap.data() as Project;
-
-        if (!project.googleDriveAccessToken) {
-            toast({ variant: 'destructive', title: 'Google Drive not connected', description: 'Please connect to Google Drive in Project Settings first.' });
-            setIsSubmitting(false);
-            return;
-        }
-        
-        const itemId = uuidv4();
-        const file = values.file;
-        
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('accessToken', project.googleDriveAccessToken);
-        formData.append('folderPath', ['true_north', 'portfolio', portfolioNoteId].join(','));
-        formData.append('fileName', `${itemId}-${file.name}`);
-
-        const uploadResult = await uploadFileToDrive(formData);
-
-        if (!uploadResult.success || !uploadResult.link) {
-            throw new Error(uploadResult.message || 'Failed to upload to Google Drive.');
-        }
-
         await addDoc(collection(db, 'portfolioItems'), {
             portfolioNoteId: portfolioNoteId,
-            fileName: file.name,
-            fileUrl: uploadResult.link,
-            fileType: file.type,
-            fileSize: file.size,
+            fileName: values.fileName,
+            fileUrl: values.fileUrl,
+            fileType: 'link', // Assume it's a link now
+            fileSize: 0,
             createdAt: serverTimestamp(),
         });
         
-        toast({ title: 'Success', description: 'Item uploaded and added to portfolio.' });
+        toast({ title: 'Success', description: 'Item added to portfolio.' });
         closeForm();
 
     } catch (error: any) {
-        console.error("Error uploading portfolio item:", error);
+        console.error("Error adding portfolio item:", error);
         toast({ variant: 'destructive', title: 'Error', description: error.message || 'Something went wrong.' });
     } finally {
         setIsSubmitting(false);
@@ -107,18 +75,25 @@ export function PortfolioItemForm({ projectId, portfolioNoteId, closeForm }: Por
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
-          name="file"
+          name="fileUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>File</FormLabel>
+              <FormLabel>File URL</FormLabel>
               <FormControl>
-                <div className="relative flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary">
-                    <div className='text-center text-muted-foreground'>
-                        <UploadCloud className='mx-auto h-8 w-8' />
-                        <p>{fileName || "Click to upload a file"}</p>
-                    </div>
-                    <Input id="file-upload" type="file" onChange={handleFileChange} className='absolute inset-0 w-full h-full opacity-0 cursor-pointer' />
-                </div>
+                 <Input placeholder="https://example.com/file.jpg" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
+          name="fileName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>File Name</FormLabel>
+              <FormControl>
+                 <Input placeholder="e.g., Final Logo Design" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -129,7 +104,7 @@ export function PortfolioItemForm({ projectId, portfolioNoteId, closeForm }: Por
           <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>Cancel</Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Upload Item
+            Add Item
           </Button>
         </div>
       </form>

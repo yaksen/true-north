@@ -19,7 +19,6 @@ import { cn } from '@/lib/utils';
 import { logActivity } from '@/lib/activity-log';
 import { FinanceForm } from './finance-form';
 import { QrCodeModal } from '../qr-code-modal';
-import { saveContactToGoogle } from '@/app/actions/google-contacts';
 
 interface LeadCardDependencies {
     project: Project;
@@ -56,21 +55,6 @@ export function LeadCard({ lead, dependencies }: LeadCardProps) {
   
   const handleStar = async (starred: boolean) => {
     onStar(lead.id, starred);
-  }
-
-  const handleSaveToContacts = async () => {
-    if (!project.googleContactsAccessToken) {
-        toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to Google Contacts in Project Settings first.'});
-        return;
-    }
-    setIsSavingToGoogle(true);
-    const result = await saveContactToGoogle(lead, project.googleContactsAccessToken);
-    if (result.success) {
-        toast({ title: 'Success', description: result.message });
-    } else {
-        toast({ variant: 'destructive', title: 'Error', description: result.message });
-    }
-    setIsSavingToGoogle(false);
   }
   
   const getStatusVariant = (status: Lead['status']) => {
@@ -124,9 +108,6 @@ export function LeadCard({ lead, dependencies }: LeadCardProps) {
                 </Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsQrOpen(true)}>
                     <QrCode className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveToContacts} disabled={isSavingToGoogle}>
-                {isSavingToGoogle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Contact className="h-4 w-4" />}
                 </Button>
                 <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                     <DialogTrigger asChild>

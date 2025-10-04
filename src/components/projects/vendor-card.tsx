@@ -18,7 +18,6 @@ import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import { logActivity } from '@/lib/activity-log';
 import { QrCodeModal } from '../qr-code-modal';
-import { saveContactToGoogle } from '@/app/actions/google-contacts';
 
 interface VendorCardDependencies {
     project: Project;
@@ -36,7 +35,6 @@ export function VendorCard({ vendor, dependencies }: VendorCardProps) {
   const { toast } = useToast();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isQrOpen, setIsQrOpen] = useState(false);
-  const [isSavingToGoogle, setIsSavingToGoogle] = useState(false);
   const { project, channels, onStar } = dependencies;
 
   const handleDelete = async () => {
@@ -52,21 +50,6 @@ export function VendorCard({ vendor, dependencies }: VendorCardProps) {
   
   const handleStar = async (starred: boolean) => {
     onStar(vendor.id, starred);
-  }
-
-  const handleSaveToContacts = async () => {
-    if (!project.googleContactsAccessToken) {
-        toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to Google Contacts in Project Settings first.'});
-        return;
-    }
-    setIsSavingToGoogle(true);
-    const result = await saveContactToGoogle(vendor, project.googleContactsAccessToken);
-    if (result.success) {
-        toast({ title: 'Success', description: result.message });
-    } else {
-        toast({ variant: 'destructive', title: 'Error', description: result.message });
-    }
-    setIsSavingToGoogle(false);
   }
 
   const channel = channels.find(c => c.id === vendor.channelId);
@@ -103,9 +86,6 @@ export function VendorCard({ vendor, dependencies }: VendorCardProps) {
                 </Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsQrOpen(true)}>
                     <QrCode className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveToContacts} disabled={isSavingToGoogle}>
-                {isSavingToGoogle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Contact className="h-4 w-4" />}
                 </Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>

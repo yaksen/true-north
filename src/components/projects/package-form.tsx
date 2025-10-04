@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -31,7 +32,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Label } from '../ui/label';
 import { extractPackageDetails, type ExtractPackageDetailsOutput } from '@/ai/flows/extract-package-details-flow';
 import Image from 'next/image';
-import { uploadFileToDrive } from '@/app/actions/google-drive';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -160,51 +160,6 @@ export function PackageForm({ pkg, project, services, products, closeForm }: Pac
       form.setValue('discountPercentage', 0);
     }
   }, [basePrice, form]);
-
-  const handleImageUpload = useCallback(async (file: File) => {
-    if (!project.googleDriveAccessToken) {
-        toast({ title: 'Google Drive not connected', description: 'Please connect to Google Drive in Project Settings first.', variant: 'destructive' });
-        return;
-    }
-    setIsUploading(true);
-    setPreviewImageUrl(URL.createObjectURL(file));
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('accessToken', project.googleDriveAccessToken);
-    formData.append('folderPath', ['true_north', project.name, 'products'].join(','));
-    formData.append('fileName', `${form.getValues('sku') || uuidv4()}.jpg`);
-
-    try {
-        const result = await uploadFileToDrive(formData);
-        if (result.success && result.link) {
-            form.setValue('imageUrl', result.link);
-            setPreviewImageUrl(result.link);
-            toast({ title: 'Success', description: 'Image uploaded to Google Drive.' });
-        } else {
-            throw new Error(result.message || 'Image upload failed');
-        }
-    } catch (error: any) {
-        setPreviewImageUrl(null); // Clear preview on error
-        form.setValue('imageUrl', '');
-        toast({ title: 'Upload Error', description: error.message, variant: 'destructive' });
-    } finally {
-        setIsUploading(false);
-    }
-}, [project, toast, form]);
-
-const handlePackageImageChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files.length > 0) {
-        const file = event.target.files[0];
-        handleImageUpload(file);
-    }
-}, [handleImageUpload]);
-
-const handleRemoveImage = () => {
-    setPreviewImageUrl(null);
-    form.setValue('imageUrl', '');
-    // Consider adding logic here to delete from Google Drive if needed
-};
   
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -363,32 +318,6 @@ const handleRemoveImage = () => {
             )}
             />
             
-            <div className='space-y-2'>
-              <Label>Package Image</Label>
-              <div className='flex items-center gap-4'>
-                  <div className='relative w-24 h-24 bg-muted rounded-lg flex items-center justify-center'>
-                      {previewImageUrl ? (
-                          <>
-                              <Image src={previewImageUrl} alt="Package preview" width={96} height={96} className='rounded-lg object-cover w-24 h-24' />
-                              <Button type="button" size="icon" variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full z-10" onClick={handleRemoveImage} disabled={isUploading}>
-                                  <X className="h-4 w-4" />
-                              </Button>
-                          </>
-                      ) : (
-                          <ImagePreviewIcon className='h-8 w-8 text-muted-foreground' />
-                      )}
-                      {isUploading && (
-                          <div className='absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg'>
-                              <Loader2 className='h-6 w-6 text-white animate-spin' />
-                          </div>
-                      )}
-                  </div>
-                  <div className='flex-1'>
-                    <Input id="package-image" type="file" accept="image/*" onChange={handlePackageImageChange} disabled={isUploading}/>
-                  </div>
-              </div>
-            </div>
-
             <FormField
                 control={form.control}
                 name="services" // Also need to handle products here, but hook form name is singular
@@ -615,4 +544,3 @@ const handleRemoveImage = () => {
     </div>
   );
 }
-

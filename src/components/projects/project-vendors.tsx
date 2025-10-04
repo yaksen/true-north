@@ -10,7 +10,6 @@ import { PlusCircle, Contact, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { VendorForm } from './vendor-form';
 import { useToast } from '@/hooks/use-toast';
-import { saveContactToGoogle } from '@/app/actions/google-contacts';
 import { VendorsToolbar } from './vendors-toolbar';
 import { VendorCard } from './vendor-card';
 import { ScrollArea } from '../ui/scroll-area';
@@ -26,7 +25,6 @@ interface ProjectVendorsProps {
 export function ProjectVendors({ project, vendors, channels }: ProjectVendorsProps) {
   const { toast } = useToast();
   const [isVendorFormOpen, setIsVendorFormOpen] = useState(false);
-  const [isBulkSaving, setIsBulkSaving] = useState(false);
   const [filters, setFilters] = useState({
     serviceType: '',
     search: '',
@@ -57,35 +55,6 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
     });
   }, [vendors, filters]);
 
-  
-  const handleBulkSaveToContacts = async () => {
-    if (!project.googleContactsAccessToken) {
-        toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to Google Contacts in Project Settings first.'});
-        return;
-    }
-    setIsBulkSaving(true);
-    let successCount = 0;
-    let existCount = 0;
-    let failCount = 0;
-
-    for (const vendor of filteredVendors) {
-        const result = await saveContactToGoogle(vendor, project.googleContactsAccessToken);
-        if (result.success) {
-            successCount++;
-        } else if (result.message.includes('already exists')) {
-            existCount++;
-        } else {
-            failCount++;
-        }
-    }
-
-    setIsBulkSaving(false);
-    toast({
-        title: 'Bulk Save Complete',
-        description: `${successCount} new contacts saved, ${existCount} already existed, and ${failCount} failed.`,
-    });
-  }
-
   return (
     <div className="grid gap-6 mt-4">
       <Card>
@@ -98,10 +67,6 @@ export function ProjectVendors({ project, vendors, channels }: ProjectVendorsPro
               </CardDescription>
             </div>
             <div className='flex items-center gap-2'>
-                <Button size="sm" variant="outline" onClick={handleBulkSaveToContacts} disabled={isBulkSaving || !project.googleContactsAccessToken}>
-                    {isBulkSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Contact className="mr-2 h-4 w-4" />}
-                    Save All to Contacts
-                </Button>
                 <Dialog open={isVendorFormOpen} onOpenChange={setIsVendorFormOpen}>
                 <DialogTrigger asChild>
                     <Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Vendor</Button>

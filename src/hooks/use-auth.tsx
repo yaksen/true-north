@@ -118,23 +118,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/drive.file');
-    provider.addScope('https://www.googleapis.com/auth/contacts');
-    provider.setCustomParameters({
-        access_type: 'offline',
-        prompt: 'consent'
-    });
-
     try {
         const result = await signInWithPopup(auth, provider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        // @ts-ignore - serverAuthCode is available on the credential object from popups
-        const serverAuthCode = credential.serverAuthCode;
-
-        if (serverAuthCode && result.user) {
-            const userRef = doc(db, 'users', result.user.uid);
-            await setDoc(userRef, { googleServerAuthCode: serverAuthCode }, { merge: true });
-        }
         return result;
     } catch (error: any) {
         if (error.code === 'auth/account-exists-with-different-credential') {

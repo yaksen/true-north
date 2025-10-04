@@ -12,7 +12,6 @@ import { LeadForm } from "./lead-form";
 import { doc, writeBatch, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { saveContactToGoogle } from "@/app/actions/google-contacts";
 import { LeadsToolbar } from "./leads-toolbar";
 import { LeadCard } from "./lead-card";
 import { ScrollArea } from "../ui/scroll-area";
@@ -28,7 +27,6 @@ interface ProjectLeadsProps {
 export function ProjectLeads({ project, leads, packages, services, channels }: ProjectLeadsProps) {
     const { toast } = useToast();
     const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
-    const [isBulkSaving, setIsBulkSaving] = useState(false);
     const [filters, setFilters] = useState({
         status: 'all',
         channel: 'all',
@@ -61,34 +59,6 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
         });
     }, [leads, filters]);
 
-    const handleBulkSaveToContacts = async () => {
-        if (!project.googleContactsAccessToken) {
-            toast({ variant: 'destructive', title: 'Not Connected', description: 'Please connect to Google Contacts in Project Settings first.'});
-            return;
-        }
-        setIsBulkSaving(true);
-        let successCount = 0;
-        let existCount = 0;
-        let failCount = 0;
-
-        for (const lead of filteredLeads) {
-            const result = await saveContactToGoogle(lead, project.googleContactsAccessToken);
-            if (result.success) {
-                successCount++;
-            } else if (result.message.includes('already exists')) {
-                existCount++;
-            } else {
-                failCount++;
-            }
-        }
-
-        setIsBulkSaving(false);
-        toast({
-            title: 'Bulk Save Complete',
-            description: `${successCount} new contacts saved, ${existCount} already existed, and ${failCount} failed.`,
-        });
-    }
-
     return (
         <div className="grid gap-6 mt-4">
             <Card>
@@ -99,10 +69,6 @@ export function ProjectLeads({ project, leads, packages, services, channels }: P
                             <CardDescription>All leads associated with the &quot;{project.name}&quot; project.</CardDescription>
                         </div>
                         <div className='flex items-center gap-2'>
-                            <Button size="sm" variant="outline" onClick={handleBulkSaveToContacts} disabled={isBulkSaving || !project.googleContactsAccessToken}>
-                                {isBulkSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Contact className="mr-2 h-4 w-4" />}
-                                Save All to Contacts
-                            </Button>
                             <Dialog open={isLeadFormOpen} onOpenChange={setIsLeadFormOpen}>
                                 <DialogTrigger asChild>
                                     <Button size="sm"><PlusCircle className="mr-2"/> Add Lead</Button>
