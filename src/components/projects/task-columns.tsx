@@ -1,20 +1,26 @@
 
+
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import type { Task, Lead } from '@/lib/types';
+import type { Task, Lead, Channel, Project } from '@/lib/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Star } from 'lucide-react';
+import { Star, Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Badge } from '../ui/badge';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { TaskForm } from './task-form';
+import { useState } from 'react';
 
 interface TaskColumnsDependencies {
     leads: Lead[];
+    channels: Channel[];
+    projects?: Project[];
 }
 
 const handleCheckedChange = async (checked: boolean | 'indeterminate', taskId: string) => {
@@ -26,13 +32,43 @@ const handleCheckedChange = async (checked: boolean | 'indeterminate', taskId: s
     }
 };
 
+const EditTaskCell = ({ row, leads, channels, projects }: { row: any, leads: Lead[], channels: Channel[], projects?: Project[] }) => {
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const task = row.original;
+  
+  // This logic should be adapted based on where this is used.
+  // For global view, project members might not be easily available.
+  const project = projects?.find(p => p.id === task.projectId);
+  const members = project?.members || [];
+
+  return (
+    <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
+        </DialogTrigger>
+        <DialogContent className='max-w-4xl'>
+            <DialogHeader><DialogTitle>Edit Task</DialogTitle></DialogHeader>
+            <TaskForm 
+              task={task}
+              projectId={task.projectId} 
+              leads={leads}
+              channels={channels}
+              members={members}
+              projects={projects}
+              closeForm={() => setIsEditOpen(false)} 
+            />
+        </DialogContent>
+    </Dialog>
+  );
+}
+
 export const getTaskColumns = (
     dependencies: TaskColumnsDependencies,
     onStar: (id: string, starred: boolean) => void
 ): ColumnDef<Task>[] => {
-  const { leads } = dependencies;
+  const { leads, channels, projects } = dependencies;
 
-  return [
+  const columns: ColumnDef<Task>[] = [
     {
       id: 'select',
       header: ({ table }) => (
@@ -64,33 +100,40 @@ export const getTaskColumns = (
         const isCompleted = task.completed;
         const canExpand = row.getCanExpand();
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 font-medium">
             <Checkbox 
                 className='h-5 w-5'
                 checked={isCompleted} 
                 onCheckedChange={(checked) => handleCheckedChange(checked, task.id)}
                 onClick={(e) => e.stopPropagation()}
             />
-            <Button
-                variant="ghost"
-                onClick={() => row.toggleExpanded()}
-                disabled={!canExpand}
-                className='p-1 h-auto justify-start text-left'
-            >
-                <span className={cn(isCompleted && 'line-through text-muted-foreground')}>
-                    {task.title}
-                </span>
-            </Button>
+            <span className={cn(isCompleted && 'line-through text-muted-foreground')}>
+                {task.title}
+            </span>
           </div>
         );
       },
     },
+  ];
+
+  if (projects) {
+    columns.push({
+      accessorKey: 'projectId',
+      header: 'Project',
+      cell: ({ row }) => {
+        const project = projects.find(p => p.id === row.original.projectId);
+        return project ? <Badge variant="secondary">{project.name}</Badge> : null;
+      }
+    })
+  }
+
+  columns.push(
     {
         accessorKey: 'leadId',
         header: 'Lead',
         cell: ({ row }) => {
             const lead = leads.find(l => l.id === row.original.leadId);
-            return lead ? <Badge variant="secondary">{lead.name}</Badge> : null;
+            return lead ? <Badge>{lead.name}</Badge> : null;
         }
     },
     {
@@ -102,28 +145,33 @@ export const getTaskColumns = (
       },
     },
     {
-        id: 'star',
+        id: 'actions',
         cell: ({ row }) => {
           const task = row.original;
           return (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={(e) => {
-                e.stopPropagation();
-                onStar(task.id, !task.starred);
-              }}
-            >
-              <Star
-                className={cn(
-                  'h-4 w-4',
-                  task.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'
-                )}
-              />
-            </Button>
+            <div className='flex items-center'>
+                <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onStar(task.id, !task.starred);
+                }}
+                >
+                <Star
+                    className={cn(
+                    'h-4 w-4',
+                    task.starred ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'
+                    )}
+                />
+                </Button>
+                <EditTaskCell row={row} leads={leads} channels={channels} projects={projects} />
+            </div>
           );
         },
       },
-  ];
+  );
+  
+  return columns;
 };

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -15,8 +16,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { isToday, isTomorrow, addDays } from 'date-fns';
 import { TasksToolbar } from '../projects/tasks-toolbar';
-import { TaskCard } from '../projects/task-card';
-import { ScrollArea } from '../ui/scroll-area';
+import { DataTable } from '../ui/data-table';
+import { getTaskColumns } from '../projects/task-columns';
+
 
 interface GlobalTasksClientProps {
   projects: Project[];
@@ -24,12 +26,10 @@ interface GlobalTasksClientProps {
   templates: TaskTemplate[];
 }
 
-type DateFilter = 'all' | 'today' | 'tomorrow' | 'day-after';
-
-
-export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksClientProps) {
+export function GlobalTasksClient({ projects, tasks: initialTasks, templates }: GlobalTasksClientProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [tasks, setTasks] = useState(initialTasks);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -65,7 +65,6 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
     };
     fetchMembers();
   }, [projectMembers]);
-
 
   const handleGenerateTodaysTasks = async () => {
     if (!user) {
@@ -159,6 +158,17 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
     }
   }, []);
 
+  const handleStar = async (id: string, starred: boolean) => {
+    try {
+        await updateDoc(doc(db, 'tasks', id), { starred });
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Error", description: "Could not update star status."})
+    }
+  };
+
+  const taskColumns = useMemo(() => getTaskColumns({ leads, channels, projects }, handleStar), [leads, channels, projects]);
+
+
   const filteredTasks = useMemo(() => {
     let filtered = tasks.filter(task => showArchived ? task.archived : !task.archived);
     
@@ -231,23 +241,10 @@ export function GlobalTasksClient({ projects, tasks, templates }: GlobalTasksCli
 
       <Card>
         <CardContent className='pt-6'>
-            <ScrollArea className="h-[calc(100vh-30rem)]">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
-                    {filteredTasks.map(task => (
-                        <TaskCard 
-                            key={task.id}
-                            task={task}
-                            leads={leads}
-                            channels={channels}
-                        />
-                    ))}
-                </div>
-            </ScrollArea>
-            {filteredTasks.length === 0 && (
-                 <div className="text-center text-muted-foreground py-12">
-                    <p>No tasks found for the selected filters.</p>
-                </div>
-            )}
+          <DataTable 
+            columns={taskColumns}
+            data={filteredTasks}
+          />
         </CardContent>
       </Card>
     </>
