@@ -59,7 +59,8 @@ export function TaskCard({ task, leads, channels }: TaskCardProps) {
     }
   }
 
-  const updatedAt = task.updatedAt ? new Date(task.updatedAt) : null;
+  const updatedAtTimestamp = task.updatedAt as any;
+  const updatedAt = updatedAtTimestamp?.toDate ? updatedAtTimestamp.toDate() : (updatedAtTimestamp ? new Date(updatedAtTimestamp) : null);
   const lead = leads.find(l => l.id === task.leadId);
   const channel = channels.find(c => c.id === task.channelId);
 
