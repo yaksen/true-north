@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,14 +8,16 @@ import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { TaskTemplateForm } from './task-template-form';
-import { Edit, Trash2, ListChecks, User, Hash } from 'lucide-react';
+import { Edit, Trash2, ListChecks, User, Hash, Copy, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { deleteDoc, doc, getDocs, collection, query, where } from 'firebase/firestore';
+import { deleteDoc, doc, getDocs, collection, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Badge } from '../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
 interface TaskTemplateCardProps {
   template: TaskTemplate;
@@ -38,6 +39,9 @@ export function TaskTemplateCard({ template, project, channels }: TaskTemplateCa
   const { user } = useAuth();
   const { toast } = useToast();
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDuplicateOpen, setIsDuplicateOpen] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState(`${template.name} (Copy)`);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const [memberProfiles, setMemberProfiles] = useState<UserProfile[]>([]);
   
   const allAssigneeUids = template.tasks.flatMap(t => t.assigneeUids);
@@ -67,6 +71,31 @@ export function TaskTemplateCard({ template, project, channels }: TaskTemplateCa
       toast({ variant: 'destructive', title: 'Error', description: 'Could not delete template.' });
     }
   };
+
+  const handleDuplicate = async () => {
+    if (!user || !newTemplateName) {
+        toast({ variant: 'destructive', title: 'Error', description: 'New template name is required.' });
+        return;
+    }
+    setIsDuplicating(true);
+    try {
+        const { id, createdAt, updatedAt, ...templateDataToCopy } = template;
+        const newTemplate = {
+            ...templateDataToCopy,
+            name: newTemplateName,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        };
+        await addDoc(collection(db, 'taskTemplates'), newTemplate);
+        toast({ title: 'Success!', description: `Template "${newTemplateName}" created.` });
+        setIsDuplicateOpen(false);
+    } catch (error) {
+        console.error("Error duplicating template:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not duplicate template.' });
+    } finally {
+        setIsDuplicating(false);
+    }
+  };
   
   return (
     <Card className="flex flex-col">
@@ -74,6 +103,32 @@ export function TaskTemplateCard({ template, project, channels }: TaskTemplateCa
             <div className="flex justify-between items-start">
                 <CardTitle className="truncate">{template.name}</CardTitle>
                 <div className='flex items-center'>
+                    <Dialog open={isDuplicateOpen} onOpenChange={setIsDuplicateOpen}>
+                        <DialogTrigger asChild>
+                             <Button variant="ghost" size="icon" className="h-8 w-8"><Copy className="h-4 w-4" /></Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Duplicate Template</DialogTitle>
+                                <DialogDescription>Enter a new name for the duplicated template.</DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-2">
+                                <Label htmlFor="new-template-name">New Template Name</Label>
+                                <Input 
+                                    id="new-template-name"
+                                    value={newTemplateName}
+                                    onChange={(e) => setNewTemplateName(e.target.value)}
+                                />
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsDuplicateOpen(false)}>Cancel</Button>
+                                <Button onClick={handleDuplicate} disabled={isDuplicating}>
+                                    {isDuplicating && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+                                    Duplicate
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                     <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                         <DialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
