@@ -30,6 +30,7 @@ export interface UserProfile {
     photoURL?: string;
     lastLogin?: Date;
     projects: string[]; // List of project IDs the user is a member of
+    googleServerAuthCode?: string;
     createdAt: Date;
     updatedAt: Date;
 }

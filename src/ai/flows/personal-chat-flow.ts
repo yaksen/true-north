@@ -95,4 +95,6 @@ const personalChatFlow = ai.defineFlow(
 
 export async function personalChat(
   input: PersonalChatInput
-): Promise<Personal
+): Promise<PersonalChatOutput> {
+  return await personalChatFlow(input);
+}

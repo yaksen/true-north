@@ -7,6 +7,8 @@ import {
   useState,
   useEffect,
   ReactNode,
+  useCallback,
+  useMemo,
 } from 'react';
 import {
   onAuthStateChanged,
@@ -51,7 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let unsubscribeProfile: Unsubscribe | undefined;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoading(true);
       if (unsubscribeProfile) unsubscribeProfile();
       
       if (firebaseUser) {
@@ -96,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
 
-  const updateUserProfile = async (updates: Partial<UserProfile>) => {
+  const updateUserProfile = useCallback(async (updates: Partial<UserProfile>) => {
     if (!auth.currentUser) throw new Error("Not authenticated");
     
     await updateProfile(auth.currentUser, {
@@ -106,17 +107,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     const userRef = doc(db, 'users', auth.currentUser.uid);
     await setDoc(userRef, { ...updates, updatedAt: serverTimestamp() }, { merge: true });
-  };
+  }, []);
   
-  const signUpWithEmail = (email: string, password: string) => {
+  const signUpWithEmail = useCallback((email: string, password: string) => {
     return createUserWithEmailAndPassword(auth, email, password);
-  };
+  }, []);
 
-  const signInWithEmail = (email: string, password: string) => {
+  const signInWithEmail = useCallback((email: string, password: string) => {
     return signInWithEmailAndPassword(auth, email, password);
-  };
+  }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = useCallback(async () => {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
@@ -151,13 +152,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         throw error;
     }
-  };
+  }, [toast]);
 
-  const signOut = () => {
+  const signOut = useCallback(() => {
     return firebaseSignOut(auth);
-  };
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     userProfile,
     loading,
@@ -167,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     updateUserProfile,
     auth,
-  };
+  }), [user, userProfile, loading, signUpWithEmail, signInWithEmail, signInWithGoogle, signOut, updateUserProfile]);
 
   return (
     <AuthContext.Provider value={value}>
