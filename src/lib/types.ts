@@ -92,7 +92,7 @@ export interface SubTask {
     description?: string;
     slot: TaskTemplateSlot;
     assigneeUids: string[];
-    channelId?: string;
+    channelIds?: string[];
 }
 
 export interface TaskTemplate {

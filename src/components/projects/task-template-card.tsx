@@ -1,14 +1,15 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { TaskTemplate, Project, UserProfile, SubTask } from '@/lib/types';
+import type { TaskTemplate, Project, UserProfile, SubTask, Channel } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { TaskTemplateForm } from './task-template-form';
-import { Edit, Trash2, ListChecks, User } from 'lucide-react';
+import { Edit, Trash2, ListChecks, User, Hash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { deleteDoc, doc, getDocs, collection, query, where } from 'firebase/firestore';
@@ -20,7 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 interface TaskTemplateCardProps {
   template: TaskTemplate;
   project: Project;
-  channels: any[];
+  channels: Channel[];
 }
 
 const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -41,6 +42,9 @@ export function TaskTemplateCard({ template, project, channels }: TaskTemplateCa
   
   const allAssigneeUids = template.tasks.flatMap(t => t.assigneeUids);
   const uniqueAssigneeUids = [...new Set(allAssigneeUids)];
+  
+  const allChannelIds = template.tasks.flatMap(t => t.channelIds || []);
+  const uniqueChannelIds = [...new Set(allChannelIds)];
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -107,6 +111,10 @@ export function TaskTemplateCard({ template, project, channels }: TaskTemplateCa
              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                 <User className='h-4 w-4'/> 
                 <span>Assigned to {uniqueAssigneeUids.length} member(s)</span>
+             </div>
+             <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                <Hash className='h-4 w-4'/> 
+                <span>Uses {uniqueChannelIds.length} channel(s)</span>
              </div>
         </CardContent>
         <CardFooter>

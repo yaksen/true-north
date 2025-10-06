@@ -36,7 +36,7 @@ const subTaskSchema = z.object({
   description: z.string().optional(),
   slot: z.enum(slots),
   assigneeUids: z.array(z.string()).min(1, 'At least one assignee is required.'),
-  channelId: z.string().optional(),
+  channelIds: z.array(z.string()).optional(),
 });
 
 const formSchema = z.object({
@@ -60,16 +60,18 @@ export function TaskTemplateForm({ template, projectId, members, channels, close
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAssigneePopoverOpen, setIsAssigneePopoverOpen] = useState(false);
 
   const form = useForm<TaskTemplateFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: template || {
+    defaultValues: template ? {
+        ...template,
+        tasks: template.tasks.map(t => ({...t, channelIds: t.channelIds || []}))
+    } : {
       name: '',
       description: '',
       daysOfWeek: [1, 2, 3, 4, 5],
       tasks: [
-          { id: uuidv4(), title: '', description: '', slot: 'morning', assigneeUids: [], channelId: '' }
+          { id: uuidv4(), title: '', description: '', slot: 'morning', assigneeUids: [], channelIds: [] }
       ],
     },
   });
@@ -123,7 +125,20 @@ export function TaskTemplateForm({ template, projectId, members, channels, close
                             <FormField control={form.control} name={`tasks.${index}.description`} render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <div className='grid grid-cols-2 gap-4'>
                                 <FormField control={form.control} name={`tasks.${index}.slot`} render={({ field }) => (<FormItem><FormLabel>Slot</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{slots.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name={`tasks.${index}.channelId`} render={({ field }) => (<FormItem><FormLabel>Channel</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select channel..."/></SelectTrigger></FormControl><SelectContent>{channels.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name={`tasks.${index}.channelIds`} render={({ field }) => (
+                                    <FormItem className="flex flex-col"><FormLabel>Channels</FormLabel>
+                                        <Popover><PopoverTrigger asChild><Button variant="outline" role="combobox" className="justify-between">{field.value && field.value.length > 0 ? `${field.value.length} selected` : "Select channels..."}<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" /></Button></PopoverTrigger><PopoverContent className="w-[--radix-popover-trigger-width] p-0"><Command><CommandInput placeholder="Search channels..." />
+                                            <CommandEmpty>No channels found.</CommandEmpty>
+                                            <CommandGroup><ScrollArea className="h-48">{channels.map((channel) => (
+                                                <CommandItem key={channel.id} onSelect={() => {
+                                                    const current = field.value || [];
+                                                    const newSelection = current.includes(channel.id) ? current.filter(id => id !== channel.id) : [...current, channel.id];
+                                                    field.onChange(newSelection);
+                                                }}><CheckIcon className={cn("mr-2 h-4 w-4", field.value?.includes(channel.id) ? "opacity-100" : "opacity-0")} />{channel.name}</CommandItem>
+                                            ))}</ScrollArea></CommandGroup></Command></PopoverContent></Popover>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
                             </div>
                             <FormField control={form.control} name={`tasks.${index}.assigneeUids`} render={({ field }) => (
                                 <FormItem className="flex flex-col"><FormLabel>Assignees</FormLabel>
@@ -141,7 +156,7 @@ export function TaskTemplateForm({ template, projectId, members, channels, close
                             )} />
                         </div>
                     ))}
-                     <Button type="button" variant="outline" size="sm" onClick={() => append({ id: uuidv4(), title: '', description: '', slot: 'morning', assigneeUids: [], channelId: '' })}>
+                     <Button type="button" variant="outline" size="sm" onClick={() => append({ id: uuidv4(), title: '', description: '', slot: 'morning', assigneeUids: [], channelIds: [] })}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Sub-Task
                     </Button>
                 </div>
